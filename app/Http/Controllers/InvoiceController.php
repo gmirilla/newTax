@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\InvoiceRequest;
 use App\Imports\InvoicesImport;
+use App\Jobs\FIRS\ProcessFirsInvoiceJob;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\InvoiceFirsSubmission;
+use App\Models\TenantFirsCredential;
 use App\Repositories\InvoiceRepository;
 use App\Services\InvoiceService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -182,6 +185,46 @@ class InvoiceController extends Controller
         $invoice->update(['status' => 'void']);
 
         return back()->with('success', 'Invoice voided.');
+    }
+
+    /**
+     * Submit an invoice to FIRS for e-Invoicing validation and signing.
+     *
+     * Only invoices with status 'sent' or 'paid' may be submitted.
+     * If a previous submission failed the job is re-queued (retry flow).
+     */
+    public function submitToFirs(Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+
+        if (! in_array($invoice->status, ['sent', 'paid'], true)) {
+            return back()->with('error', 'Only sent or paid invoices can be submitted to FIRS.');
+        }
+
+        if ($invoice->firs_status === 'signed') {
+            return back()->with('error', 'This invoice has already been signed by FIRS.');
+        }
+
+        // Ensure the tenant has active FIRS credentials configured
+        $hasCredentials = TenantFirsCredential::where('tenant_id', $invoice->tenant_id)
+            ->where('is_active', true)
+            ->exists();
+
+        if (! $hasCredentials) {
+            return back()->with('error', 'FIRS credentials not configured. Go to Settings → FIRS to set up your credentials.');
+        }
+
+        // Reset a previously failed submission so the job can retry
+        $submission = InvoiceFirsSubmission::where('invoice_id', $invoice->id)->first();
+        if ($submission && $submission->status === 'failed') {
+            $submission->update(['status' => 'pending']);
+        }
+
+        $invoice->update(['firs_status' => 'pending']);
+
+        ProcessFirsInvoiceJob::dispatch($invoice);
+
+        return back()->with('success', 'Invoice queued for FIRS submission. You will be notified when signing is complete.');
     }
 
     public function importForm(): View

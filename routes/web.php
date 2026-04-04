@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FirsOnboardingController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PayrollController;
@@ -40,7 +41,15 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
         Route::post('/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('payment');
         Route::get('/{invoice}/pdf',      [InvoiceController::class, 'downloadPdf'])->name('pdf');
         Route::post('/{invoice}/send',    [InvoiceController::class, 'sendEmail'])->name('send');
-        Route::post('/{invoice}/void',    [InvoiceController::class, 'void'])->name('void');
+        Route::post('/{invoice}/void',       [InvoiceController::class, 'void'])->name('void');
+        Route::post('/{invoice}/submit-firs', [InvoiceController::class, 'submitToFirs'])->name('submit-firs');
+    });
+
+    // ── FIRS Onboarding / Settings ────────────────────────────────────────────
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/firs',         [FirsOnboardingController::class, 'showForm'])->name('firs');
+        Route::post('/firs',        [FirsOnboardingController::class, 'store'])->name('firs.store');
+        Route::post('/firs/deactivate', [FirsOnboardingController::class, 'deactivate'])->name('firs.deactivate');
     });
 
     // ── Transactions & Expenses ───────────────────────────────────────────────
