@@ -29,6 +29,9 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
         Route::get('/',               [InvoiceController::class, 'index'])->name('index');
         Route::get('/create',         [InvoiceController::class, 'create'])->name('create');
         Route::post('/',              [InvoiceController::class, 'store'])->name('store');
+        Route::get('/import',         [InvoiceController::class, 'importForm'])->name('import');
+        Route::post('/import',        [InvoiceController::class, 'import'])->name('import.process');
+        Route::get('/sample',         [InvoiceController::class, 'downloadSample'])->name('sample');
         Route::get('/{invoice}',      [InvoiceController::class, 'show'])->name('show');
         Route::get('/{invoice}/edit', [InvoiceController::class, 'edit'])->name('edit');
         Route::put('/{invoice}',      [InvoiceController::class, 'update'])->name('update');

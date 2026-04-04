@@ -32,10 +32,16 @@
     <div class="bg-white shadow rounded-lg">
         <div class="px-6 py-4 border-b flex items-center justify-between">
             <h2 class="text-base font-semibold">All Invoices</h2>
-            <a href="{{ route('invoices.create') }}"
-               class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
-                + New Invoice
-            </a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('invoices.import') }}"
+                   class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50">
+                    ↑ Import
+                </a>
+                <a href="{{ route('invoices.create') }}"
+                   class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                    + New Invoice
+                </a>
+            </div>
         </div>
 
         {{-- Filters --}}
