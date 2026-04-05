@@ -29,12 +29,12 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Issue Date *</label>
-                    <input type="date" name="issue_date" value="{{ $invoice->issue_date->toDateString() }}" required
+                    <input type="date" name="issue_date" value="{{ $invoice->issue_date?->toDateString() ?? now()->toDateString() }}" required
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Due Date *</label>
-                    <input type="date" name="due_date" value="{{ $invoice->due_date->toDateString() }}" required
+                    <input type="date" name="due_date" value="{{ $invoice->due_date?->toDateString() ?? now()->addDays(30)->toDateString() }}" required
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                 </div>
                 <div>
@@ -150,10 +150,18 @@
     </div>
 </div>
 
+@php
+    $invoiceItemsData = $invoice->items->map(fn($i) => [
+        'description' => $i->description,
+        'quantity'    => $i->quantity,
+        'unit_price'  => $i->unit_price,
+        'amount'      => $i->amount,
+    ]);
+@endphp
 <script>
 function invoiceForm() {
     return {
-        items: @json($invoice->items->map(fn($i) => ['description' => $i->description, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price, 'amount' => $i->amount])),
+        items: @json($invoiceItemsData),
         vatApplicable: {{ $invoice->vat_applicable ? 'true' : 'false' }},
         whtApplicable: {{ $invoice->wht_applicable ? 'true' : 'false' }},
         discount: {{ $invoice->discount_amount }},
