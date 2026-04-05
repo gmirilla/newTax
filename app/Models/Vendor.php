@@ -15,7 +15,18 @@ class Vendor extends Model
     protected $fillable = [
         'tenant_id', 'name', 'email', 'phone', 'address',
         'city', 'state', 'tin', 'rc_number',
-        'vendor_type', 'wht_rate', 'is_active', 'current_balance',
+        'vendor_type', 'wht_rate', 'wht_exempt', 'wht_exempt_reason',
+        'is_active', 'current_balance',
+    ];
+
+    // Reasons a vendor may be exempt from Nigerian WHT
+    public const WHT_EXEMPT_REASONS = [
+        'foreign_income'  => 'Foreign vendor / income not earned in Nigeria',
+        'diplomatic'      => 'Diplomatic mission / international organisation',
+        'govt_entity'     => 'Government or public sector entity',
+        'firs_exemption'  => 'FIRS-issued WHT exemption certificate',
+        'treaty_relief'   => 'Double-taxation treaty relief',
+        'other'           => 'Other (specify in notes)',
     ];
 
     protected static function booted(): void
@@ -29,6 +40,7 @@ class Vendor extends Model
 
     protected $casts = [
         'wht_rate'        => 'decimal:2',
+        'wht_exempt'      => 'boolean',
         'is_active'       => 'boolean',
         'current_balance' => 'decimal:2',
     ];
