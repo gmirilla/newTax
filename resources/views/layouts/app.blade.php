@@ -87,6 +87,10 @@
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('invoices.*') ? 'bg-green-900' : '' }}">
                             🧾 Invoices
                         </a>
+                        <a href="{{ route('quotes.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('quotes.*') ? 'bg-green-900' : '' }}">
+                            📄 Quotes / Proforma
+                        </a>
                         <a href="{{ route('transactions.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('transactions.*') ? 'bg-green-900' : '' }}">
                             💰 Transactions
@@ -175,6 +179,10 @@
                         <a href="{{ route('invoices.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('invoices.*') ? 'bg-green-900' : '' }}">
                             🧾 Invoices
+                        </a>
+                        <a href="{{ route('quotes.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('quotes.*') ? 'bg-green-900' : '' }}">
+                            📄 Quotes / Proforma
                         </a>
                         <a href="{{ route('transactions.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('transactions.*') ? 'bg-green-900' : '' }}">
