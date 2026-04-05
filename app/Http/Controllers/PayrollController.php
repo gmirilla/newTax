@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\PayrollExport;
+use App\Imports\EmployeesImport;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
 use App\Services\PayeService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PayrollController extends Controller
 {
@@ -228,6 +233,25 @@ class PayrollController extends Controller
         return view('payroll.payslip', compact('payslip'));
     }
 
+    public function downloadPdf(Payroll $payroll)
+    {
+        $payroll->load(['items.employee', 'tenant']);
+
+        $pdf = Pdf::loadView('payroll.export-pdf', compact('payroll'))
+            ->setPaper('a3', 'landscape');
+
+        $filename = 'Payroll-' . $payroll->getMonthName() . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    public function downloadExcel(Payroll $payroll)
+    {
+        $filename = 'Payroll-' . $payroll->getMonthName() . '.xlsx';
+
+        return Excel::download(new PayrollExport($payroll), $filename);
+    }
+
     public function employees(Request $request): View
     {
         $tenant    = $request->user()->tenant;
@@ -241,6 +265,70 @@ class PayrollController extends Controller
     public function createEmployee(Request $request): View
     {
         return view('payroll.employee-form');
+    }
+
+    public function importEmployeesForm(): View
+    {
+        return view('payroll.import');
+    }
+
+    public function importEmployees(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,xlsx,xls|max:5120',
+        ]);
+
+        $tenant  = $request->user()->tenant;
+        $import  = new EmployeesImport($tenant, (bool) $request->input('update_existing', false));
+
+        Excel::import($import, $request->file('file'));
+
+        $parts = [];
+        if ($import->imported > 0) $parts[] = "{$import->imported} employee(s) added";
+        if ($import->updated  > 0) $parts[] = "{$import->updated} updated";
+        if ($import->skipped  > 0) $parts[] = "{$import->skipped} skipped";
+
+        $message = implode(', ', $parts) . '.';
+        $type    = ($import->imported + $import->updated) > 0 ? 'success' : 'error';
+
+        if (! empty($import->errors)) {
+            session()->flash('import_errors', $import->errors);
+        }
+
+        return redirect()->route('payroll.employees.import')
+            ->with($type, $message);
+    }
+
+    public function downloadEmployeeSample(): Response
+    {
+        $csv = implode("\n", [
+            'first_name,last_name,email,phone,job_title,department,employment_type,hire_date,' .
+            'state_of_residence,tin,basic_salary,housing_allowance,transport_allowance,' .
+            'medical_allowance,utility_allowance,other_allowances,' .
+            'nhf_enabled,nhis_enabled,nhis_amount,' .
+            'home_loan_interest,life_insurance_premium,annual_rent,' .
+            'bank_name,account_number,account_name',
+
+            // Example 1 — full row
+            'Chukwuemeka,Okafor,c.okafor@example.ng,08012345678,Senior Accountant,Finance,full_time,' .
+            '2024-01-15,Lagos,1234567890,350000,87500,50000,25000,0,0,' .
+            'yes,yes,15000,0,0,1200000,Access Bank,0123456789,Chukwuemeka Okafor',
+
+            // Example 2 — minimal required fields
+            'Ngozi,Adeyemi,,08098765432,Marketing Manager,Marketing,full_time,' .
+            '2025-03-01,Abuja,,280000,70000,40000,0,0,0,' .
+            'yes,no,0,0,0,0,GTBank,9876543210,Ngozi Adeyemi',
+
+            // Example 3 — contractor, partial benefits
+            'Ibrahim,Musa,i.musa@freelance.ng,,IT Consultant,,contract,' .
+            '2026-01-01,Kano,,500000,0,0,0,0,50000,' .
+            'no,no,0,2400000,180000,0,Zenith Bank,1122334455,Ibrahim Musa',
+        ]);
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="employee_import_sample.csv"',
+        ]);
     }
 
     public function editEmployee(Employee $employee): View

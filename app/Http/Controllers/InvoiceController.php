@@ -3,14 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\InvoiceRequest;
+use App\Imports\InvoicesImport;
+use App\Jobs\FIRS\ProcessFirsInvoiceJob;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\InvoiceFirsSubmission;
+use App\Models\TenantFirsCredential;
 use App\Repositories\InvoiceRepository;
 use App\Services\InvoiceService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InvoiceController extends Controller
 {
@@ -179,5 +185,95 @@ class InvoiceController extends Controller
         $invoice->update(['status' => 'void']);
 
         return back()->with('success', 'Invoice voided.');
+    }
+
+    /**
+     * Submit an invoice to FIRS for e-Invoicing validation and signing.
+     *
+     * Only invoices with status 'sent' or 'paid' may be submitted.
+     * If a previous submission failed the job is re-queued (retry flow).
+     */
+    public function submitToFirs(Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+
+        if (! in_array($invoice->status, ['sent', 'paid'], true)) {
+            return back()->with('error', 'Only sent or paid invoices can be submitted to FIRS.');
+        }
+
+        if ($invoice->firs_status === 'signed') {
+            return back()->with('error', 'This invoice has already been signed by FIRS.');
+        }
+
+        // Ensure the tenant has active FIRS credentials configured
+        $hasCredentials = TenantFirsCredential::where('tenant_id', $invoice->tenant_id)
+            ->where('is_active', true)
+            ->exists();
+
+        if (! $hasCredentials) {
+            return back()->with('error', 'FIRS credentials not configured. Go to Settings → FIRS to set up your credentials.');
+        }
+
+        // Reset a previously failed submission so the job can retry
+        $submission = InvoiceFirsSubmission::where('invoice_id', $invoice->id)->first();
+        if ($submission && $submission->status === 'failed') {
+            $submission->update(['status' => 'pending']);
+        }
+
+        $invoice->update(['firs_status' => 'pending']);
+
+        ProcessFirsInvoiceJob::dispatch($invoice);
+
+        return back()->with('success', 'Invoice queued for FIRS submission. You will be notified when signing is complete.');
+    }
+
+    public function importForm(): View
+    {
+        return view('invoices.import');
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,xlsx,xls|max:2048',
+        ]);
+
+        $tenant  = $request->user()->tenant;
+        $import  = new InvoicesImport($tenant, $this->invoiceService);
+
+        Excel::import($import, $request->file('file'));
+
+        $message = "{$import->imported} invoice(s) imported successfully.";
+        if ($import->skipped > 0) {
+            $message .= " {$import->skipped} row(s) skipped.";
+        }
+
+        if (!empty($import->errors)) {
+            session()->flash('import_errors', $import->errors);
+        }
+
+        $type = $import->imported > 0 ? 'success' : 'error';
+        return redirect()->route('invoices.import')
+            ->with($type, $message);
+    }
+
+    public function downloadSample(): Response
+    {
+        $csv = implode("\n", [
+            // Header row
+            'invoice_number,customer_name,invoice_date,due_date,reference,vat_applicable,wht_applicable,wht_rate,discount_amount,notes,terms,item_description,item_quantity,item_unit_price,item_vat',
+            // Invoice 1 — two line items (same invoice_number = same invoice)
+            'INV-2026-0001,Acme Nigeria Ltd,2026-01-15,2026-02-14,PO-1001,yes,no,0,0,,Net 30,Web Design Services,1,500000,yes',
+            'INV-2026-0001,Acme Nigeria Ltd,2026-01-15,2026-02-14,PO-1001,yes,no,0,0,,Net 30,Domain Registration (1yr),1,75000,yes',
+            // Invoice 2 — single line, WHT deducted
+            'INV-2026-0002,Beta Corp Ltd,2026-01-20,2026-02-19,PO-2002,yes,yes,5,0,Q1 consulting,Net 30,IT Consulting — January,10,100000,yes',
+            // Invoice 3 — auto-number (leave invoice_number blank)
+            ',Gamma Stores,2026-01-22,2026-02-21,,yes,no,0,5000,Discount applied,,Office Supplies,20,15000,no',
+        ]);
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="invoice_import_sample.csv"',
+        ]);
     }
 }

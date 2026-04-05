@@ -19,6 +19,7 @@ class Invoice extends Model
         'total_amount', 'amount_paid', 'balance_due',
         'vat_applicable', 'wht_applicable', 'wht_rate',
         'status', 'notes', 'terms', 'currency', 'qr_code', 'created_by',
+        'firs_status', 'is_b2c',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class Invoice extends Model
         'vat_applicable'  => 'boolean',
         'wht_applicable'  => 'boolean',
         'wht_rate'        => 'decimal:2',
+        'is_b2c'          => 'boolean',
     ];
 
     public const VAT_RATE = 7.5; // Nigerian VAT rate 7.5%
@@ -66,6 +68,11 @@ class Invoice extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(InvoicePayment::class);
+    }
+
+    public function firsSubmission(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(InvoiceFirsSubmission::class);
     }
 
     public function isOverdue(): bool

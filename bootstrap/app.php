@@ -30,6 +30,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Prevent sensitive FIRS credential values from appearing in exception
+        // reports, Horizon dashboards, or log storage.
+        $exceptions->dontFlash([
+            'api_key',
+            'secret_key',
+            'service_id',
+            'public_key',
+            'certificate',
+        ]);
     })
     ->create();

@@ -25,6 +25,30 @@
                 Record Payment
             </button>
             @endif
+            {{-- FIRS submission button --}}
+            @if(in_array($invoice->status, ['sent', 'paid']) && $invoice->firs_status !== 'signed')
+            <form method="POST" action="{{ route('invoices.submit-firs', $invoice) }}">
+                @csrf
+                @php
+                    $firsLabel = match($invoice->firs_status ?? 'draft') {
+                        'pending', 'validating', 'signing' => '⏳ FIRS Pending…',
+                        'failed'  => '↺ Retry FIRS',
+                        default   => '⬆ Submit to FIRS',
+                    };
+                    $firsClass = $invoice->firs_status === 'failed'
+                        ? 'bg-red-600 hover:bg-red-700'
+                        : 'bg-indigo-600 hover:bg-indigo-700';
+                @endphp
+                <button type="submit"
+                        class="px-4 py-1.5 {{ $firsClass }} text-white text-sm rounded-md"
+                        {{ in_array($invoice->firs_status, ['pending','validating','signing']) ? 'disabled' : '' }}>
+                    {{ $firsLabel }}
+                </button>
+            </form>
+            @elseif($invoice->firs_status === 'signed')
+            <span class="px-3 py-1.5 bg-green-100 text-green-800 text-xs font-semibold rounded-md">✓ FIRS Signed</span>
+            @endif
+
             <a href="{{ route('invoices.pdf', $invoice) }}" target="_blank"
                class="px-4 py-1.5 bg-gray-700 text-white text-sm rounded-md hover:bg-gray-800">Download PDF</a>
         </div>
