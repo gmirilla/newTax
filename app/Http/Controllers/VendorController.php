@@ -15,12 +15,14 @@ class VendorController extends Controller
     public function quickStore(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'nullable|email|max:255',
-            'phone'       => 'nullable|string|max:30',
-            'tin'         => 'nullable|string|max:50',
-            'rc_number'   => 'nullable|string|max:50',
-            'vendor_type' => 'in:goods,services,rent,mixed',
+            'name'              => 'required|string|max:255',
+            'email'             => 'nullable|email|max:255',
+            'phone'             => 'nullable|string|max:30',
+            'tin'               => 'nullable|string|max:50',
+            'rc_number'         => 'nullable|string|max:50',
+            'vendor_type'       => 'in:goods,services,rent,mixed',
+            'wht_exempt'        => 'boolean',
+            'wht_exempt_reason' => 'nullable|string|in:' . implode(',', array_keys(\App\Models\Vendor::WHT_EXEMPT_REASONS)),
         ]);
 
         $tenant = $request->user()->tenant;
@@ -28,31 +30,36 @@ class VendorController extends Controller
         $existing = Vendor::where('name', $data['name'])->first();
         if ($existing) {
             return response()->json([
-                'id'       => $existing->id,
-                'name'     => $existing->name,
-                'wht_rate' => $existing->wht_rate,
-                'note'     => 'existing',
+                'id'         => $existing->id,
+                'name'       => $existing->name,
+                'wht_rate'   => $existing->wht_rate,
+                'wht_exempt' => $existing->wht_exempt,
+                'note'       => 'existing',
             ]);
         }
 
+        $whtExempt  = !empty($data['wht_exempt']);
         $vendorType = $data['vendor_type'] ?? 'services';
-        $whtRate    = match($vendorType) {
+        $whtRate    = $whtExempt ? 0.0 : match($vendorType) {
             'rent'  => 10.0,
             default => 5.0,
         };
 
         $vendor = Vendor::create(array_merge($data, [
-            'tenant_id'   => $tenant->id,
-            'vendor_type' => $vendorType,
-            'wht_rate'    => $whtRate,
-            'is_active'   => true,
+            'tenant_id'         => $tenant->id,
+            'vendor_type'       => $vendorType,
+            'wht_rate'          => $whtRate,
+            'wht_exempt'        => $whtExempt,
+            'wht_exempt_reason' => $whtExempt ? ($data['wht_exempt_reason'] ?? null) : null,
+            'is_active'         => true,
         ]));
 
         return response()->json([
-            'id'       => $vendor->id,
-            'name'     => $vendor->name,
-            'wht_rate' => $vendor->wht_rate,
-            'note'     => 'created',
+            'id'         => $vendor->id,
+            'name'       => $vendor->name,
+            'wht_rate'   => $vendor->wht_rate,
+            'wht_exempt' => $vendor->wht_exempt,
+            'note'       => 'created',
         ], 201);
     }
 }

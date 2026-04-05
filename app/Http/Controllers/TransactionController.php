@@ -8,6 +8,7 @@ use App\Repositories\TransactionRepository;
 use App\Services\BookkeepingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class TransactionController extends Controller
@@ -94,14 +95,18 @@ class TransactionController extends Controller
 
         $tenant = $request->user()->tenant;
 
-        // Auto-compute WHT if vendor is set
-        $vendor    = null;
-        $whtAmount = 0;
-        $whtRate   = 0;
+        // Auto-compute WHT if vendor is set and not WHT-exempt
+        $vendor      = null;
+        $whtAmount   = 0;
+        $whtRate     = 0;
+        $whtApplicable = false;
         if ($request->vendor_id) {
-            $vendor    = \App\Models\Vendor::find($request->vendor_id);
-            $whtRate   = $vendor->wht_rate;
-            $whtAmount = round($request->amount * $whtRate / 100, 2);
+            $vendor = \App\Models\Vendor::find($request->vendor_id);
+            if (!$vendor->wht_exempt) {
+                $whtRate       = $vendor->wht_rate;
+                $whtAmount     = round($request->amount * $whtRate / 100, 2);
+                $whtApplicable = true;
+            }
         }
 
         $expense = Expense::create([
@@ -116,17 +121,17 @@ class TransactionController extends Controller
             'vat_applicable' => $request->boolean('vat_applicable'),
             'vat_amount'     => $request->boolean('vat_applicable')
                 ? round($request->amount * 7.5 / 107.5, 2) : 0,
-            'wht_applicable' => $vendor !== null,
+            'wht_applicable' => $whtApplicable,
             'wht_rate'       => $whtRate,
             'wht_amount'     => $whtAmount,
             'net_payable'    => $request->amount - $whtAmount,
             'status'         => 'pending',
             'notes'          => $request->notes,
-            'created_by'     => auth()->id(),
+            'created_by'     => Auth::id(),
         ]);
 
-        // Create WHT record if applicable
-        if ($vendor && $whtAmount > 0) {
+        // Create WHT record only for non-exempt vendors with a positive WHT amount
+        if ($vendor && $whtApplicable && $whtAmount > 0) {
             app(\App\Services\WhtService::class)->deductFromExpense($expense, $vendor);
         }
 

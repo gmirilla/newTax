@@ -14,7 +14,7 @@
         </div>
 
         {{-- Quick expense form (collapsible) --}}
-        <div id="expense-form" class="hidden border-b bg-gray-50 p-6" x-data="expenseForm()" @keydown.escape.window="showNewVendor = false">
+        <div id="expense-form" class="hidden border-b bg-gray-50 p-6" x-data="expenseForm()" @keydown.escape.window="showNewVendor = false; showNewVendorExemptReason = false">
             <form method="POST" action="{{ route('transactions.expenses.store') }}" class="space-y-4">
                 @csrf
                 <h3 class="text-sm font-semibold text-gray-700">Record New Expense</h3>
@@ -64,7 +64,9 @@
                                     class="block w-full rounded border-gray-300 text-sm px-2 py-1.5">
                                 <option value="">— No Vendor —</option>
                                 @foreach(\App\Models\Vendor::where('is_active',true)->orderBy('name')->get() as $v)
-                                    <option value="{{ $v->id }}">{{ $v->name }} (WHT: {{ $v->wht_rate }}%)</option>
+                                    <option value="{{ $v->id }}">
+                                        {{ $v->name }} — {{ $v->wht_exempt ? 'WHT Exempt' : 'WHT: '.$v->wht_rate.'%' }}
+                                    </option>
                                 @endforeach
                             </select>
                             <button type="button" @click="showNewVendor = true"
@@ -105,7 +107,7 @@
                                             <input type="text" x-model="newVendor.tin" placeholder="1234567-0001"
                                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                                         </div>
-                                        <div>
+                                        <div x-show="!newVendor.wht_exempt">
                                             <label class="block text-xs font-medium text-gray-700">Vendor Type</label>
                                             <select x-model="newVendor.vendor_type"
                                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
@@ -113,6 +115,31 @@
                                                 <option value="goods">Goods (WHT 5%)</option>
                                                 <option value="rent">Rent (WHT 10%)</option>
                                                 <option value="mixed">Mixed (WHT 5%)</option>
+                                            </select>
+                                        </div>
+                                        {{-- WHT Exempt toggle --}}
+                                        <div class="col-span-2">
+                                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                                <input type="checkbox" x-model="newVendor.wht_exempt"
+                                                       class="rounded border-gray-300 text-amber-500 focus:ring-amber-400">
+                                                <span class="text-xs font-medium text-gray-700">WHT Not Applicable</span>
+                                            </label>
+                                            <p class="text-xs text-gray-400 mt-0.5 ml-5">
+                                                e.g. foreign vendor, income not earned in Nigeria, diplomatic, govt entity
+                                            </p>
+                                        </div>
+                                        {{-- Exempt reason (shown when exempt is checked) --}}
+                                        <div class="col-span-2" x-show="newVendor.wht_exempt" x-cloak>
+                                            <label class="block text-xs font-medium text-gray-700">Reason *</label>
+                                            <select x-model="newVendor.wht_exempt_reason"
+                                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                                                <option value="">— Select reason —</option>
+                                                <option value="foreign_income">Foreign vendor / income not earned in Nigeria</option>
+                                                <option value="diplomatic">Diplomatic mission / international organisation</option>
+                                                <option value="govt_entity">Government or public sector entity</option>
+                                                <option value="firs_exemption">FIRS-issued WHT exemption certificate</option>
+                                                <option value="treaty_relief">Double-taxation treaty relief</option>
+                                                <option value="other">Other</option>
                                             </select>
                                         </div>
                                     </div>
@@ -177,6 +204,8 @@
                             @if($expense->wht_amount > 0)
                                 ₦{{ number_format($expense->wht_amount, 2) }}
                                 <span class="text-xs text-gray-400">({{ $expense->wht_rate }}%)</span>
+                            @elseif($expense->vendor && $expense->vendor->wht_exempt)
+                                <span class="text-xs text-gray-400">Exempt</span>
                             @else
                                 —
                             @endif
@@ -227,11 +256,15 @@ function expenseForm() {
         showNewVendor: false,
         savingVendor: false,
         newVendorError: '',
-        newVendor: { name: '', email: '', phone: '', tin: '', vendor_type: 'services' },
+        newVendor: { name: '', email: '', phone: '', tin: '', vendor_type: 'services', wht_exempt: false, wht_exempt_reason: '' },
 
         async saveNewVendor() {
             if (!this.newVendor.name.trim()) {
                 this.newVendorError = 'Vendor name is required.';
+                return;
+            }
+            if (this.newVendor.wht_exempt && !this.newVendor.wht_exempt_reason) {
+                this.newVendorError = 'Please select a reason for the WHT exemption.';
                 return;
             }
             this.savingVendor = true;
@@ -253,13 +286,15 @@ function expenseForm() {
                 }
                 const select = this.$refs.vendorSelect;
                 if (!select.querySelector(`option[value="${data.id}"]`)) {
-                    const label = `${data.name} (WHT: ${data.wht_rate}%)`;
+                    const label = data.wht_exempt
+                        ? `${data.name} — WHT Exempt`
+                        : `${data.name} — WHT: ${data.wht_rate}%`;
                     const opt = new Option(label, data.id, true, true);
                     select.add(opt);
                 }
                 select.value = data.id;
                 this.showNewVendor = false;
-                this.newVendor = { name: '', email: '', phone: '', tin: '', vendor_type: 'services' };
+                this.newVendor = { name: '', email: '', phone: '', tin: '', vendor_type: 'services', wht_exempt: false, wht_exempt_reason: '' };
             } catch (e) {
                 this.newVendorError = 'Network error. Please try again.';
             } finally {
