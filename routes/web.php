@@ -7,6 +7,7 @@ use App\Http\Controllers\FirsOnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaxController;
@@ -26,6 +27,21 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
     // ── Customers & Vendors (quick-create via AJAX) ───────────────────────────
     Route::post('/customers/quick', [CustomerController::class, 'quickStore'])->name('customers.quick-store');
     Route::post('/vendors/quick',   [VendorController::class,  'quickStore'])->name('vendors.quick-store');
+
+    // ── Quotes / Proforma Invoices ────────────────────────────────────────────
+    Route::prefix('quotes')->name('quotes.')->group(function () {
+        Route::get('/',               [QuoteController::class, 'index'])->name('index');
+        Route::get('/create',         [QuoteController::class, 'create'])->name('create');
+        Route::post('/',              [QuoteController::class, 'store'])->name('store');
+        Route::get('/{quote}',        [QuoteController::class, 'show'])->name('show');
+        Route::get('/{quote}/edit',   [QuoteController::class, 'edit'])->name('edit');
+        Route::put('/{quote}',        [QuoteController::class, 'update'])->name('update');
+        Route::delete('/{quote}',     [QuoteController::class, 'destroy'])->name('destroy');
+        Route::post('/{quote}/send',  [QuoteController::class, 'send'])->name('send');
+        Route::post('/{quote}/accept',[QuoteController::class, 'accept'])->name('accept');
+        Route::post('/{quote}/decline',[QuoteController::class, 'decline'])->name('decline');
+        Route::get('/{quote}/pdf',    [QuoteController::class, 'downloadPdf'])->name('pdf');
+    });
 
     // ── Invoices ──────────────────────────────────────────────────────────────
     Route::prefix('invoices')->name('invoices.')->group(function () {
