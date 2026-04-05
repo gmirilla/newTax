@@ -31,6 +31,7 @@
     {{-- Sidebar --}}
     <aside class="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div class="flex flex-grow flex-col overflow-y-auto bg-naija-green pt-5 pb-4">
+
             {{-- Logo --}}
             <div class="flex flex-shrink-0 items-center px-4">
                 <span class="text-2xl font-bold text-white">🇳🇬 NaijaBooks</span>
@@ -114,26 +115,101 @@
                 </div>
             </nav>
 
-            {{-- User info --}}
-            <div class="flex flex-shrink-0 border-t border-green-700 p-4">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-green-900">
-                            <span class="text-sm font-medium leading-none text-white">
-                                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-                            </span>
+            {{-- ── User menu (dropdown) ── --}}
+            <div class="flex-shrink-0 border-t border-green-700"
+                 x-data="{ open: false }"
+                 @click.outside="open = false">
+
+                {{-- Trigger --}}
+                <button type="button"
+                        @click="open = !open"
+                        class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-green-700 transition-colors focus:outline-none">
+                    {{-- Avatar --}}
+                    <span class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-green-900">
+                        <span class="text-sm font-medium leading-none text-white">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                         </span>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm font-medium text-white">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-green-300 capitalize">{{ auth()->user()->role }}</p>
-                    </div>
-                    <form method="POST" action="{{ route('logout') }}" class="ml-auto">
+                    </span>
+                    {{-- Name + role --}}
+                    <span class="flex-1 min-w-0">
+                        <span class="block text-sm font-medium text-white truncate">{{ auth()->user()->name }}</span>
+                        <span class="block text-xs text-green-300 capitalize">{{ auth()->user()->role }}</span>
+                    </span>
+                    {{-- Chevron --}}
+                    <svg class="h-4 w-4 text-green-300 flex-shrink-0 transition-transform duration-150"
+                         :class="open ? 'rotate-180' : ''"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+
+                {{-- Dropdown panel — slides up from the trigger --}}
+                <div x-show="open"
+                     x-cloak
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 -translate-y-1"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="opacity-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 -translate-y-1"
+                     class="absolute bottom-[4.5rem] left-2 right-2 z-50 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden">
+
+                    {{-- My Profile --}}
+                    <a href="{{ route('profile.edit') }}"
+                       class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors
+                              {{ request()->routeIs('profile.*') ? 'bg-gray-50 font-medium' : '' }}">
+                        <span class="flex-shrink-0 text-base">👤</span>
+                        <span>My Profile</span>
+                    </a>
+
+                    @if(auth()->user()->isAdmin())
+                    {{-- Divider --}}
+                    <div class="border-t border-gray-100 mx-3"></div>
+
+                    {{-- Company Settings --}}
+                    <a href="{{ route('settings.company') }}"
+                       class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors
+                              {{ request()->routeIs('settings.company*') ? 'bg-gray-50 font-medium' : '' }}">
+                        <span class="flex-shrink-0 text-base">🏢</span>
+                        <span>Company Settings</span>
+                        <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Admin</span>
+                    </a>
+
+                    {{-- FIRS Configuration --}}
+                    <a href="{{ route('settings.firs') }}"
+                       class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors
+                              {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
+                        <span class="flex-shrink-0 text-base">⬆</span>
+                        <div class="flex-1 min-w-0">
+                            <span class="block">FIRS e-Invoicing</span>
+                            @php
+                                $firsActive = \App\Models\TenantFirsCredential::where('tenant_id', auth()->user()->tenant_id)
+                                    ->where('is_active', true)->exists();
+                            @endphp
+                            <span class="block text-xs {{ $firsActive ? 'text-green-600' : 'text-gray-400' }}">
+                                {{ $firsActive ? '● Configured' : '○ Not configured' }}
+                            </span>
+                        </div>
+                        <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Admin</span>
+                    </a>
+                    @endif
+
+                    {{-- Divider --}}
+                    <div class="border-t border-gray-100 mx-3"></div>
+
+                    {{-- Logout --}}
+                    <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="text-green-300 hover:text-white text-xs">Logout</button>
+                        <button type="submit"
+                                class="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <span class="flex-shrink-0 text-base">🚪</span>
+                            <span>Sign Out</span>
+                        </button>
                     </form>
                 </div>
             </div>
+            {{-- ── End user menu ── --}}
+
         </div>
     </aside>
 
@@ -153,6 +229,72 @@
                         VAT Due: {{ now()->setDay($nextVatDue)->format('M d') }}
                     </span>
                     <span class="text-sm text-gray-500">₦ NGN</span>
+
+                    {{-- Top-bar user avatar (mirrors sidebar dropdown for quick access) --}}
+                    <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button"
+                                @click="open = !open"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-700 text-white text-xs font-semibold hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                        </button>
+
+                        <div x-show="open"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute right-0 top-10 z-50 w-56 rounded-lg bg-white shadow-xl border border-gray-200 overflow-hidden">
+
+                            {{-- User info header --}}
+                            <div class="px-4 py-3 border-b border-gray-100">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email }}</p>
+                                <span class="inline-block mt-1 text-xs capitalize bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+                                    {{ auth()->user()->role }}
+                                </span>
+                            </div>
+
+                            <a href="{{ route('profile.edit') }}"
+                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50
+                                      {{ request()->routeIs('profile.*') ? 'bg-gray-50 font-medium' : '' }}">
+                                <span>👤</span> My Profile
+                            </a>
+
+                            @if(auth()->user()->isAdmin())
+                            <div class="border-t border-gray-100 mx-3"></div>
+
+                            <a href="{{ route('settings.company') }}"
+                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50
+                                      {{ request()->routeIs('settings.company*') ? 'bg-gray-50 font-medium' : '' }}">
+                                <span>🏢</span>
+                                <span class="flex-1">Company Settings</span>
+                                <span class="text-xs bg-gray-100 text-gray-500 px-1 rounded">Admin</span>
+                            </a>
+
+                            <a href="{{ route('settings.firs') }}"
+                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50
+                                      {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
+                                <span>⬆</span>
+                                <span class="flex-1">FIRS e-Invoicing</span>
+                                <span class="text-xs bg-gray-100 text-gray-500 px-1 rounded">Admin</span>
+                            </a>
+                            @endif
+
+                            <div class="border-t border-gray-100 mx-3"></div>
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit"
+                                        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                                    <span>🚪</span> Sign Out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {{-- End top-bar user avatar --}}
                 </div>
             </div>
         </div>
@@ -183,16 +325,6 @@
         {{-- Page content --}}
         <main class="flex-1 pb-8">
             <div class="px-4 py-4 md:px-6">
-                @if(session('success'))
-                <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
-                    {{ session('success') }}
-                </div>
-                @endif
-                @if(session('error'))
-                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-                    {{ session('error') }}
-                </div>
-                @endif
                 @yield('content')
             </div>
         </main>

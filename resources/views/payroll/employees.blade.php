@@ -7,10 +7,20 @@
     <div class="bg-white shadow rounded-lg">
         <div class="px-6 py-4 border-b flex items-center justify-between">
             <h2 class="text-base font-semibold">Employees ({{ $employees->total() }})</h2>
-            <a href="{{ route('payroll.employees.create') }}"
-               class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
-                + Add Employee
-            </a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('payroll.employees.sample') }}"
+                   class="px-3 py-1.5 border border-gray-300 text-sm rounded-md hover:bg-gray-50">
+                    ⬇ Sample CSV
+                </a>
+                <a href="{{ route('payroll.employees.import') }}"
+                   class="px-3 py-1.5 border border-indigo-300 text-indigo-700 text-sm font-medium rounded-md hover:bg-indigo-50">
+                    ↑ Import
+                </a>
+                <a href="{{ route('payroll.employees.create') }}"
+                   class="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                    + Add Employee
+                </a>
+            </div>
         </div>
 
         <div class="overflow-x-auto">

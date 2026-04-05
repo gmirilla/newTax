@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirsOnboardingController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PayrollController;
@@ -45,11 +47,21 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
         Route::post('/{invoice}/submit-firs', [InvoiceController::class, 'submitToFirs'])->name('submit-firs');
     });
 
-    // ── FIRS Onboarding / Settings ────────────────────────────────────────────
+    // ── Profile ───────────────────────────────────────────────────────────────
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/',    [ProfileController::class, 'edit'])->name('edit');
+        Route::patch('/',  [ProfileController::class, 'update'])->name('update');
+        Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password');
+    });
+
+    // ── Settings (admin-only sections gated inside controllers) ───────────────
     Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/firs',         [FirsOnboardingController::class, 'showForm'])->name('firs');
-        Route::post('/firs',        [FirsOnboardingController::class, 'store'])->name('firs.store');
-        Route::post('/firs/deactivate', [FirsOnboardingController::class, 'deactivate'])->name('firs.deactivate');
+        Route::get('/company',   [CompanySettingsController::class, 'edit'])->name('company');
+        Route::patch('/company', [CompanySettingsController::class, 'update'])->name('company.update');
+
+        Route::get('/firs',              [FirsOnboardingController::class, 'showForm'])->name('firs');
+        Route::post('/firs',             [FirsOnboardingController::class, 'store'])->name('firs.store');
+        Route::post('/firs/deactivate',  [FirsOnboardingController::class, 'deactivate'])->name('firs.deactivate');
     });
 
     // ── Transactions & Expenses ───────────────────────────────────────────────
@@ -97,6 +109,9 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
 
         // Employees — static routes must come before /{payroll} wildcard
         Route::get('/employees',                    [PayrollController::class, 'employees'])->name('employees');
+        Route::get('/employees/import',             [PayrollController::class, 'importEmployeesForm'])->name('employees.import');
+        Route::post('/employees/import',            [PayrollController::class, 'importEmployees'])->name('employees.import.process');
+        Route::get('/employees/sample',             [PayrollController::class, 'downloadEmployeeSample'])->name('employees.sample');
         Route::get('/employees/create',             [PayrollController::class, 'createEmployee'])->name('employees.create');
         Route::post('/employees',                   [PayrollController::class, 'storeEmployee'])->name('employees.store');
         Route::get('/employees/{employee}/edit',    [PayrollController::class, 'editEmployee'])->name('employees.edit');
@@ -107,13 +122,19 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
         Route::get('/{payroll}',              [PayrollController::class, 'show'])->name('show')->whereNumber('payroll');
         Route::post('/{payroll}/approve',     [PayrollController::class, 'approve'])->name('approve')->whereNumber('payroll');
         Route::post('/{payroll}/recompute',   [PayrollController::class, 'recompute'])->name('recompute')->whereNumber('payroll');
+        Route::get('/{payroll}/export/pdf',   [PayrollController::class, 'downloadPdf'])->name('export.pdf')->whereNumber('payroll');
+        Route::get('/{payroll}/export/excel', [PayrollController::class, 'downloadExcel'])->name('export.excel')->whereNumber('payroll');
     });
 
     // ── Reports ───────────────────────────────────────────────────────────────
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/',              [ReportController::class, 'index'])->name('index');
-        Route::get('/profit-loss',   [ReportController::class, 'profitAndLoss'])->name('pl');
-        Route::get('/balance-sheet', [ReportController::class, 'balanceSheet'])->name('bs');
+        Route::get('/profit-loss',        [ReportController::class, 'profitAndLoss'])->name('pl');
+        Route::get('/profit-loss/pdf',    [ReportController::class, 'profitAndLossPdf'])->name('pl.pdf');
+        Route::get('/profit-loss/excel',  [ReportController::class, 'profitAndLossExcel'])->name('pl.excel');
+        Route::get('/balance-sheet',       [ReportController::class, 'balanceSheet'])->name('bs');
+        Route::get('/balance-sheet/pdf',   [ReportController::class, 'balanceSheetPdf'])->name('bs.pdf');
+        Route::get('/balance-sheet/excel', [ReportController::class, 'balanceSheetExcel'])->name('bs.excel');
         Route::get('/trial-balance', [ReportController::class, 'trialBalance'])->name('tb');
         Route::get('/vat',           [ReportController::class, 'vatReport'])->name('vat');
         Route::get('/cit',           [ReportController::class, 'citReport'])->name('cit');

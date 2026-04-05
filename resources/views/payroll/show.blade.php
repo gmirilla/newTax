@@ -19,6 +19,16 @@
                     text-{{ $colors[$payroll->status] ?? 'gray' }}-800">
                     {{ ucfirst($payroll->status) }}
                 </span>
+                {{-- Export buttons — always visible --}}
+                <a href="{{ route('payroll.export.excel', $payroll) }}"
+                   class="px-3 py-1.5 border border-emerald-300 text-emerald-700 text-sm font-medium rounded-md hover:bg-emerald-50">
+                    ⬇ Excel
+                </a>
+                <a href="{{ route('payroll.export.pdf', $payroll) }}" target="_blank"
+                   class="px-3 py-1.5 border border-red-300 text-red-700 text-sm font-medium rounded-md hover:bg-red-50">
+                    ⬇ PDF
+                </a>
+
                 @if($payroll->status === 'draft')
                 <form method="POST" action="{{ route('payroll.recompute', $payroll) }}">
                     @csrf
