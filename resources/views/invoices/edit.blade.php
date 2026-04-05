@@ -150,10 +150,18 @@
     </div>
 </div>
 
+@php
+    $invoiceItemsData = $invoice->items->map(fn($i) => [
+        'description' => $i->description,
+        'quantity'    => $i->quantity,
+        'unit_price'  => $i->unit_price,
+        'amount'      => $i->amount,
+    ]);
+@endphp
 <script>
 function invoiceForm() {
     return {
-        items: @json($invoice->items->map(fn($i) => ['description' => $i->description, 'quantity' => $i->quantity, 'unit_price' => $i->unit_price, 'amount' => $i->amount])),
+        items: @json($invoiceItemsData),
         vatApplicable: {{ $invoice->vat_applicable ? 'true' : 'false' }},
         whtApplicable: {{ $invoice->wht_applicable ? 'true' : 'false' }},
         discount: {{ $invoice->discount_amount }},
