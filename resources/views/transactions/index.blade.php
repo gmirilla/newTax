@@ -20,17 +20,17 @@
             </div>
         </div>
 
-        {{-- Filters --}}
+        {{-- Filters + Export --}}
         <div class="px-6 py-3 bg-gray-50 border-b">
-            <form method="GET" class="flex flex-wrap gap-3">
+            <form method="GET" class="flex flex-wrap gap-3 items-center">
                 <input type="text" name="search" value="{{ request('search') }}"
                        placeholder="Search reference or description..."
                        class="rounded-md border-gray-300 text-sm shadow-sm px-3 py-1.5 focus:ring-green-500 focus:border-green-500">
                 <select name="type" class="rounded-md border-gray-300 text-sm shadow-sm px-3 py-1.5">
                     <option value="">All Types</option>
-                    @foreach(['sale','purchase','expense','income','payment','receipt','journal','tax_payment','payroll'] as $type)
-                        <option value="{{ $type }}" {{ request('type') === $type ? 'selected' : '' }}>
-                            {{ ucfirst(str_replace('_',' ', $type)) }}
+                    @foreach(['sale','purchase','expense','income','payment','receipt','journal','tax_payment','payroll'] as $t)
+                        <option value="{{ $t }}" {{ request('type') === $t ? 'selected' : '' }}>
+                            {{ ucfirst(str_replace('_',' ', $t)) }}
                         </option>
                     @endforeach
                 </select>
@@ -42,6 +42,21 @@
                 @if(request()->hasAny(['search','type','date_from','date_to']))
                     <a href="{{ route('transactions.index') }}" class="px-3 py-1.5 text-sm text-gray-500 hover:underline">Clear</a>
                 @endif
+
+                <div class="flex-1"></div>
+
+                {{-- Export buttons — carry current filters via query string --}}
+                @php
+                    $exportParams = array_filter(request()->only(['search','type','date_from','date_to']));
+                @endphp
+                <a href="{{ route('transactions.export.excel', $exportParams) }}"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 border border-emerald-300 text-emerald-700 text-sm font-medium rounded-md hover:bg-emerald-50">
+                    ⬇ Excel
+                </a>
+                <a href="{{ route('transactions.export.pdf', $exportParams) }}" target="_blank"
+                   class="inline-flex items-center gap-1 px-3 py-1.5 border border-red-300 text-red-700 text-sm font-medium rounded-md hover:bg-red-50">
+                    ⬇ PDF
+                </a>
             </form>
         </div>
 

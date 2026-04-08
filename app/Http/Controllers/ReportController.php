@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\BalanceSheetExport;
+use App\Exports\LedgerExport;
 use App\Exports\ProfitLossExport;
+use App\Models\Account;
 use App\Services\BookkeepingService;
 use App\Services\ReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -125,6 +127,52 @@ class ReportController extends Controller
         $report = $this->bookkeepingService->getTrialBalance($tenant, $asOf);
 
         return view('reports.trial-balance', compact('report'));
+    }
+
+    public function ledger(Request $request): View
+    {
+        [$tenant, $start, $end, $accountCode] = $this->ledgerParams($request);
+
+        $report   = $this->bookkeepingService->getLedger($tenant, $start, $end, $accountCode);
+        $accounts = Account::where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get(['code', 'name', 'type']);
+
+        return view('reports.ledger', compact('report', 'accounts'));
+    }
+
+    public function ledgerPdf(Request $request)
+    {
+        [$tenant, $start, $end, $accountCode] = $this->ledgerParams($request);
+
+        $report = $this->bookkeepingService->getLedger($tenant, $start, $end, $accountCode);
+
+        $pdf = Pdf::loadView('reports.ledger-pdf', compact('report', 'tenant'))
+            ->setPaper('a4', 'landscape');
+
+        $filename = 'Ledger_' . $start->format('Ymd') . '-' . $end->format('Ymd') . '.pdf';
+        return $pdf->download($filename);
+    }
+
+    public function ledgerExcel(Request $request)
+    {
+        [$tenant, $start, $end, $accountCode] = $this->ledgerParams($request);
+
+        $report   = $this->bookkeepingService->getLedger($tenant, $start, $end, $accountCode);
+        $filename = 'Ledger_' . $start->format('Ymd') . '-' . $end->format('Ymd') . '.xlsx';
+
+        return Excel::download(new LedgerExport($report, $tenant), $filename);
+    }
+
+    private function ledgerParams(Request $request): array
+    {
+        $tenant      = $request->user()->tenant;
+        $start       = Carbon::parse($request->input('date_from', now()->startOfYear()->toDateString()))->startOfDay();
+        $end         = Carbon::parse($request->input('date_to',   now()->toDateString()))->endOfDay();
+        $accountCode = $request->input('account_code') ?: null;
+
+        return [$tenant, $start, $end, $accountCode];
     }
 
     public function vatReport(Request $request): View

@@ -23,6 +23,12 @@
         <p class="text-sm text-gray-500 mt-1">All account debit/credit balances — must balance</p>
     </a>
 
+    <a href="{{ route('reports.ledger') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow group">
+        <div class="text-3xl mb-3">📒</div>
+        <h3 class="font-semibold text-gray-900 group-hover:text-green-700">General Ledger</h3>
+        <p class="text-sm text-gray-500 mt-1">All journal entries per account with running balance — export Excel or PDF</p>
+    </a>
+
     <a href="{{ route('reports.vat') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow group border-t-4 border-blue-500">
         <div class="text-3xl mb-3">🏛️</div>
         <h3 class="font-semibold text-gray-900 group-hover:text-blue-700">VAT Report</h3>

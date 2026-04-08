@@ -297,9 +297,16 @@ class BookkeepingService
             $debits  = (float) $query->clone()->where('entry_type', 'debit')->sum('amount');
             $credits = (float) $query->clone()->where('entry_type', 'credit')->sum('amount');
 
-            $balance = in_array($type, ['asset', 'expense'])
+            $journalBalance = in_array($type, ['asset', 'expense'])
                 ? $debits - $credits
                 : $credits - $debits;
+
+            // Include the account's opening balance for cumulative (balance sheet) queries.
+            // Opening balance represents the position before the company started using NaijaBooks.
+            // Only applied when $start is null (balance-sheet / all-time mode), not for P&L periods.
+            $openingBalance = ($start === null) ? (float) $account->opening_balance : 0.0;
+
+            $balance = $journalBalance + $openingBalance;
 
             if (round($balance, 2) != 0) {
                 $result[] = [
@@ -430,6 +437,7 @@ class BookkeepingService
     {
         $expenses = Expense::where('tenant_id', $tenant->id)
             ->whereNull('transaction_id')
+            ->whereNotIn('status', ['rejected'])
             ->whereBetween('expense_date', [$start->toDateString(), $end->toDateString()])
             ->with('account')
             ->get();
@@ -584,7 +592,7 @@ class BookkeepingService
         $payrolls = Payroll::where('tenant_id', $tenant->id)
             ->where('status', 'approved')
             ->where('pay_date', '<=', $asOf->toDateString())
-            ->selectRaw('SUM(total_paye) as paye, SUM(total_pension + total_employer_pension) as pension, SUM(total_nhf) as nhf')
+            ->selectRaw('SUM(total_paye) as paye, SUM(total_pension) as pension, SUM(total_nhf) as nhf')
             ->first();
 
         if (! $payrolls) {
@@ -628,44 +636,56 @@ class BookkeepingService
     }
 
     /**
-     * Retained earnings from operations: accrual-basis net P&L from inception
-     * to asOf, using all non-journal sources.  Added to account 3100.
-     * Only contributes if the journal 3100 balance is zero (i.e. not yet posted).
+     * Retained earnings from operations: net P&L from all sources up to asOf,
+     * combining journal-based and supplement (non-journalised) data.
+     *
+     * Added to account 3100 only when no explicit journal entry exists for 3100
+     * (i.e. the user hasn't closed the period manually to retained earnings).
+     *
+     * P&L sources:
+     *   Journal revenue  = net credit balance on all revenue accounts
+     *   Journal expenses = net debit  balance on all expense accounts
+     *   Supplement revenue  = invoice subtotals (transaction_id IS NULL)
+     *   Supplement expenses = expense amounts   (transaction_id IS NULL, not rejected)
+     *   Supplement payroll  = approved payroll gross (no transaction_id on payrolls yet)
      */
     private function getOperationalRetainedEarnings(Tenant $tenant, Carbon $asOf): array
     {
-        // Check if 3100 already has a journal balance — if so, don't double-count
-        $existing = $this->getJournalAccountTotals(
-            $tenant, 'equity',
-            null,
-            $asOf
-        );
-        $has3100 = collect($existing)->where('code', '3100')->isNotEmpty();
-        if ($has3100) {
+        // If 3100 is already in journals the user has closed the period — don't overlay
+        $existingEquity = $this->getJournalAccountTotals($tenant, 'equity', null, $asOf);
+        if (collect($existingEquity)->where('code', '3100')->isNotEmpty()) {
             return [];
         }
 
-        // Accrual revenue from all invoices up to asOf
-        $revenue = (float) Invoice::where('tenant_id', $tenant->id)
+        // ── Journal-based P&L ────────────────────────────────────────────────
+        $journalRevRows  = $this->getJournalAccountTotals($tenant, 'revenue', null, $asOf);
+        $journalExpRows  = $this->getJournalAccountTotals($tenant, 'expense', null, $asOf);
+        $journalRevenue  = array_sum(array_column($journalRevRows,  'balance'));
+        $journalExpenses = array_sum(array_column($journalExpRows, 'balance'));
+
+        // ── Supplement P&L (non-journalised records only) ────────────────────
+        $supplementRevenue = (float) Invoice::where('tenant_id', $tenant->id)
             ->whereNull('transaction_id')
             ->whereIn('status', ['sent', 'partial', 'paid', 'overdue'])
             ->where('invoice_date', '<=', $asOf->toDateString())
             ->sum('subtotal');
 
-        // All expenses (any status except rejected) up to asOf
-        $expenses = (float) Expense::where('tenant_id', $tenant->id)
+        $supplementExpenses = (float) Expense::where('tenant_id', $tenant->id)
             ->whereNull('transaction_id')
             ->whereNotIn('status', ['rejected'])
             ->where('expense_date', '<=', $asOf->toDateString())
             ->sum('amount');
 
-        // All approved payroll gross up to asOf
-        $payroll = (float) Payroll::where('tenant_id', $tenant->id)
-            ->whereIn('status', ['approved'])
+        $supplementPayroll = (float) Payroll::where('tenant_id', $tenant->id)
+            ->whereIn('status', ['approved', 'paid'])
             ->where('pay_date', '<=', $asOf->toDateString())
             ->sum('total_gross');
 
-        $retained = round($revenue - $expenses - $payroll, 2);
+        $retained = round(
+            $journalRevenue  - $journalExpenses
+            + $supplementRevenue - $supplementExpenses - $supplementPayroll,
+            2
+        );
 
         if ($retained == 0) {
             return [];
@@ -729,6 +749,105 @@ class BookkeepingService
             default
                 => ['5500', 'Other Operating Expenses'],
         };
+    }
+
+    /**
+     * Generate General Ledger for a period.
+     *
+     * For each active account (optionally filtered to one account code),
+     * returns all posted journal entries in date order with a running balance,
+     * plus the opening balance as of the day before $start.
+     */
+    public function getLedger(Tenant $tenant, Carbon $start, Carbon $end, ?string $accountCode = null): array
+    {
+        $accountsQuery = Account::where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->orderBy('code');
+
+        if ($accountCode) {
+            $accountsQuery->where('code', $accountCode);
+        }
+
+        $accounts       = $accountsQuery->get();
+        $ledgerAccounts = [];
+
+        foreach ($accounts as $account) {
+            $normalDebit = in_array($account->type, ['asset', 'expense']);
+
+            // Opening balance: all posted entries strictly before $start
+            $openDebits  = (float) JournalEntry::where('tenant_id', $tenant->id)
+                ->where('account_id', $account->id)
+                ->where('entry_type', 'debit')
+                ->whereHas('transaction', fn($q) => $q
+                    ->where('status', 'posted')
+                    ->where('transaction_date', '<', $start->toDateString()))
+                ->sum('amount');
+
+            $openCredits = (float) JournalEntry::where('tenant_id', $tenant->id)
+                ->where('account_id', $account->id)
+                ->where('entry_type', 'credit')
+                ->whereHas('transaction', fn($q) => $q
+                    ->where('status', 'posted')
+                    ->where('transaction_date', '<', $start->toDateString()))
+                ->sum('amount');
+
+            $openingBalance = $normalDebit
+                ? ($openDebits  - $openCredits)
+                : ($openCredits - $openDebits);
+
+            // Period entries
+            $entries = JournalEntry::where('tenant_id', $tenant->id)
+                ->where('account_id', $account->id)
+                ->whereHas('transaction', fn($q) => $q
+                    ->where('status', 'posted')
+                    ->whereBetween('transaction_date', [$start->toDateString(), $end->toDateString()]))
+                ->with(['transaction' => fn($q) => $q->select('id', 'reference', 'transaction_date', 'description')])
+                ->get()
+                ->sortBy('transaction.transaction_date');
+
+            // Skip accounts with no activity and zero opening balance
+            if ($entries->isEmpty() && round($openingBalance, 2) == 0) {
+                continue;
+            }
+
+            $running = round($openingBalance, 2);
+            $lines   = [];
+
+            foreach ($entries as $entry) {
+                $amount = (float) $entry->amount;
+
+                if ($normalDebit) {
+                    $running += $entry->entry_type === 'debit' ? $amount : -$amount;
+                } else {
+                    $running += $entry->entry_type === 'credit' ? $amount : -$amount;
+                }
+
+                $lines[] = [
+                    'date'        => $entry->transaction->transaction_date->toDateString(),
+                    'reference'   => $entry->transaction->reference,
+                    'description' => $entry->description ?: $entry->transaction->description,
+                    'debit'       => $entry->entry_type === 'debit'  ? round($amount, 2) : null,
+                    'credit'      => $entry->entry_type === 'credit' ? round($amount, 2) : null,
+                    'balance'     => round($running, 2),
+                ];
+            }
+
+            $ledgerAccounts[] = [
+                'code'            => $account->code,
+                'name'            => $account->name,
+                'type'            => $account->type,
+                'opening_balance' => round($openingBalance, 2),
+                'closing_balance' => round($running, 2),
+                'lines'           => $lines,
+            ];
+        }
+
+        return [
+            'period_start' => $start->toDateString(),
+            'period_end'   => $end->toDateString(),
+            'account_code' => $accountCode,
+            'accounts'     => $ledgerAccounts,
+        ];
     }
 
     private function generateReference(Tenant $tenant): string
