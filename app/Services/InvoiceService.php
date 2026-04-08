@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Account;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -13,7 +14,8 @@ use Illuminate\Support\Facades\DB;
 class InvoiceService
 {
     public function __construct(
-        private readonly VatService $vatService
+        private readonly VatService         $vatService,
+        private readonly BookkeepingService $bookkeepingService,
     ) {}
 
     /**
@@ -70,11 +72,27 @@ class InvoiceService
     }
 
     /**
-     * Record a payment against an invoice.
+     * Record a payment against an invoice and post the corresponding journal entry.
+     *
+     * If the invoice has not yet been journalised (transaction_id IS NULL), revenue
+     * is recognised first so the AR account exists in the GL before we settle it.
+     *
+     * Journal posted here:
+     *   DR  Bank / Cash account  [payment amount]
+     *   CR  Accounts Receivable  [payment amount]
+     *
+     * $paymentData must include 'payment_account_id' (the bank/cash GL account id).
      */
     public function recordPayment(Invoice $invoice, array $paymentData): InvoicePayment
     {
         return DB::transaction(function () use ($invoice, $paymentData) {
+            $invoice->load(['tenant', 'customer']);
+
+            // Ensure revenue is recognised in the GL before settling AR
+            if (! $invoice->transaction_id) {
+                $this->postRevenueJournal($invoice);
+            }
+
             $payment = InvoicePayment::create([
                 'tenant_id'    => $invoice->tenant_id,
                 'invoice_id'   => $invoice->id,
@@ -87,8 +105,8 @@ class InvoiceService
             ]);
 
             // Update invoice payment status
-            $invoice->amount_paid = (float)$invoice->amount_paid + (float)$paymentData['amount'];
-            $invoice->balance_due = (float)$invoice->total_amount - $invoice->amount_paid;
+            $invoice->amount_paid = (float) $invoice->amount_paid + (float) $paymentData['amount'];
+            $invoice->balance_due = (float) $invoice->total_amount  - $invoice->amount_paid;
 
             if ($invoice->balance_due <= 0) {
                 $invoice->status = 'paid';
@@ -98,10 +116,137 @@ class InvoiceService
 
             $invoice->save();
 
+            // Post payment journal if a bank/cash account was selected
+            if (! empty($paymentData['payment_account_id'])) {
+                $this->postPaymentJournal($invoice, $payment, (int) $paymentData['payment_account_id']);
+            }
+
             AuditLog::record('payment_recorded', $invoice, [], $paymentData, 'invoice,payment');
 
             return $payment;
         });
+    }
+
+    /**
+     * Recognise revenue for a sent invoice.
+     *
+     *   DR  Accounts Receivable (1100)   total_amount
+     *   CR  Revenue (4001)               subtotal − discount − wht_amount   (net revenue)
+     *   CR  VAT Payable (2100)           vat_amount   (if VAT applies)
+     *
+     * Debits = Credits:
+     *   total_amount = subtotal + vat − wht − discount
+     *               = (subtotal − discount − wht) + vat  ✓
+     *
+     * Safe to call multiple times — skips if already journalised.
+     * Also skips silently if required accounts are not in the chart of accounts.
+     */
+    public function postRevenueJournal(Invoice $invoice): void
+    {
+        if ($invoice->transaction_id) {
+            return;
+        }
+
+        $invoice->loadMissing(['tenant', 'customer']);
+        $tenant = $invoice->tenant;
+
+        $arAccount  = Account::where('tenant_id', $tenant->id)->where('code', '1100')->first();
+        $revAccount = Account::where('tenant_id', $tenant->id)->where('code', '4001')->first();
+
+        if (! $arAccount || ! $revAccount) {
+            return; // accounts not configured — stay in supplement mode
+        }
+
+        $totalAmount = round((float) $invoice->total_amount, 2);
+        $netRevenue  = round((float) $invoice->subtotal - (float) $invoice->discount_amount - (float) $invoice->wht_amount, 2);
+        $vatAmount   = round((float) $invoice->vat_amount, 2);
+
+        $entries = [
+            [
+                'account_id'  => $arAccount->id,
+                'entry_type'  => 'debit',
+                'amount'      => $totalAmount,
+                'description' => "AR: {$invoice->invoice_number}",
+            ],
+        ];
+
+        if ($vatAmount > 0) {
+            $vatAccount = Account::where('tenant_id', $tenant->id)->where('code', '2100')->first();
+            if ($vatAccount) {
+                $entries[] = [
+                    'account_id'  => $revAccount->id,
+                    'entry_type'  => 'credit',
+                    'amount'      => $netRevenue,
+                    'description' => "Revenue: {$invoice->invoice_number}",
+                ];
+                $entries[] = [
+                    'account_id'  => $vatAccount->id,
+                    'entry_type'  => 'credit',
+                    'amount'      => $vatAmount,
+                    'description' => "Output VAT: {$invoice->invoice_number}",
+                ];
+            } else {
+                // No VAT account — credit full total to revenue to keep balance
+                $entries[] = [
+                    'account_id'  => $revAccount->id,
+                    'entry_type'  => 'credit',
+                    'amount'      => $totalAmount,
+                    'description' => "Revenue: {$invoice->invoice_number}",
+                ];
+            }
+        } else {
+            $entries[] = [
+                'account_id'  => $revAccount->id,
+                'entry_type'  => 'credit',
+                'amount'      => $totalAmount,
+                'description' => "Revenue: {$invoice->invoice_number}",
+            ];
+        }
+
+        $transaction = $this->bookkeepingService->postJournalEntry($tenant, [
+            'transaction_date' => $invoice->invoice_date->toDateString(),
+            'type'             => 'sale',
+            'description'      => "Invoice issued: {$invoice->invoice_number} — {$invoice->customer->name}",
+            'reference'        => $invoice->invoice_number,
+        ], $entries);
+
+        $invoice->update(['transaction_id' => $transaction->id]);
+    }
+
+    /**
+     * Settle Accounts Receivable when a payment is collected.
+     *
+     *   DR  Bank / Cash (payment_account_id)   amount
+     *   CR  Accounts Receivable (1100)          amount
+     */
+    private function postPaymentJournal(Invoice $invoice, InvoicePayment $payment, int $bankAccountId): void
+    {
+        $tenant    = $invoice->tenant;
+        $arAccount = Account::where('tenant_id', $tenant->id)->where('code', '1100')->first();
+
+        if (! $arAccount) {
+            return;
+        }
+
+        $this->bookkeepingService->postJournalEntry($tenant, [
+            'transaction_date' => $payment->payment_date->toDateString(),
+            'type'             => 'receipt',
+            'description'      => "Payment received: {$invoice->invoice_number} — {$invoice->customer->name}",
+            'reference'        => 'REC-' . $invoice->invoice_number,
+        ], [
+            [
+                'account_id'  => $bankAccountId,
+                'entry_type'  => 'debit',
+                'amount'      => (float) $payment->amount,
+                'description' => "Receipt: {$invoice->invoice_number}",
+            ],
+            [
+                'account_id'  => $arAccount->id,
+                'entry_type'  => 'credit',
+                'amount'      => (float) $payment->amount,
+                'description' => "AR settled: {$invoice->invoice_number}",
+            ],
+        ]);
     }
 
     /**

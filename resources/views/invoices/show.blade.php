@@ -63,9 +63,9 @@
                 <h3 class="text-base font-semibold">Record Payment</h3>
                 <button type="button" @click="showPayment = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
             </div>
-            <form method="POST" action="{{ route('invoices.payment', $invoice) }}" class="space-y-4">
+            <form method="POST" action="{{ route('invoices.payment', $invoice) }}" class="space-y-3">
                 @csrf
-                <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="grid grid-cols-2 gap-3 text-sm">
                     <div>
                         <label class="block text-xs font-medium text-gray-700">Payment Date *</label>
                         <input type="date" name="payment_date" value="{{ now()->toDateString() }}" required
@@ -94,6 +94,19 @@
                         <label class="block text-xs font-medium text-gray-700">Reference</label>
                         <input type="text" name="reference" placeholder="Bank ref / cheque no."
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-gray-700">Deposit To (Bank / Cash Account) *</label>
+                        <select name="payment_account_id" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">
+                            <option value="">— Select account —</option>
+                            @foreach($bankAccounts as $acct)
+                                <option value="{{ $acct->id }}">{{ $acct->code }} – {{ $acct->name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            Journal: DR selected account / CR Accounts Receivable
+                        </p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
@@ -249,7 +262,7 @@
                 <tr>
                     <td class="px-6 py-2">{{ $payment->payment_date->format('d M Y') }}</td>
                     <td class="px-6 py-2 font-mono text-xs">{{ $payment->reference }}</td>
-                    <td class="px-6 py-2">{{ ucfirst($payment->payment_method) }}</td>
+                    <td class="px-6 py-2">{{ ucfirst(str_replace('_', ' ', $payment->method)) }}</td>
                     <td class="px-6 py-2 text-right text-green-700 font-medium">₦{{ number_format($payment->amount, 2) }}</td>
                 </tr>
                 @endforeach

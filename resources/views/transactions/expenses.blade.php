@@ -13,9 +13,95 @@
             </button>
         </div>
 
+        {{-- Filters --}}
+        <div class="px-6 py-4 border-b bg-gray-50">
+            <form method="GET" action="{{ route('transactions.expenses') }}" id="filter-form">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+
+                    {{-- Search --}}
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Search</label>
+                        <div class="relative">
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                   placeholder="Description, ref, vendor…"
+                                   class="w-full pl-8 pr-3 py-1.5 rounded border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">
+                            <svg class="absolute left-2.5 top-2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    {{-- Date from --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">From</label>
+                        <input type="date" name="date_from" value="{{ request('date_from') }}"
+                               class="w-full rounded border-gray-300 text-sm py-1.5 focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    {{-- Date to --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">To</label>
+                        <input type="date" name="date_to" value="{{ request('date_to') }}"
+                               class="w-full rounded border-gray-300 text-sm py-1.5 focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    {{-- Vendor --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Vendor</label>
+                        <select name="vendor_id" class="w-full rounded border-gray-300 text-sm py-1.5 focus:ring-green-500 focus:border-green-500">
+                            <option value="">All Vendors</option>
+                            <option value="none" {{ request('vendor_id') === 'none' ? 'selected' : '' }}>— No Vendor —</option>
+                            @foreach($vendors as $v)
+                                <option value="{{ $v->id }}" {{ request('vendor_id') == $v->id ? 'selected' : '' }}>{{ $v->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Status --}}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                        <select name="status" class="w-full rounded border-gray-300 text-sm py-1.5 focus:ring-green-500 focus:border-green-500">
+                            <option value="">All Statuses</option>
+                            @foreach(['pending','approved','paid','rejected'] as $s)
+                                <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Second row: category + actions --}}
+                <div class="flex flex-wrap items-end gap-3 mt-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                        <select name="category" class="rounded border-gray-300 text-sm py-1.5 focus:ring-green-500 focus:border-green-500">
+                            <option value="">All Categories</option>
+                            @foreach(['rent','utilities','salaries','transport','repairs','supplies','marketing','legal','insurance','other'] as $cat)
+                                <option value="{{ $cat }}" {{ request('category') === $cat ? 'selected' : '' }}>{{ ucfirst($cat) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <button type="submit"
+                            class="px-4 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                        Apply
+                    </button>
+
+                    @if(request()->hasAny(['search','date_from','date_to','vendor_id','status','category']))
+                    <a href="{{ route('transactions.expenses') }}"
+                       class="px-4 py-1.5 border border-gray-300 text-sm text-gray-600 rounded-md hover:bg-gray-50">
+                        Clear
+                    </a>
+                    <span class="text-xs text-gray-400 ml-1">
+                        {{ $expenses->total() }} result{{ $expenses->total() !== 1 ? 's' : '' }}
+                    </span>
+                    @endif
+                </div>
+            </form>
+        </div>
+
         {{-- Quick expense form (collapsible) --}}
         <div id="expense-form" class="hidden border-b bg-gray-50 p-6" x-data="expenseForm()" @keydown.escape.window="showNewVendor = false; showNewVendorExemptReason = false">
-            <form method="POST" action="{{ route('transactions.expenses.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('transactions.expenses.store') }}" enctype="multipart/form-data" class="space-y-4">
                 @csrf
                 <h3 class="text-sm font-semibold text-gray-700">Record New Expense</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -158,6 +244,12 @@
                         </template>
                     </div>
                     <div>
+                        <label class="block text-xs font-medium text-gray-700">Receipt</label>
+                        <input type="file" name="receipt" accept=".pdf,.jpg,.jpeg,.png"
+                               class="mt-1 block w-full text-sm text-gray-500 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                        <p class="text-xs text-gray-400 mt-0.5">PDF, JPG or PNG — max 4 MB</p>
+                    </div>
+                    <div>
                         <label class="block text-xs font-medium text-gray-700">Notes</label>
                         <input type="text" name="notes" placeholder="Additional notes"
                                class="mt-1 block w-full rounded border-gray-300 text-sm px-2 py-1.5">
@@ -189,15 +281,28 @@
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">WHT</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net Payable</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($expenses as $expense)
+                    @php $colors = ['pending'=>'yellow','approved'=>'blue','paid'=>'green','rejected'=>'red'] @endphp
                     <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-xs font-mono text-gray-500">{{ $expense->reference }}</td>
+                        <td class="px-4 py-3 text-xs font-mono text-gray-500">
+                            {{ $expense->reference }}
+                            @if($expense->receipt_path)
+                                <a href="{{ Storage::url($expense->receipt_path) }}" target="_blank"
+                                   title="View receipt" class="ml-1 text-gray-400 hover:text-green-600">📎</a>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-sm">{{ $expense->expense_date->format('d M Y') }}</td>
                         <td class="px-4 py-3 text-sm capitalize">{{ $expense->category }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700 max-w-xs truncate">{{ $expense->description }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 max-w-xs truncate" title="{{ $expense->description }}">
+                            {{ $expense->description }}
+                            @if($expense->notes && str_starts_with($expense->notes, 'REJECTED:'))
+                                <span class="block text-xs text-red-500 truncate">{{ Str::limit($expense->notes, 60) }}</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-sm">{{ $expense->vendor->name ?? '—' }}</td>
                         <td class="px-4 py-3 text-sm text-right">₦{{ number_format($expense->amount, 2) }}</td>
                         <td class="px-4 py-3 text-sm text-right text-orange-600">
@@ -214,17 +319,61 @@
                             ₦{{ number_format($expense->net_payable, 2) }}
                         </td>
                         <td class="px-4 py-3">
-                            @php $colors = ['pending'=>'yellow','approved'=>'blue','paid'=>'green','rejected'=>'red'] @endphp
                             <span class="inline-flex rounded-full px-2 text-xs font-semibold
                                 bg-{{ $colors[$expense->status] ?? 'gray' }}-100
                                 text-{{ $colors[$expense->status] ?? 'gray' }}-800">
                                 {{ ucfirst($expense->status) }}
                             </span>
                         </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1.5 flex-nowrap">
+                                @if($expense->status === 'pending')
+                                    {{-- Approve --}}
+                                    <form method="POST" action="{{ route('transactions.expenses.approve', $expense) }}">
+                                        @csrf
+                                        <button type="submit"
+                                                onclick="return confirm('Approve and post to ledger?')"
+                                                class="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200 font-medium">
+                                            Approve
+                                        </button>
+                                    </form>
+                                    {{-- Reject --}}
+                                    <button type="button"
+                                            onclick="openReject({{ $expense->id }}, '{{ addslashes($expense->reference) }}')"
+                                            class="px-2 py-0.5 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100 font-medium">
+                                        Reject
+                                    </button>
+                                    {{-- Edit --}}
+                                    <a href="{{ route('transactions.expenses.edit', $expense) }}"
+                                       class="px-2 py-0.5 text-xs border border-gray-200 text-gray-600 rounded hover:bg-gray-50">
+                                        Edit
+                                    </a>
+                                    {{-- Delete --}}
+                                    <form method="POST" action="{{ route('transactions.expenses.destroy', $expense) }}">
+                                        @csrf @method('DELETE')
+                                        <button type="submit"
+                                                onclick="return confirm('Delete this expense?')"
+                                                class="px-2 py-0.5 text-xs text-red-400 hover:text-red-600">
+                                            ✕
+                                        </button>
+                                    </form>
+
+                                @elseif($expense->status === 'approved')
+                                    {{-- Pay --}}
+                                    <button type="button"
+                                            onclick="openPay({{ $expense->id }}, '{{ addslashes($expense->reference) }}', {{ $expense->net_payable }})"
+                                            class="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 font-medium">
+                                        Mark Paid
+                                    </button>
+                                @else
+                                    <span class="text-xs text-gray-300">—</span>
+                                @endif
+                            </div>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                        <td colspan="10" class="px-4 py-8 text-center text-gray-500">
                             No expenses recorded yet.
                         </td>
                     </tr>
@@ -232,11 +381,15 @@
                 </tbody>
                 @if($expenses->isNotEmpty())
                 <tfoot class="bg-gray-50 font-medium text-sm">
-                    <tr>
-                        <td colspan="5" class="px-4 py-3">Page Total</td>
-                        <td class="px-4 py-3 text-right">₦{{ number_format($expenses->sum('amount'), 2) }}</td>
-                        <td class="px-4 py-3 text-right text-orange-600">₦{{ number_format($expenses->sum('wht_amount'), 2) }}</td>
-                        <td class="px-4 py-3 text-right">₦{{ number_format($expenses->sum('net_payable'), 2) }}</td>
+                    <tr class="border-t-2 border-gray-200">
+                        <td colspan="5" class="px-4 py-3 text-gray-500 text-xs">
+                            Filtered total
+                            <span class="text-gray-400 font-normal">({{ $expenses->total() }} records)</span>
+                        </td>
+                        <td class="px-4 py-3 text-right">₦{{ number_format($filteredTotals->total_amount ?? 0, 2) }}</td>
+                        <td class="px-4 py-3 text-right text-orange-600">₦{{ number_format($filteredTotals->total_wht ?? 0, 2) }}</td>
+                        <td class="px-4 py-3 text-right">₦{{ number_format($filteredTotals->total_net ?? 0, 2) }}</td>
+                        <td></td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -249,8 +402,118 @@
         </div>
     </div>
 </div>
+{{-- ── Reject Modal ─────────────────────────────────────────────────────────── --}}
+<div id="reject-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
+        <div class="flex justify-between items-center">
+            <h3 class="text-base font-semibold text-gray-900">Reject Expense</h3>
+            <button type="button" onclick="closeReject()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+        <p class="text-sm text-gray-600">
+            Rejecting <strong id="reject-ref"></strong>. Please state the reason.
+        </p>
+        <form id="reject-form" method="POST" class="space-y-3">
+            @csrf
+            <div>
+                <label class="block text-xs font-medium text-gray-700">Rejection Reason *</label>
+                <textarea name="rejection_reason" rows="3" required
+                          placeholder="e.g. Duplicate entry, insufficient documentation…"
+                          class="mt-1 block w-full rounded border-gray-300 text-sm px-2 py-1.5 focus:ring-red-500 focus:border-red-500 resize-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-1">
+                <button type="button" onclick="closeReject()"
+                        class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">
+                    Confirm Reject
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ── Pay Modal ─────────────────────────────────────────────────────────────── --}}
+<div id="pay-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
+        <div class="flex justify-between items-center">
+            <h3 class="text-base font-semibold text-gray-900">Mark Expense as Paid</h3>
+            <button type="button" onclick="closePay()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+        <p class="text-sm text-gray-600">
+            Paying <strong id="pay-ref"></strong> —
+            Net payable: <strong>₦<span id="pay-amount"></span></strong>
+        </p>
+        <form id="pay-form" method="POST" class="space-y-3">
+            @csrf
+            <div>
+                <label class="block text-xs font-medium text-gray-700">Payment Date *</label>
+                <input type="date" name="payment_date" required
+                       value="{{ now()->toDateString() }}"
+                       class="mt-1 block w-full rounded border-gray-300 text-sm px-2 py-1.5 focus:ring-green-500 focus:border-green-500">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700">Pay From Account *</label>
+                <select name="payment_account" required
+                        class="mt-1 block w-full rounded border-gray-300 text-sm px-2 py-1.5 focus:ring-green-500 focus:border-green-500">
+                    <option value="">— Select bank / cash account —</option>
+                    @foreach(\App\Models\Account::where('tenant_id', auth()->user()->tenant_id)
+                        ->where('type', 'asset')
+                        ->whereIn('sub_type', ['bank', 'cash'])
+                        ->where('is_active', true)
+                        ->orderBy('code')
+                        ->get() as $acct)
+                        <option value="{{ $acct->id }}">{{ $acct->code }} – {{ $acct->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex justify-end gap-3 pt-1">
+                <button type="button" onclick="closePay()"
+                        class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700">
+                    Confirm Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+// Reject modal
+function openReject(id, ref) {
+    document.getElementById('reject-ref').textContent = ref;
+    document.getElementById('reject-form').action = '/transactions/expenses/' + id + '/reject';
+    document.getElementById('reject-form').querySelector('textarea').value = '';
+    document.getElementById('reject-modal').classList.remove('hidden');
+}
+function closeReject() {
+    document.getElementById('reject-modal').classList.add('hidden');
+}
+
+// Pay modal
+function openPay(id, ref, netPayable) {
+    document.getElementById('pay-ref').textContent = ref;
+    document.getElementById('pay-amount').textContent = Number(netPayable).toLocaleString('en-NG', {minimumFractionDigits: 2});
+    document.getElementById('pay-form').action = '/transactions/expenses/' + id + '/pay';
+    document.getElementById('pay-modal').classList.remove('hidden');
+}
+function closePay() {
+    document.getElementById('pay-modal').classList.add('hidden');
+}
+
+// Close modals on backdrop click
+document.addEventListener('click', function(e) {
+    const rejectModal = document.getElementById('reject-modal');
+    const payModal    = document.getElementById('pay-modal');
+    if (e.target === rejectModal) closeReject();
+    if (e.target === payModal)    closePay();
+});
+
 function expenseForm() {
     return {
         showNewVendor: false,

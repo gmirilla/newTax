@@ -83,11 +83,19 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
     // ── Transactions & Expenses ───────────────────────────────────────────────
     Route::prefix('transactions')->name('transactions.')->group(function () {
         Route::get('/',              [TransactionController::class, 'index'])->name('index');
+        Route::get('/export/excel',  [TransactionController::class, 'exportExcel'])->name('export.excel');
+        Route::get('/export/pdf',    [TransactionController::class, 'exportPdf'])->name('export.pdf');
         Route::get('/create',        [TransactionController::class, 'create'])->name('create');
         Route::post('/',             [TransactionController::class, 'store'])->name('store');
         // Expenses — must be declared before /{id} to prevent "expenses" being treated as an ID
-        Route::get('/expenses',      [TransactionController::class, 'expenses'])->name('expenses');
-        Route::post('/expenses',     [TransactionController::class, 'storeExpense'])->name('expenses.store');
+        Route::get('/expenses',                        [TransactionController::class, 'expenses'])->name('expenses');
+        Route::post('/expenses',                       [TransactionController::class, 'storeExpense'])->name('expenses.store');
+        Route::get('/expenses/{expense}/edit',         [TransactionController::class, 'editExpense'])->name('expenses.edit');
+        Route::put('/expenses/{expense}',              [TransactionController::class, 'updateExpense'])->name('expenses.update');
+        Route::delete('/expenses/{expense}',           [TransactionController::class, 'destroyExpense'])->name('expenses.destroy');
+        Route::post('/expenses/{expense}/approve',     [TransactionController::class, 'approveExpense'])->name('expenses.approve');
+        Route::post('/expenses/{expense}/reject',      [TransactionController::class, 'rejectExpense'])->name('expenses.reject');
+        Route::post('/expenses/{expense}/pay',         [TransactionController::class, 'payExpense'])->name('expenses.pay');
         Route::get('/{id}',          [TransactionController::class, 'show'])->name('show')->whereNumber('id');
     });
 
@@ -152,6 +160,9 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
         Route::get('/balance-sheet/pdf',   [ReportController::class, 'balanceSheetPdf'])->name('bs.pdf');
         Route::get('/balance-sheet/excel', [ReportController::class, 'balanceSheetExcel'])->name('bs.excel');
         Route::get('/trial-balance', [ReportController::class, 'trialBalance'])->name('tb');
+        Route::get('/ledger',             [ReportController::class, 'ledger'])->name('ledger');
+        Route::get('/ledger/pdf',         [ReportController::class, 'ledgerPdf'])->name('ledger.pdf');
+        Route::get('/ledger/excel',       [ReportController::class, 'ledgerExcel'])->name('ledger.excel');
         Route::get('/vat',           [ReportController::class, 'vatReport'])->name('vat');
         Route::get('/cit',           [ReportController::class, 'citReport'])->name('cit');
         Route::get('/tax-summary',   [ReportController::class, 'taxSummary'])->name('tax-summary');

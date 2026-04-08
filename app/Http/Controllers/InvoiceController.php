@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\InvoiceRequest;
 use App\Imports\InvoicesImport;
 use App\Jobs\FIRS\ProcessFirsInvoiceJob;
+use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceFirsSubmission;
@@ -67,7 +68,14 @@ class InvoiceController extends Controller
 
         $invoice->load(['customer', 'items', 'payments', 'creator', 'tenant']);
 
-        return view('invoices.show', compact('invoice'));
+        $bankAccounts = Account::where('tenant_id', $invoice->tenant_id)
+            ->where('type', 'asset')
+            ->whereIn('sub_type', ['bank', 'cash'])
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get(['id', 'code', 'name']);
+
+        return view('invoices.show', compact('invoice', 'bankAccounts'));
     }
 
     public function edit(Invoice $invoice): View
@@ -136,15 +144,18 @@ class InvoiceController extends Controller
         $this->authorize('update', $invoice);
 
         $request->validate([
-            'payment_date' => 'required|date',
-            'amount'       => 'required|numeric|min:0.01|max:' . $invoice->balance_due,
-            'method'       => 'required|in:cash,bank_transfer,cheque,pos,online',
-            'reference'    => 'nullable|string|max:100',
+            'payment_date'       => 'required|date',
+            'amount'             => 'required|numeric|min:0.01|max:' . $invoice->balance_due,
+            'method'             => 'required|in:cash,bank_transfer,cheque,pos,online',
+            'payment_account_id' => 'required|exists:accounts,id',
+            'reference'          => 'nullable|string|max:100',
         ]);
 
-        $this->invoiceService->recordPayment($invoice, $request->all());
+        $this->invoiceService->recordPayment($invoice, $request->only([
+            'payment_date', 'amount', 'method', 'payment_account_id', 'reference', 'notes',
+        ]));
 
-        return back()->with('success', 'Payment recorded successfully.');
+        return back()->with('success', 'Payment recorded and journal entry posted.');
     }
 
     public function downloadPdf(Invoice $invoice)
@@ -163,15 +174,19 @@ class InvoiceController extends Controller
     {
         $this->authorize('update', $invoice);
 
-        // Mark as sent
         if ($invoice->status === 'draft') {
             $invoice->update(['status' => 'sent']);
         }
 
+        // Post revenue recognition journal (DR AR / CR Revenue / CR VAT Payable)
+        // Idempotent — skips if already posted or if required accounts are missing
+        $invoice->load('tenant');
+        $this->invoiceService->postRevenueJournal($invoice);
+
         // TODO: Dispatch SendInvoiceEmail job
         // SendInvoiceEmail::dispatch($invoice);
 
-        return back()->with('success', "Invoice sent to {$invoice->customer->email}.");
+        return back()->with('success', "Invoice {$invoice->invoice_number} sent and revenue recognised in ledger.");
     }
 
     public function void(Invoice $invoice): RedirectResponse

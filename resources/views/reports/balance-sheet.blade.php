@@ -113,14 +113,22 @@
                             'operations' => 'bg-violet-400',
                             default      => 'bg-indigo-400',
                         };
+                        $isNeg = $row['balance'] < 0;
                     @endphp
-                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                    <tr class="hover:bg-gray-50 border-b border-gray-100 {{ $isNeg ? 'bg-red-50/40' : '' }}">
                         <td class="py-1.5 font-mono text-xs text-gray-400">{{ $row['code'] }}</td>
-                        <td class="py-1.5 text-gray-700">{{ $row['name'] }}</td>
+                        <td class="py-1.5 text-gray-700">
+                            {{ $row['name'] }}
+                            @if($isNeg)
+                                <span class="ml-1 text-xs text-red-500 font-normal">(overdraft/contra)</span>
+                            @endif
+                        </td>
                         <td class="py-1.5 text-center">
                             <span class="inline-block w-1.5 h-1.5 rounded-full {{ $dot }}"></span>
                         </td>
-                        <td class="py-1.5 text-right font-medium text-blue-700">₦{{ number_format($row['balance'], 2) }}</td>
+                        <td class="py-1.5 text-right font-medium {{ $isNeg ? 'text-red-600' : 'text-blue-700' }}">
+                            ₦{{ number_format($row['balance'], 2) }}
+                        </td>
                     </tr>
                     @endforeach
                     </tbody>
