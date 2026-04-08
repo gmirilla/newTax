@@ -143,6 +143,14 @@
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.bs*') ? 'bg-green-900' : '' }}">
                             📉 Balance Sheet
                         </a>
+                        <a href="{{ route('reports.tb') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.tb*') ? 'bg-green-900' : '' }}">
+                            ⚖️ Trial Balance
+                        </a>
+                        <a href="{{ route('reports.ledger') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.ledger*') ? 'bg-green-900' : '' }}">
+                            📒 General Ledger
+                        </a>
                         <a href="{{ route('reports.tax-summary') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.tax-summary*') ? 'bg-green-900' : '' }}">
                             📑 Tax Summary
@@ -235,6 +243,14 @@
                         <a href="{{ route('reports.bs') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.bs*') ? 'bg-green-900' : '' }}">
                             📉 Balance Sheet
+                        </a>
+                        <a href="{{ route('reports.tb') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.tb*') ? 'bg-green-900' : '' }}">
+                            ⚖️ Trial Balance
+                        </a>
+                        <a href="{{ route('reports.ledger') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.ledger*') ? 'bg-green-900' : '' }}">
+                            📒 General Ledger
                         </a>
                         <a href="{{ route('reports.tax-summary') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.tax-summary*') ? 'bg-green-900' : '' }}">
