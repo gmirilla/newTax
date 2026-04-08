@@ -42,9 +42,23 @@ class LedgerExport implements FromArray, WithStyles, WithTitle, WithColumnWidths
         $rows[] = [$this->tenant->company_name ?? $this->tenant->name, '', '', '', '', ''];
         $rows[] = ['General Ledger', '', '', '', '', ''];
         $rows[] = ["Period: {$from} to {$to}", '', '', '', '', ''];
-        if ($this->report['account_code']) {
-            $rows[] = ['Account filter: ' . $this->report['account_code'], '', '', '', '', ''];
+
+        $filters = array_filter([
+            $this->report['account_type'] ? 'Type: ' . ucfirst($this->report['account_type']) : null,
+            $this->report['account_code'] ? 'Account: ' . $this->report['account_code'] : null,
+            $this->report['search']       ? 'Search: "' . $this->report['search'] . '"' : null,
+        ]);
+        if ($filters) {
+            $rows[] = ['Filters: ' . implode('  |  ', $filters), '', '', '', '', ''];
         }
+
+        // Summary row
+        $rows[] = [
+            'Accounts: ' . count($this->report['accounts']),
+            'Total Debits: ₦' . number_format($this->report['total_debits'], 2),
+            'Total Credits: ₦' . number_format($this->report['total_credits'], 2),
+            '', '', '',
+        ];
         $rows[] = ['', '', '', '', '', ''];
 
         // Column headings
@@ -54,8 +68,10 @@ class LedgerExport implements FromArray, WithStyles, WithTitle, WithColumnWidths
             // Account header
             $rows[] = [
                 "{$acct['code']} — {$acct['name']}",
-                '', '', '', '',
                 ucfirst($acct['type']),
+                "Opening: ₦" . number_format($acct['opening_balance'], 2),
+                '', '',
+                "Closing: ₦" . number_format($acct['closing_balance'], 2),
             ];
 
             // Opening balance
@@ -63,12 +79,21 @@ class LedgerExport implements FromArray, WithStyles, WithTitle, WithColumnWidths
 
             foreach ($acct['lines'] as $line) {
                 $rows[] = [
-                    $line['date'],
+                    Carbon::parse($line['date'])->format('d M Y'),
                     $line['reference'],
                     $line['description'],
                     $line['debit']  !== null ? (float) $line['debit']  : '',
                     $line['credit'] !== null ? (float) $line['credit'] : '',
                     (float) $line['balance'],
+                ];
+            }
+
+            // Period totals row
+            if (count($acct['lines']) > 0) {
+                $rows[] = ['', 'PERIOD TOTALS', '',
+                    (float) $acct['period_debits'],
+                    (float) $acct['period_credits'],
+                    (float) $acct['net_movement'],
                 ];
             }
 
@@ -143,6 +168,22 @@ class LedgerExport implements FromArray, WithStyles, WithTitle, WithColumnWidths
                             'font' => ['bold' => true, 'size' => 10],
                             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F3F4F6']],
                         ]);
+                        continue;
+                    }
+
+                    // Period totals row
+                    if ($b === 'PERIOD TOTALS') {
+                        $sheet->getStyle("A{$r}:F{$r}")->applyFromArray([
+                            'font' => ['italic' => true, 'size' => 8.5],
+                            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F3F4F6']],
+                        ]);
+                        foreach (['D', 'E', 'F'] as $col) {
+                            $v = $sheet->getCell("{$col}{$r}")->getValue();
+                            if (is_numeric($v) && $v !== '') {
+                                $sheet->getStyle("{$col}{$r}")->getNumberFormat()->setFormatCode($numFmt);
+                                $sheet->getStyle("{$col}{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                            }
+                        }
                         continue;
                     }
 

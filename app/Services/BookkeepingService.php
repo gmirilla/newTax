@@ -754,18 +754,41 @@ class BookkeepingService
     /**
      * Generate General Ledger for a period.
      *
-     * For each active account (optionally filtered to one account code),
-     * returns all posted journal entries in date order with a running balance,
-     * plus the opening balance as of the day before $start.
+     * Filters:
+     *   $accountCode — show a single account by code
+     *   $accountType — show all accounts of a given type (asset/liability/equity/revenue/expense)
+     *   $search      — case-insensitive substring match on account code or name
+     *
+     * Opening balance = account.opening_balance (pre-NaijaBooks balance)
+     *                 + net of all posted journal entries before $start
+     * This ensures the running balance is correct from the very first entry.
+     *
+     * Returns per-account period totals (debits, credits, net movement) for summary display.
      */
-    public function getLedger(Tenant $tenant, Carbon $start, Carbon $end, ?string $accountCode = null): array
-    {
+    public function getLedger(
+        Tenant  $tenant,
+        Carbon  $start,
+        Carbon  $end,
+        ?string $accountCode = null,
+        ?string $accountType = null,
+        ?string $search      = null,
+    ): array {
         $accountsQuery = Account::where('tenant_id', $tenant->id)
             ->where('is_active', true)
+            ->orderBy('type')
             ->orderBy('code');
 
         if ($accountCode) {
             $accountsQuery->where('code', $accountCode);
+        }
+        if ($accountType) {
+            $accountsQuery->where('type', $accountType);
+        }
+        if ($search) {
+            $accountsQuery->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            });
         }
 
         $accounts       = $accountsQuery->get();
@@ -774,7 +797,7 @@ class BookkeepingService
         foreach ($accounts as $account) {
             $normalDebit = in_array($account->type, ['asset', 'expense']);
 
-            // Opening balance: all posted entries strictly before $start
+            // Opening balance = model's pre-NaijaBooks balance + net of all journal entries before $start
             $openDebits  = (float) JournalEntry::where('tenant_id', $tenant->id)
                 ->where('account_id', $account->id)
                 ->where('entry_type', 'debit')
@@ -791,9 +814,12 @@ class BookkeepingService
                     ->where('transaction_date', '<', $start->toDateString()))
                 ->sum('amount');
 
-            $openingBalance = $normalDebit
+            $journalOpening = $normalDebit
                 ? ($openDebits  - $openCredits)
                 : ($openCredits - $openDebits);
+
+            // Add the model's opening_balance (set at company inception / migration)
+            $openingBalance = round((float) $account->opening_balance + $journalOpening, 2);
 
             // Period entries
             $entries = JournalEntry::where('tenant_id', $tenant->id)
@@ -806,20 +832,24 @@ class BookkeepingService
                 ->sortBy('transaction.transaction_date');
 
             // Skip accounts with no activity and zero opening balance
-            if ($entries->isEmpty() && round($openingBalance, 2) == 0) {
+            if ($entries->isEmpty() && $openingBalance == 0) {
                 continue;
             }
 
-            $running = round($openingBalance, 2);
-            $lines   = [];
+            $running       = $openingBalance;
+            $periodDebits  = 0.0;
+            $periodCredits = 0.0;
+            $lines         = [];
 
             foreach ($entries as $entry) {
                 $amount = (float) $entry->amount;
 
-                if ($normalDebit) {
-                    $running += $entry->entry_type === 'debit' ? $amount : -$amount;
+                if ($entry->entry_type === 'debit') {
+                    $periodDebits += $amount;
+                    $running      += $normalDebit ? $amount : -$amount;
                 } else {
-                    $running += $entry->entry_type === 'credit' ? $amount : -$amount;
+                    $periodCredits += $amount;
+                    $running       += $normalDebit ? -$amount : $amount;
                 }
 
                 $lines[] = [
@@ -838,15 +868,24 @@ class BookkeepingService
                 'type'            => $account->type,
                 'opening_balance' => round($openingBalance, 2),
                 'closing_balance' => round($running, 2),
+                'period_debits'   => round($periodDebits, 2),
+                'period_credits'  => round($periodCredits, 2),
+                'net_movement'    => round($normalDebit
+                    ? $periodDebits - $periodCredits
+                    : $periodCredits - $periodDebits, 2),
                 'lines'           => $lines,
             ];
         }
 
         return [
-            'period_start' => $start->toDateString(),
-            'period_end'   => $end->toDateString(),
-            'account_code' => $accountCode,
-            'accounts'     => $ledgerAccounts,
+            'period_start'  => $start->toDateString(),
+            'period_end'    => $end->toDateString(),
+            'account_code'  => $accountCode,
+            'account_type'  => $accountType,
+            'search'        => $search,
+            'accounts'      => $ledgerAccounts,
+            'total_debits'  => round(array_sum(array_column($ledgerAccounts, 'period_debits')), 2),
+            'total_credits' => round(array_sum(array_column($ledgerAccounts, 'period_credits')), 2),
         ];
     }
 
