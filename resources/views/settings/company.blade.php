@@ -5,6 +5,61 @@
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6">
 
+    {{-- ─── Logo Upload ──────────────────────────────────────────────────────── --}}
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="mb-4">
+            <h2 class="text-base font-semibold">Company Logo</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Appears on PDF invoices and quotations. Recommended: PNG or SVG, max 2 MB.</p>
+        </div>
+
+        <div class="flex items-start gap-6">
+            {{-- Current logo preview --}}
+            <div class="flex-shrink-0">
+                @if($tenant->logo)
+                    <img src="{{ Storage::url($tenant->logo) }}" alt="Company logo"
+                         class="h-20 w-auto object-contain border border-gray-200 rounded p-1 bg-gray-50">
+                @else
+                    <div class="h-20 w-40 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-xs text-center bg-gray-50">
+                        No logo<br>uploaded
+                    </div>
+                @endif
+            </div>
+
+            <div class="flex-1 space-y-3">
+                {{-- Upload form --}}
+                <form method="POST" action="{{ route('settings.company.logo.upload') }}"
+                      enctype="multipart/form-data" class="flex items-end gap-3">
+                    @csrf
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Upload new logo</label>
+                        <input type="file" name="logo" accept="image/*" required
+                               class="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-4
+                                      file:rounded file:border-0 file:text-sm file:font-medium
+                                      file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                        @error('logo')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                        Upload
+                    </button>
+                </form>
+
+                {{-- Remove logo --}}
+                @if($tenant->logo)
+                <form method="POST" action="{{ route('settings.company.logo.delete') }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            onclick="return confirm('Remove the company logo?')"
+                            class="text-sm text-red-600 hover:text-red-800 underline">
+                        Remove logo
+                    </button>
+                </form>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <div class="bg-white rounded-lg shadow p-6 space-y-5">
         <div>
             <h2 class="text-base font-semibold">Company Details</h2>
