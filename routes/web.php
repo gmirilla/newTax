@@ -72,8 +72,10 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
 
     // ── Settings (admin-only sections gated inside controllers) ───────────────
     Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/company',   [CompanySettingsController::class, 'edit'])->name('company');
-        Route::patch('/company', [CompanySettingsController::class, 'update'])->name('company.update');
+        Route::get('/company',        [CompanySettingsController::class, 'edit'])->name('company');
+        Route::patch('/company',      [CompanySettingsController::class, 'update'])->name('company.update');
+        Route::post('/company/logo',  [CompanySettingsController::class, 'uploadLogo'])->name('company.logo.upload');
+        Route::delete('/company/logo',[CompanySettingsController::class, 'deleteLogo'])->name('company.logo.delete');
 
         Route::get('/firs',              [FirsOnboardingController::class, 'showForm'])->name('firs');
         Route::post('/firs',             [FirsOnboardingController::class, 'store'])->name('firs.store');

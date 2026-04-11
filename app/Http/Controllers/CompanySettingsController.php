@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class CompanySettingsController extends Controller
@@ -45,6 +46,42 @@ class CompanySettingsController extends Controller
         $tenant->updateTaxCategory();
 
         return back()->with('success', 'Company details updated.');
+    }
+
+    public function uploadLogo(Request $request): RedirectResponse
+    {
+        $this->requireAdmin($request);
+
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        $tenant = $request->user()->tenant;
+
+        // Delete old logo if exists
+        if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
+            Storage::disk('public')->delete($tenant->logo);
+        }
+
+        $path = $request->file('logo')->store("logos/{$tenant->id}", 'public');
+        $tenant->update(['logo' => $path]);
+
+        return back()->with('success', 'Company logo updated successfully.');
+    }
+
+    public function deleteLogo(Request $request): RedirectResponse
+    {
+        $this->requireAdmin($request);
+
+        $tenant = $request->user()->tenant;
+
+        if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
+            Storage::disk('public')->delete($tenant->logo);
+        }
+
+        $tenant->update(['logo' => null]);
+
+        return back()->with('success', 'Company logo removed.');
     }
 
     private function requireAdmin(Request $request): void
