@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuditLogMiddleware;
+use App\Http\Middleware\RequiresPlan;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Middleware\TenantMiddleware;
@@ -22,11 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'        => RoleMiddleware::class,
             'audit'       => AuditLogMiddleware::class,
             'superadmin'  => SuperAdminMiddleware::class,
+            'plan'        => RequiresPlan::class,
         ]);
 
         // Apply CSRF protection to web routes
         $middleware->validateCsrfTokens(except: [
             'api/*',
+            'webhooks/paystack',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

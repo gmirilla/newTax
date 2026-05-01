@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -14,25 +15,34 @@ class SuperAdminController extends Controller
 {
     public function dashboard(): View
     {
+        $planBreakdown = Plan::withCount(['tenants' => fn($q) => $q->where('is_active', true)])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->mapWithKeys(fn($p) => [$p->slug => $p->tenants_count]);
+
         $stats = [
-            'total_companies'  => Tenant::withTrashed()->count(),
-            'active_companies' => Tenant::where('is_active', true)->count(),
-            'inactive_companies' => Tenant::where('is_active', false)->count(),
-            'free_plan'        => Tenant::where('subscription_plan', 'free')->count(),
-            'starter_plan'     => Tenant::where('subscription_plan', 'starter')->count(),
-            'pro_plan'         => Tenant::where('subscription_plan', 'pro')->count(),
-            'enterprise_plan'  => Tenant::where('subscription_plan', 'enterprise')->count(),
-            'expiring_soon'    => Tenant::where('is_active', true)
+            'total_companies'   => Tenant::withTrashed()->count(),
+            'active_companies'  => Tenant::where('is_active', true)->count(),
+            'inactive_companies'=> Tenant::where('is_active', false)->count(),
+            'trialing'          => Tenant::where('subscription_status', 'trialing')->count(),
+            'plan_breakdown'    => $planBreakdown,
+            'expiring_soon'     => Tenant::where('is_active', true)
                                     ->whereNotNull('subscription_expires_at')
-                                    ->where('subscription_expires_at', '<=', now()->addDays(14))
-                                    ->where('subscription_expires_at', '>=', now())
+                                    ->whereBetween('subscription_expires_at', [now(), now()->addDays(14)])
                                     ->count(),
-            'expired'          => Tenant::where('is_active', true)
+            'in_grace'          => Tenant::where('is_active', true)
+                                    ->whereIn('subscription_status', ['active', 'cancelled', 'suspended'])
                                     ->whereNotNull('subscription_expires_at')
                                     ->where('subscription_expires_at', '<', now())
+                                    ->where('subscription_expires_at', '>=', now()->subDays(7))
                                     ->count(),
-            'total_users'      => User::where('is_superadmin', false)->count(),
-            'new_this_month'   => Tenant::whereMonth('created_at', now()->month)
+            'expired'           => Tenant::where('is_active', true)
+                                    ->whereNotNull('subscription_expires_at')
+                                    ->where('subscription_expires_at', '<', now()->subDays(7))
+                                    ->count(),
+            'total_users'       => User::where('is_superadmin', false)->count(),
+            'new_this_month'    => Tenant::whereMonth('created_at', now()->month)
                                     ->whereYear('created_at', now()->year)
                                     ->count(),
         ];
@@ -93,7 +103,7 @@ class SuperAdminController extends Controller
 
     public function showCompany(Tenant $tenant): View
     {
-        $tenant->load(['users' => fn($q) => $q->orderBy('name')]);
+        $tenant->load(['users' => fn($q) => $q->orderBy('name'), 'plan']);
         $tenant->loadCount(['users', 'invoices']);
 
         $activityLog = \App\Models\AuditLog::where('tenant_id', $tenant->id)
@@ -101,7 +111,9 @@ class SuperAdminController extends Controller
             ->limit(20)
             ->get();
 
-        return view('superadmin.companies.show', compact('tenant', 'activityLog'));
+        $plans = Plan::where('is_active', true)->orderBy('sort_order')->orderBy('price_monthly')->get();
+
+        return view('superadmin.companies.show', compact('tenant', 'activityLog', 'plans'));
     }
 
     public function toggleActive(Tenant $tenant): RedirectResponse
@@ -116,14 +128,40 @@ class SuperAdminController extends Controller
     public function updateSubscription(Request $request, Tenant $tenant): RedirectResponse
     {
         $data = $request->validate([
-            'subscription_plan'       => 'required|in:free,starter,pro,enterprise',
+            'plan_id'                 => 'required|exists:plans,id',
             'subscription_expires_at' => 'nullable|date|after:today',
-            'subscription_status'     => 'required|in:active,suspended,cancelled',
+            'subscription_status'     => 'required|in:active,trialing,suspended,cancelled,grace',
+            'trial_ends_at'           => 'nullable|date',
         ]);
 
-        $tenant->update($data);
+        $plan = Plan::findOrFail($data['plan_id']);
 
-        return back()->with('success', 'Subscription updated successfully.');
+        $tenant->update([
+            'plan_id'                 => $plan->id,
+            'subscription_plan'       => $plan->slug,
+            'subscription_status'     => $data['subscription_status'],
+            'subscription_expires_at' => $data['subscription_expires_at'] ?? null,
+            'trial_ends_at'           => $data['trial_ends_at'] ?? null,
+        ]);
+
+        return back()->with('success', "Subscription updated to {$plan->name}.");
+    }
+
+    public function extendTrial(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $days = (int) $request->input('days', 14);
+        $days = max(1, min(90, $days)); // clamp 1–90
+
+        $base = ($tenant->trial_ends_at && $tenant->trial_ends_at->isFuture())
+            ? $tenant->trial_ends_at
+            : now();
+
+        $tenant->update([
+            'trial_ends_at'       => $base->copy()->addDays($days),
+            'subscription_status' => 'trialing',
+        ]);
+
+        return back()->with('success', "Trial extended by {$days} days for {$tenant->name}.");
     }
 
     public function sendReminder(Request $request, Tenant $tenant): RedirectResponse

@@ -3,7 +3,7 @@
 @section('page-title', 'Invoice #' . $invoice->invoice_number)
 
 @section('content')
-<div class="max-w-4xl mx-auto space-y-4" x-data="{ showPayment: false }">
+<div class="max-w-4xl mx-auto space-y-4" x-data="{ showPayment: false, linkCopied: false }">
 
     {{-- Actions bar --}}
     <div class="flex items-center justify-between">
@@ -47,6 +47,19 @@
             </form>
             @elseif($invoice->firs_status === 'signed')
             <span class="px-3 py-1.5 bg-green-100 text-green-800 text-xs font-semibold rounded-md">✓ FIRS Signed</span>
+            @endif
+
+            {{-- Share link --}}
+            @if(!in_array($invoice->status, ['draft']))
+            <button type="button"
+                    x-on:click="navigator.clipboard.writeText('{{ $invoice->publicUrl() }}').then(() => { linkCopied = true; setTimeout(() => linkCopied = false, 2500) })"
+                    class="px-4 py-1.5 border border-gray-300 text-sm rounded-md hover:bg-gray-50 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <span x-text="linkCopied ? 'Copied!' : 'Copy Link'"></span>
+            </button>
             @endif
 
             <a href="{{ route('invoices.pdf', $invoice) }}" target="_blank"

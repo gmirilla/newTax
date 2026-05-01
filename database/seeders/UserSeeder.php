@@ -43,12 +43,13 @@ class UserSeeder extends Seeder
 
         // Super admin (no tenant)
         User::create([
-            'tenant_id' => null,
-            'name'      => 'Platform Admin',
-            'email'     => 'superadmin@naijabooks.ng',
-            'password'  => Hash::make('admin123'),
-            'role'      => 'admin',
-            'is_active' => true,
+            'tenant_id'    => null,
+            'name'         => 'Platform Admin',
+            'email'        => 'superadmin@naijabooks.ng',
+            'password'     => Hash::make('admin123'),
+            'role'         => 'admin',
+            'is_active'    => true,
+            'is_superadmin'=> true,
         ]);
     }
 }

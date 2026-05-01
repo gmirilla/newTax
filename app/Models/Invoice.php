@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
@@ -19,7 +20,7 @@ class Invoice extends Model
         'total_amount', 'amount_paid', 'balance_due',
         'vat_applicable', 'wht_applicable', 'wht_rate',
         'status', 'notes', 'terms', 'currency', 'qr_code', 'created_by',
-        'firs_status', 'is_b2c',
+        'firs_status', 'is_b2c', 'public_token',
     ];
 
     protected $casts = [
@@ -39,6 +40,20 @@ class Invoice extends Model
     ];
 
     public const VAT_RATE = 7.5; // Nigerian VAT rate 7.5%
+
+    protected static function booted(): void
+    {
+        static::creating(function (Invoice $invoice) {
+            if (empty($invoice->public_token)) {
+                $invoice->public_token = (string) Str::uuid();
+            }
+        });
+    }
+
+    public function publicUrl(): string
+    {
+        return route('invoice.public.show', ['token' => $this->public_token]);
+    }
 
     public function tenant(): BelongsTo
     {

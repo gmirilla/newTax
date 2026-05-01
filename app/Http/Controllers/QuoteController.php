@@ -8,6 +8,8 @@ use App\Models\InvoiceItem;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -283,6 +285,60 @@ class QuoteController extends Controller
 
         return redirect()->route('invoices.show', $invoice)
             ->with('success', "Quote {$quote->quote_number} accepted — Invoice {$invoice->invoice_number} created.");
+    }
+
+    public function preview(Request $request): JsonResponse
+    {
+        $tenant   = $request->user()->tenant;
+        $customer = Customer::where('tenant_id', $tenant->id)
+            ->find($request->input('customer_id'));
+
+        $items = collect($request->input('items', []))->map(function ($item) use ($request) {
+            $subtotal  = round(($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0), 2);
+            $vatAmount = ($request->boolean('vat_applicable') && ($item['vat_applicable'] ?? true))
+                ? round($subtotal * 7.5 / 100, 2) : 0;
+            return (object) [
+                'description'    => $item['description'] ?? '',
+                'quantity'       => (float) ($item['quantity'] ?? 0),
+                'unit_price'     => (float) ($item['unit_price'] ?? 0),
+                'subtotal'       => $subtotal,
+                'vat_applicable' => (bool) ($item['vat_applicable'] ?? true),
+                'vat_amount'     => $vatAmount,
+                'total'          => $subtotal + $vatAmount,
+            ];
+        });
+
+        $subtotal  = $items->sum('subtotal');
+        $vatAmount = $request->boolean('vat_applicable') ? $items->sum('vat_amount') : 0;
+        $whtRate   = (float) ($request->input('wht_rate', 5));
+        $whtAmount = $request->boolean('wht_applicable') ? round($subtotal * $whtRate / 100, 2) : 0;
+        $discount  = (float) ($request->input('discount_amount', 0));
+        $total     = $subtotal + $vatAmount - $whtAmount - $discount;
+
+        $quote = (object) [
+            'tenant'          => $tenant,
+            'customer'        => $customer ?? (object)['name'=>'—','address'=>'','city'=>'','state'=>'','email'=>'','tin'=>''],
+            'quote_number'    => 'PREVIEW',
+            'quote_date'      => Carbon::parse($request->input('quote_date', today())),
+            'expiry_date'     => Carbon::parse($request->input('expiry_date', today()->addDays(30))),
+            'reference'       => $request->input('reference'),
+            'status'          => 'draft',
+            'items'           => $items,
+            'vat_applicable'  => $request->boolean('vat_applicable'),
+            'wht_applicable'  => $request->boolean('wht_applicable'),
+            'wht_rate'        => $whtRate,
+            'subtotal'        => $subtotal,
+            'vat_amount'      => $vatAmount,
+            'wht_amount'      => $whtAmount,
+            'discount_amount' => $discount,
+            'total_amount'    => $total,
+            'notes'           => $request->input('notes'),
+            'terms'           => $request->input('terms'),
+        ];
+
+        $html = view('quotes.pdf', compact('quote'))->render();
+
+        return response()->json(['html' => $html]);
     }
 
     public function downloadPdf(Quote $quote)

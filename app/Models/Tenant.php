@@ -5,7 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\SubscriptionPayment;
 
 class Tenant extends Model
 {
@@ -17,6 +19,8 @@ class Tenant extends Model
         'annual_turnover', 'vat_registered', 'vat_number', 'logo',
         'currency', 'subscription_plan', 'subscription_expires_at', 'is_active',
         'is_professional_firm',
+        'plan_id', 'next_plan_id', 'subscription_status', 'trial_ends_at',
+        'paystack_customer_id', 'paystack_subscription_code',
     ];
 
     protected $casts = [
@@ -25,6 +29,7 @@ class Tenant extends Model
         'is_active'              => 'boolean',
         'is_professional_firm'   => 'boolean',
         'subscription_expires_at'=> 'datetime',
+        'trial_ends_at'          => 'datetime',
     ];
 
     // Nigerian tax thresholds — 2026 (Finance Act 2025)
@@ -34,6 +39,26 @@ class Tenant extends Model
     public const CIT_LARGE_RATE = 30;          // >₦50M — 30% CIT
 
     // --- Relationships ---
+
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    public function nextPlan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class, 'next_plan_id');
+    }
+
+    public function subscriptionPayments(): HasMany
+    {
+        return $this->hasMany(SubscriptionPayment::class);
+    }
+
+    public function hasPendingPlanChange(): bool
+    {
+        return $this->next_plan_id !== null;
+    }
 
     public function users(): HasMany
     {
@@ -128,5 +153,106 @@ class Tenant extends Model
         }
 
         $this->save();
+    }
+
+    // --- Subscription helpers ---
+
+    public function isOnTrial(): bool
+    {
+        return $this->subscription_status === 'trialing'
+            && $this->trial_ends_at
+            && $this->trial_ends_at->isFuture();
+    }
+
+    public function trialExpired(): bool
+    {
+        return $this->subscription_status === 'trialing'
+            && $this->trial_ends_at
+            && $this->trial_ends_at->isPast();
+    }
+
+    public function isInGracePeriod(): bool
+    {
+        if ($this->isOnTrial()) return false;
+        if (!in_array($this->subscription_status, ['active', 'cancelled', 'suspended'])) return false;
+        if (!$this->subscription_expires_at) return false;
+
+        return $this->subscription_expires_at->isPast()
+            && $this->subscription_expires_at->copy()->addDays(7)->isFuture();
+    }
+
+    public function graceDaysLeft(): int
+    {
+        if (!$this->isInGracePeriod()) return 0;
+        return max(0, (int) now()->diffInDays($this->subscription_expires_at->copy()->addDays(7)));
+    }
+
+    public function subscriptionActive(): bool
+    {
+        if ($this->isOnTrial()) return true;
+
+        // cancelled = won't renew but access continues until expiry
+        // suspended = payment failed; grace period: 7 days after expiry before enforcement kicks in
+        if (in_array($this->subscription_status, ['active', 'cancelled', 'suspended'])) {
+            if (!$this->subscription_expires_at) return true; // perpetual
+            return $this->subscription_expires_at->copy()->addDays(7)->isFuture();
+        }
+
+        return false;
+    }
+
+    /** Check a feature flag against the current plan; denies when subscription is inactive. */
+    public function planAllows(string $feature): bool
+    {
+        if (!$this->plan) return false;
+        if (!$this->subscriptionActive()) return false;
+        return $this->plan->allows($feature);
+    }
+
+    /** Check a numeric limit (null = unlimited). Falls back to Free defaults when subscription is inactive. */
+    public function withinLimit(string $resource): bool
+    {
+        if (!$this->plan) return false;
+
+        $limit = $this->subscriptionActive()
+            ? $this->plan->limit($resource)
+            : (int) (Plan::LIMIT_DEFAULTS[$resource] ?? 0);
+
+        if ($limit === null) return true;
+        if ($limit <= 0)     return false;
+
+        // Cache counts for 5 minutes to avoid a DB query on every request
+        $month    = now()->format('Y-m');
+        $cacheKey = "tenant.{$this->id}.limit.{$resource}.{$month}";
+        $current  = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, fn() => match ($resource) {
+            'invoices_per_month' => $this->invoices()
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count(),
+            'users'         => $this->users()->count(),
+            'payroll_staff' => \App\Models\Employee::where('tenant_id', $this->id)->where('is_active', true)->count(),
+            'customers'     => $this->customers()->count(),
+            default         => 0,
+        });
+
+        return $current < $limit;
+    }
+
+    /** Invalidate withinLimit cache for a resource after a record is created. */
+    public function invalidateLimitCache(string $resource): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("tenant.{$this->id}.limit.{$resource}." . now()->format('Y-m'));
+    }
+
+    /** Assign a plan and sync the legacy subscription_plan slug. */
+    public function assignPlan(Plan $plan, ?string $status = 'active', ?\Carbon\Carbon $expiresAt = null, ?\Carbon\Carbon $trialEndsAt = null): void
+    {
+        $this->update([
+            'plan_id'                 => $plan->id,
+            'subscription_plan'       => $plan->slug,
+            'subscription_status'     => $status,
+            'subscription_expires_at' => $expiresAt,
+            'trial_ends_at'           => $trialEndsAt,
+        ]);
     }
 }

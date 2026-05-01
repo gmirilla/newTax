@@ -3,9 +3,9 @@
 @section('page-title', 'Create Invoice')
 
 @section('content')
-<div x-data="invoiceForm()" class="space-y-6" @keydown.escape="showNewCustomer = false">
+<div x-data="invoiceForm()" class="space-y-6" @keydown.escape="showNewCustomer = false; showPreview = false">
 
-    <form method="POST" action="{{ route('invoices.store') }}" @submit="calculateTotals">
+    <form x-ref="mainForm" method="POST" action="{{ route('invoices.store') }}" @submit="calculateTotals">
         @csrf
 
         {{-- Header --}}
@@ -114,11 +114,13 @@
                 <div class="flex items-center gap-6 mt-6">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="vat_applicable" value="1" checked x-model="vatApplicable"
+                               @change="recalculateAll()"
                                class="rounded border-gray-300 text-green-600">
                         <span class="text-sm font-medium text-gray-700">Apply VAT (7.5%)</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="wht_applicable" value="1" x-model="whtApplicable"
+                               @change="recalculateAll()"
                                class="rounded border-gray-300 text-green-600">
                         <span class="text-sm font-medium text-gray-700">WHT Deductible</span>
                     </label>
@@ -127,6 +129,7 @@
                 <div x-show="whtApplicable">
                     <label class="block text-sm font-medium text-gray-700">WHT Rate (%)</label>
                     <select name="wht_rate" x-model="whtRate"
+                            @change="recalculateAll()"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                         <option value="5">5% (Services/Contracts)</option>
                         <option value="10">10% (Rent/Dividends)</option>
@@ -220,6 +223,11 @@
                 </dl>
 
                 <div class="mt-6 flex gap-3">
+                    <button type="button" @click="openPreview()"
+                            :disabled="previewing"
+                            class="flex-1 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                        <span x-text="previewing ? 'Loading…' : 'Preview'"></span>
+                    </button>
                     <button type="submit" name="status" value="draft"
                             class="flex-1 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50">
                         Save as Draft
@@ -232,6 +240,23 @@
             </div>
         </div>
     </form>
+
+    {{-- Preview Modal --}}
+    <template x-teleport="body">
+        <div x-show="showPreview" x-cloak
+             class="fixed inset-0 z-50 flex flex-col bg-black/60"
+             @keydown.escape.window="showPreview = false">
+            <div class="flex items-center justify-between bg-gray-900 px-5 py-3 shrink-0">
+                <span class="text-white text-sm font-medium">Invoice Preview</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-gray-400">This is a preview only — no data has been saved</span>
+                    <button type="button" @click="showPreview = false"
+                            class="text-gray-300 hover:text-white text-2xl leading-none">&times;</button>
+                </div>
+            </div>
+            <iframe x-ref="previewFrame" class="flex-1 w-full bg-white border-0"></iframe>
+        </div>
+    </template>
 </div>
 
 @push('scripts')
@@ -243,6 +268,39 @@ function invoiceForm() {
         whtRate: 5,
         items: [{ description: '', quantity: 1, unitPrice: 0, subtotal: 0, vatAmount: 0, total: 0 }],
         totals: { subtotal: 0, vatAmount: 0, whtAmount: 0, grandTotal: 0 },
+
+        // Preview
+        showPreview: false,
+        previewing: false,
+
+        async openPreview() {
+            this.previewing = true;
+            const fd = new FormData(this.$refs.mainForm);
+            // Merge Alpine state that isn't in hidden inputs
+            this.items.forEach((item, i) => {
+                fd.set(`items[${i}][quantity]`,   item.quantity);
+                fd.set(`items[${i}][unit_price]`, item.unitPrice);
+                fd.set(`items[${i}][subtotal]`,   item.subtotal);
+            });
+            // booleans need to be explicit
+            if (!this.vatApplicable) fd.delete('vat_applicable');
+            if (!this.whtApplicable) fd.delete('wht_applicable');
+
+            try {
+                const res = await fetch('{{ route('invoices.preview') }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    body: fd,
+                });
+                const data = await res.json();
+                this.$refs.previewFrame.srcdoc = data.html;
+                this.showPreview = true;
+            } catch (e) {
+                alert('Preview failed. Please try again.');
+            } finally {
+                this.previewing = false;
+            }
+        },
 
         // New customer modal
         showNewCustomer: false,
@@ -304,6 +362,14 @@ function invoiceForm() {
             item.subtotal  = Math.round(item.quantity * item.unitPrice * 100) / 100;
             item.vatAmount = this.vatApplicable ? Math.round(item.subtotal * 7.5) / 100 : 0;
             item.total     = item.subtotal + item.vatAmount;
+            this.calculateTotals();
+        },
+
+        recalculateAll() {
+            this.items.forEach(item => {
+                item.vatAmount = this.vatApplicable ? Math.round(item.subtotal * 7.5) / 100 : 0;
+                item.total     = item.subtotal + item.vatAmount;
+            });
             this.calculateTotals();
         },
 
