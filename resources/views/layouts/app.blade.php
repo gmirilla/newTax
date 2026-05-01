@@ -71,19 +71,21 @@
                 </div>
 
                 {{-- Navigation --}}
+                @php $navRole = $currentUser->role ?? 'staff'; @endphp
                 <nav class="mt-5 flex flex-1 flex-col divide-y divide-green-700 overflow-y-auto">
                     <div class="space-y-1 px-2">
                         <a href="{{ route('dashboard') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('dashboard') ? 'bg-green-900' : '' }}">
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('dashboard') || request()->routeIs('staff.dashboard') ? 'bg-green-900' : '' }}">
                             📊 Dashboard
+                        </a>
+                        @if(in_array($navRole, ['admin', 'accountant']))
+                        <a href="{{ route('quotes.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('quotes.*') ? 'bg-green-900' : '' }}">
+                            📄 Quotes / Proforma
                         </a>
                         <a href="{{ route('invoices.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('invoices.*') ? 'bg-green-900' : '' }}">
                             🧾 Invoices
-                        </a>
-                        <a href="{{ route('quotes.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('quotes.*') ? 'bg-green-900' : '' }}">
-                            📄 Quotes / Proforma
                         </a>
                         <a href="{{ route('transactions.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('transactions.*') ? 'bg-green-900' : '' }}">
@@ -93,8 +95,10 @@
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('transactions.expenses*') ? 'bg-green-900' : '' }}">
                             🧮 Expenses
                         </a>
+                        @endif
                     </div>
 
+                    @if(in_array($navRole, ['admin', 'accountant']))
                     <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Tax
                             Compliance</p>
@@ -155,13 +159,20 @@
                             📑 Tax Summary
                         </a>
                     </div>
+                    @endif
 
+                    @if($navRole === 'admin')
                     <div class="mt-2 pt-2 space-y-1 px-2">
+                        <a href="{{ route('team.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('team.*') ? 'bg-green-900' : '' }}">
+                            🧑‍🤝‍🧑 Team Members
+                        </a>
                         <a href="{{ route('billing') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('billing*') ? 'bg-green-900' : '' }}">
                             💳 Billing & Plan
                         </a>
                     </div>
+                    @endif
                 </nav>
             </div>
         </div>
@@ -188,9 +199,10 @@
                 <nav class="mt-5 flex flex-1 flex-col divide-y divide-green-700 overflow-y-auto">
                     <div class="space-y-1 px-2">
                         <a href="{{ route('dashboard') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('dashboard') ? 'bg-green-900' : '' }}">
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('dashboard') || request()->routeIs('staff.dashboard') ? 'bg-green-900' : '' }}">
                             📊 Dashboard
                         </a>
+                        @if(in_array($navRole, ['admin', 'accountant']))
                         <a href="{{ route('quotes.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('quotes.*') ? 'bg-green-900' : '' }}">
                             📄 Quotes / Proforma
@@ -207,8 +219,10 @@
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('transactions.expenses*') ? 'bg-green-900' : '' }}">
                             🧮 Expenses
                         </a>
+                        @endif
                     </div>
 
+                    @if(in_array($navRole, ['admin', 'accountant']))
                     <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Tax
                             Compliance</p>
@@ -269,13 +283,20 @@
                             📑 Tax Summary
                         </a>
                     </div>
+                    @endif
 
+                    @if($navRole === 'admin')
                     <div class="mt-2 pt-2 space-y-1 px-2">
+                        <a href="{{ route('team.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('team.*') ? 'bg-green-900' : '' }}">
+                            🧑‍🤝‍🧑 Team Members
+                        </a>
                         <a href="{{ route('billing') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('billing*') ? 'bg-green-900' : '' }}">
                             💳 Billing & Plan
                         </a>
                     </div>
+                    @endif
                 </nav>
 
                 {{-- ── User menu (dropdown) ── --}}
