@@ -25,32 +25,35 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow p-4 text-center border-t-4 border-gray-300">
-            <p class="text-2xl font-bold text-gray-500">{{ $stats['free_plan'] }}</p>
-            <p class="text-xs text-gray-500 mt-1">Free</p>
+    {{-- Per-plan breakdown (dynamic from DB) --}}
+    @php
+        $borderColours = ['free' => 'border-gray-300', 'growth' => 'border-blue-400', 'business' => 'border-green-500', 'enterprise' => 'border-purple-500'];
+        $textColours   = ['free' => 'text-gray-500',   'growth' => 'text-blue-600',   'business' => 'text-green-700',  'enterprise' => 'text-purple-700'];
+    @endphp
+    <div class="grid grid-cols-2 md:grid-cols-{{ max(2, count($stats['plan_breakdown'])) }} gap-4">
+        @forelse($stats['plan_breakdown'] as $slug => $count)
+        <div class="bg-white rounded-lg shadow p-4 text-center border-t-4 {{ $borderColours[$slug] ?? 'border-indigo-400' }}">
+            <p class="text-2xl font-bold {{ $textColours[$slug] ?? 'text-indigo-700' }}">{{ $count }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ ucfirst($slug) }}</p>
         </div>
-        <div class="bg-white rounded-lg shadow p-4 text-center border-t-4 border-blue-400">
-            <p class="text-2xl font-bold text-blue-600">{{ $stats['starter_plan'] }}</p>
-            <p class="text-xs text-gray-500 mt-1">Starter</p>
-        </div>
-        <div class="bg-white rounded-lg shadow p-4 text-center border-t-4 border-green-500">
-            <p class="text-2xl font-bold text-green-700">{{ $stats['pro_plan'] }}</p>
-            <p class="text-xs text-gray-500 mt-1">Pro</p>
-        </div>
-        <div class="bg-white rounded-lg shadow p-4 text-center border-t-4 border-purple-500">
-            <p class="text-2xl font-bold text-purple-700">{{ $stats['enterprise_plan'] }}</p>
-            <p class="text-xs text-gray-500 mt-1">Enterprise</p>
+        @empty
+        <div class="col-span-2 text-center text-sm text-gray-400 py-4">No active plans found.</div>
+        @endforelse
+        {{-- Trialing --}}
+        <div class="bg-white rounded-lg shadow p-4 text-center border-t-4 border-sky-400">
+            <p class="text-2xl font-bold text-sky-600">{{ $stats['trialing'] }}</p>
+            <p class="text-xs text-gray-500 mt-1">Trialing</p>
         </div>
     </div>
 
-    @if($stats['expired'] > 0 || $stats['expiring_soon'] > 0)
-    <div class="grid grid-cols-2 gap-4">
+    {{-- Subscription health alerts --}}
+    @if($stats['expired'] > 0 || $stats['expiring_soon'] > 0 || $stats['in_grace'] > 0)
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         @if($stats['expired'] > 0)
         <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
             <div>
                 <p class="text-2xl font-bold text-red-700">{{ $stats['expired'] }}</p>
-                <p class="text-sm text-red-600">Subscriptions Expired</p>
+                <p class="text-sm text-red-600">Expired (past grace)</p>
             </div>
             <form method="POST" action="{{ route('superadmin.bulk-reminder') }}">
                 @csrf
@@ -59,6 +62,18 @@
                     Send All Reminders
                 </button>
             </form>
+        </div>
+        @endif
+        @if($stats['in_grace'] > 0)
+        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 flex items-center justify-between">
+            <div>
+                <p class="text-2xl font-bold text-orange-700">{{ $stats['in_grace'] }}</p>
+                <p class="text-sm text-orange-600">In Grace Period</p>
+            </div>
+            <a href="{{ route('superadmin.companies', ['expiry' => 'expired']) }}"
+               class="px-3 py-1.5 bg-orange-600 text-white text-xs rounded-md hover:bg-orange-700">
+                View
+            </a>
         </div>
         @endif
         @if($stats['expiring_soon'] > 0)
