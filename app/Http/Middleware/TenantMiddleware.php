@@ -47,8 +47,9 @@ class TenantMiddleware
         // Bind tenant to the container for dependency injection
         app()->instance('currentTenant', $tenant);
 
-        // Share tenant with all views
+        // Share tenant and authenticated user with all views
         view()->share('currentTenant', $tenant);
+        view()->share('currentUser', $user);
 
         return $next($request);
     }
