@@ -24,3 +24,8 @@ Schedule::command('invoices:mark-overdue')
     ->dailyAt('00:05')
     ->withoutOverlapping()
     ->description('Mark past-due invoices as overdue');
+
+Schedule::command('subscriptions:downgrade-expired-trials')
+    ->dailyAt('00:15')
+    ->withoutOverlapping()
+    ->description('Downgrade expired trial tenants to the Free plan');

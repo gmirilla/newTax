@@ -3,7 +3,7 @@
 @section('page-title', $tenant->name)
 
 @section('content')
-<div class="space-y-6" x-data="{ showReminder: false }">
+<div class="space-y-6" x-data="{ showReminder: false, showExtendTrial: false }">
 
     <div class="flex items-center justify-between">
         <a href="{{ route('superadmin.companies') }}" class="text-sm text-gray-500 hover:text-gray-700">← All Companies</a>
@@ -25,6 +25,10 @@
                     {{ $tenant->is_active ? 'Deactivate' : 'Activate' }}
                 </button>
             </form>
+            <button type="button" @click="showExtendTrial = true"
+                    class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Extend Trial
+            </button>
             <button type="button" @click="showReminder = true"
                     class="px-3 py-1.5 text-xs bg-yellow-500 text-white rounded-md hover:bg-yellow-600">
                 Send Reminder
@@ -96,27 +100,48 @@
         {{-- Subscription card --}}
         <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h3 class="text-sm font-semibold text-gray-700">Subscription</h3>
-            <div class="text-center">
-                <span class="text-3xl font-bold
-                    {{ $tenant->subscription_plan === 'free'       ? 'text-gray-500' :
-                       ($tenant->subscription_plan === 'starter'   ? 'text-blue-600' :
-                       ($tenant->subscription_plan === 'pro'       ? 'text-green-700' :
-                                                                     'text-purple-700')) }}">
-                    {{ ucfirst($tenant->subscription_plan) }}
+
+            {{-- Current plan display --}}
+            <div class="text-center py-2">
+                @if($tenant->plan)
+                    <div class="text-2xl font-bold text-indigo-600">{{ $tenant->plan->name }}</div>
+                    <div class="text-sm text-gray-400">{{ $tenant->plan->priceLabel() }}</div>
+                @else
+                    <div class="text-2xl font-bold text-gray-400">No Plan</div>
+                @endif
+
+                @php
+                    $inGrace      = $tenant->isInGracePeriod();
+                    $displayStatus = $inGrace ? 'grace' : ($tenant->subscription_status ?? 'none');
+                    $statusColour = match($displayStatus) {
+                        'active'    => 'bg-green-100 text-green-700',
+                        'trialing'  => 'bg-blue-100 text-blue-700',
+                        'suspended' => 'bg-yellow-100 text-yellow-700',
+                        'cancelled' => 'bg-red-100 text-red-600',
+                        'grace'     => 'bg-orange-100 text-orange-700',
+                        default     => 'bg-gray-100 text-gray-500',
+                    };
+                @endphp
+                <span class="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full {{ $statusColour }}">
+                    {{ ucfirst($displayStatus) }}
+                    @if($inGrace)({{ $tenant->graceDaysLeft() }}d left)@endif
                 </span>
+
                 @if($tenant->subscription_expires_at)
                     @php $expired = $tenant->subscription_expires_at->isPast(); @endphp
                     <p class="text-sm mt-1 {{ $expired ? 'text-red-600 font-semibold' : 'text-gray-500' }}">
                         {{ $expired ? 'Expired' : 'Expires' }}: {{ $tenant->subscription_expires_at->format('d M Y') }}
+                        @if(!$expired)<span class="text-xs text-gray-400">({{ $tenant->subscription_expires_at->diffForHumans() }})</span>@endif
                     </p>
-                    @if(!$expired)
-                    <p class="text-xs text-gray-400">{{ $tenant->subscription_expires_at->diffForHumans() }}</p>
-                    @endif
-                @else
-                    <p class="text-xs text-gray-400 mt-1">No expiry set</p>
+                @endif
+                @if($tenant->trial_ends_at)
+                    @php $trialExpired = $tenant->trial_ends_at->isPast(); @endphp
+                    <p class="text-xs mt-1 {{ $trialExpired ? 'text-red-500' : 'text-blue-500' }}">
+                        Trial {{ $trialExpired ? 'ended' : 'ends' }}: {{ $tenant->trial_ends_at->format('d M Y') }}
+                    </p>
                 @endif
                 @if($tenant->reminder_sent_at)
-                <p class="text-xs text-gray-400 mt-2">Last reminder: {{ $tenant->reminder_sent_at->diffForHumans() }}</p>
+                    <p class="text-xs text-gray-400 mt-1">Last reminder: {{ $tenant->reminder_sent_at->diffForHumans() }}</p>
                 @endif
             </div>
 
@@ -126,31 +151,40 @@
                 @method('PATCH')
                 <div>
                     <label class="block text-xs font-medium text-gray-600">Plan</label>
-                    <select name="subscription_plan"
+                    <select name="plan_id" required
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
-                        @foreach(['free','starter','pro','enterprise'] as $plan)
-                        <option value="{{ $plan }}" {{ $tenant->subscription_plan === $plan ? 'selected' : '' }}>
-                            {{ ucfirst($plan) }}
+                        <option value="">— No Plan —</option>
+                        @foreach($plans as $p)
+                        <option value="{{ $p->id }}" {{ $tenant->plan_id == $p->id ? 'selected' : '' }}>
+                            {{ $p->name }} — {{ $p->priceLabel() }}
+                            @if(!$p->is_active) (inactive)@endif
                         </option>
                         @endforeach
                     </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-600">Expiry Date</label>
-                    <input type="date" name="subscription_expires_at"
-                           value="{{ $tenant->subscription_expires_at?->toDateString() }}"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-600">Status</label>
                     <select name="subscription_status"
                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
-                        @foreach(['active','suspended','cancelled'] as $s)
-                        <option value="{{ $s }}" {{ ($tenant->subscription_status ?? 'active') === $s ? 'selected' : '' }}>
+                        @foreach(['active','trialing','suspended','cancelled'] as $s)
+                        <option value="{{ $s }}" {{ ($tenant->subscription_status ?? 'trialing') === $s ? 'selected' : '' }}>
                             {{ ucfirst($s) }}
                         </option>
                         @endforeach
                     </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600">Subscription Expires</label>
+                    <input type="date" name="subscription_expires_at"
+                           value="{{ $tenant->subscription_expires_at?->toDateString() }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                    <p class="text-xs text-gray-400 mt-0.5">Leave blank for no expiry (perpetual).</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600">Trial Ends</label>
+                    <input type="date" name="trial_ends_at"
+                           value="{{ $tenant->trial_ends_at?->toDateString() }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                 </div>
                 <button type="submit"
                         class="w-full py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700">
@@ -219,6 +253,37 @@
         </ul>
     </div>
     @endif
+
+    {{-- Extend Trial Modal --}}
+    <div x-show="showExtendTrial" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+         @click.self="showExtendTrial = false" @keydown.escape.window="showExtendTrial = false">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-semibold">Extend Trial</h3>
+                <button type="button" @click="showExtendTrial = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <p class="text-sm text-gray-500">
+                Current trial ends: <strong>{{ $tenant->trial_ends_at?->format('d M Y') ?? 'Not on trial' }}</strong>
+            </p>
+            <form method="POST" action="{{ route('superadmin.companies.extend-trial', $tenant) }}" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block text-xs font-medium text-gray-700">Days to extend</label>
+                    <input type="number" name="days" value="14" min="1" max="90"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" @click="showExtendTrial = false"
+                            class="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                    <button type="submit"
+                            class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Extend Trial
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     {{-- Send Reminder Modal --}}
     <div x-show="showReminder" x-cloak

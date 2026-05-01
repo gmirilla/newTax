@@ -38,7 +38,7 @@ class TenantMiddleware
             abort(403, 'Your account has been deactivated.');
         }
 
-        $tenant = $user->tenant;
+        $tenant = $user->load('tenant.plan')->tenant;
 
         if (!$tenant || !$tenant->is_active) {
             abort(403, 'Your company account is inactive. Please contact support.');

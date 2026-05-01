@@ -13,11 +13,13 @@ use App\Models\TenantFirsCredential;
 use App\Repositories\InvoiceRepository;
 use App\Services\InvoiceService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
-use Maatwebsite\Excel\Facades\Excel;
 
 class InvoiceController extends Controller
 {
@@ -51,15 +53,81 @@ class InvoiceController extends Controller
 
     public function store(InvoiceRequest $request): RedirectResponse
     {
-        $tenant  = $request->user()->tenant;
+        $tenant = $request->user()->tenant;
+
+        if (!$tenant->withinLimit('invoices_per_month')) {
+            $limit = $tenant->plan?->limit('invoices_per_month') ?? 5;
+            return back()
+                ->withInput()
+                ->with('error', "You have reached your plan limit of {$limit} invoices this month. Upgrade your plan to create more.");
+        }
+
         $invoice = $this->invoiceService->create(
             $tenant,
             $request->validated(),
             $request->input('items', [])
         );
 
+        $tenant->invalidateLimitCache('invoices_per_month');
+
         return redirect()->route('invoices.show', $invoice)
             ->with('success', "Invoice {$invoice->invoice_number} created successfully.");
+    }
+
+    public function preview(Request $request): JsonResponse
+    {
+        $tenant   = $request->user()->tenant;
+        $customer = Customer::where('tenant_id', $tenant->id)
+            ->find($request->input('customer_id'));
+
+        $items = collect($request->input('items', []))->map(function ($item) use ($request) {
+            $subtotal   = round(($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0), 2);
+            $vatAmount  = ($request->boolean('vat_applicable') && ($item['vat_applicable'] ?? true))
+                ? round($subtotal * 7.5 / 100, 2) : 0;
+            return (object) [
+                'description'   => $item['description'] ?? '',
+                'quantity'       => (float) ($item['quantity'] ?? 0),
+                'unit_price'     => (float) ($item['unit_price'] ?? 0),
+                'subtotal'       => $subtotal,
+                'vat_applicable' => (bool) ($item['vat_applicable'] ?? true),
+                'vat_amount'     => $vatAmount,
+                'total'          => $subtotal + $vatAmount,
+            ];
+        });
+
+        $subtotal  = $items->sum('subtotal');
+        $vatAmount = $request->boolean('vat_applicable') ? $items->sum('vat_amount') : 0;
+        $whtRate   = (float) ($request->input('wht_rate', 5));
+        $whtAmount = $request->boolean('wht_applicable') ? round($subtotal * $whtRate / 100, 2) : 0;
+        $discount  = (float) ($request->input('discount_amount', 0));
+        $total     = $subtotal + $vatAmount - $whtAmount - $discount;
+
+        $invoice = (object) [
+            'tenant'          => $tenant,
+            'customer'        => $customer ?? (object)['name'=>'—','address'=>'','city'=>'','state'=>'','email'=>'','tin'=>''],
+            'invoice_number'  => 'PREVIEW',
+            'invoice_date'    => Carbon::parse($request->input('invoice_date', today())),
+            'due_date'        => Carbon::parse($request->input('due_date', today()->addDays(30))),
+            'reference'       => $request->input('reference'),
+            'status'          => 'draft',
+            'items'           => $items,
+            'vat_applicable'  => $request->boolean('vat_applicable'),
+            'wht_applicable'  => $request->boolean('wht_applicable'),
+            'wht_rate'        => $whtRate,
+            'subtotal'        => $subtotal,
+            'vat_amount'      => $vatAmount,
+            'wht_amount'      => $whtAmount,
+            'discount_amount' => $discount,
+            'total_amount'    => $total,
+            'amount_paid'     => 0,
+            'balance_due'     => $total,
+            'notes'           => $request->input('notes'),
+            'terms'           => $request->input('terms'),
+        ];
+
+        $html = view('invoices.pdf', compact('invoice'))->render();
+
+        return response()->json(['html' => $html]);
     }
 
     public function show(Invoice $invoice): View

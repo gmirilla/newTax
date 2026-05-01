@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -34,10 +35,26 @@ class TenancyService
                 'annual_turnover' => $tenantData['annual_turnover'] ?? 0,
                 'currency'        => 'NGN',
                 'subscription_plan' => 'free',
+                'subscription_status' => 'active',
             ]);
 
             // Determine tax category based on turnover
             $tenant->updateTaxCategory();
+
+            // Assign Growth trial plan if one exists with trial_days > 0
+            $trialPlan = Plan::where('is_active', true)
+                ->where('trial_days', '>', 0)
+                ->orderBy('sort_order')
+                ->first();
+
+            if ($trialPlan) {
+                $tenant->assignPlan(
+                    $trialPlan,
+                    'trialing',
+                    null,
+                    now()->addDays($trialPlan->trial_days)
+                );
+            }
 
             // Create admin user
             $admin = User::create([

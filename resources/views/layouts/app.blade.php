@@ -39,23 +39,16 @@
         {{-- Mobile sidebar backdrop --}}
         <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"
             class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden"
-            x-transition:enter="transition-opacity ease-linear duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition-opacity ease-linear duration-300"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0">
+            x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300"
+            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
         </div>
 
         {{-- Mobile sidebar panel --}}
-        <div x-show="sidebarOpen" x-cloak
-            class="fixed inset-y-0 left-0 z-50 w-64 flex flex-col md:hidden"
-            x-transition:enter="transition ease-in-out duration-300"
-            x-transition:enter-start="-translate-x-full"
-            x-transition:enter-end="translate-x-0"
-            x-transition:leave="transition ease-in-out duration-300"
-            x-transition:leave-start="translate-x-0"
-            x-transition:leave-end="-translate-x-full">
+        <div x-show="sidebarOpen" x-cloak class="fixed inset-y-0 left-0 z-50 w-64 flex flex-col md:hidden"
+            x-transition:enter="transition ease-in-out duration-300" x-transition:enter-start="-translate-x-full"
+            x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300"
+            x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
             <div class="flex flex-grow flex-col overflow-y-auto bg-naija-green pt-5 pb-4">
 
                 {{-- Close button --}}
@@ -71,7 +64,8 @@
                 {{-- Company Name --}}
                 <div class="px-4">
                     <p class="text-green-200 text-sm truncate">{{ $currentTenant->name ?? '' }}</p>
-                    <span class="inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs text-green-100 mt-1">
+                    <span
+                        class="inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs text-green-100 mt-1">
                         {{ strtoupper($currentTenant->tax_category ?? 'SME') }} Company
                     </span>
                 </div>
@@ -102,7 +96,8 @@
                     </div>
 
                     <div class="mt-2 pt-2 space-y-1 px-2">
-                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Tax Compliance</p>
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Tax
+                            Compliance</p>
                         <a href="{{ route('tax.dashboard') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('tax.*') ? 'bg-green-900' : '' }}">
                             🏛️ Tax Dashboard
@@ -122,14 +117,18 @@
                     </div>
 
                     <div class="mt-2 pt-2 space-y-1 px-2">
-                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">HR & Payroll</p>
-                        <a href="{{ route('payroll.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('payroll.*') ? 'bg-green-900' : '' }}">
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">HR & Payroll
+                        </p>
+                        @php $canPayroll = $currentTenant->planAllows('payroll'); @endphp
+                        <a href="{{ $canPayroll ? route('payroll.index') : route('billing').'?upgrade_feature=payroll' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canPayroll ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('payroll.*') ? 'bg-green-900' : '' }}">
                             👥 Payroll & PAYE
+                            @unless($canPayroll)<span class="ml-auto text-xs">🔒</span>@endunless
                         </a>
-                        <a href="{{ route('payroll.employees') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('payroll.employees*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canPayroll ? route('payroll.employees') : route('billing').'?upgrade_feature=payroll' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canPayroll ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('payroll.employees*') ? 'bg-green-900' : '' }}">
                             🧑‍💼 Employees
+                            @unless($canPayroll)<span class="ml-auto text-xs">🔒</span>@endunless
                         </a>
                     </div>
 
@@ -154,6 +153,13 @@
                         <a href="{{ route('reports.tax-summary') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.tax-summary*') ? 'bg-green-900' : '' }}">
                             📑 Tax Summary
+                        </a>
+                    </div>
+
+                    <div class="mt-2 pt-2 space-y-1 px-2">
+                        <a href="{{ route('billing') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('billing*') ? 'bg-green-900' : '' }}">
+                            💳 Billing & Plan
                         </a>
                     </div>
                 </nav>
@@ -172,7 +178,8 @@
                 {{-- Company Name --}}
                 <div class="mt-2 px-4">
                     <p class="text-green-200 text-sm truncate">{{ $currentTenant->name ?? '' }}</p>
-                    <span class="inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs text-green-100 mt-1">
+                    <span
+                        class="inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs text-green-100 mt-1">
                         {{ strtoupper($currentTenant->tax_category ?? 'SME') }} Company
                     </span>
                 </div>
@@ -184,13 +191,13 @@
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('dashboard') ? 'bg-green-900' : '' }}">
                             📊 Dashboard
                         </a>
-                        <a href="{{ route('invoices.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('invoices.*') ? 'bg-green-900' : '' }}">
-                            🧾 Invoices
-                        </a>
                         <a href="{{ route('quotes.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('quotes.*') ? 'bg-green-900' : '' }}">
                             📄 Quotes / Proforma
+                        </a>
+                        <a href="{{ route('invoices.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('invoices.*') ? 'bg-green-900' : '' }}">
+                            🧾 Invoices
                         </a>
                         <a href="{{ route('transactions.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('transactions.*') ? 'bg-green-900' : '' }}">
@@ -203,7 +210,8 @@
                     </div>
 
                     <div class="mt-2 pt-2 space-y-1 px-2">
-                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Tax Compliance</p>
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Tax
+                            Compliance</p>
                         <a href="{{ route('tax.dashboard') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('tax.*') ? 'bg-green-900' : '' }}">
                             🏛️ Tax Dashboard
@@ -223,14 +231,18 @@
                     </div>
 
                     <div class="mt-2 pt-2 space-y-1 px-2">
-                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">HR & Payroll</p>
-                        <a href="{{ route('payroll.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('payroll.*') ? 'bg-green-900' : '' }}">
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">HR & Payroll
+                        </p>
+                        @php $canPayroll = $currentTenant->planAllows('payroll'); @endphp
+                        <a href="{{ $canPayroll ? route('payroll.index') : route('billing').'?upgrade_feature=payroll' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canPayroll ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('payroll.*') ? 'bg-green-900' : '' }}">
                             👥 Payroll & PAYE
+                            @unless($canPayroll)<span class="ml-auto text-xs">🔒</span>@endunless
                         </a>
-                        <a href="{{ route('payroll.employees') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('payroll.employees*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canPayroll ? route('payroll.employees') : route('billing').'?upgrade_feature=payroll' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canPayroll ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('payroll.employees*') ? 'bg-green-900' : '' }}">
                             🧑‍💼 Employees
+                            @unless($canPayroll)<span class="ml-auto text-xs">🔒</span>@endunless
                         </a>
                     </div>
 
@@ -257,6 +269,13 @@
                             📑 Tax Summary
                         </a>
                     </div>
+
+                    <div class="mt-2 pt-2 space-y-1 px-2">
+                        <a href="{{ route('billing') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('billing*') ? 'bg-green-900' : '' }}">
+                            💳 Billing & Plan
+                        </a>
+                    </div>
                 </nav>
 
                 {{-- ── User menu (dropdown) ── --}}
@@ -267,27 +286,28 @@
                     <button type="button" @click="open = !open"
                         class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-green-700 transition-colors focus:outline-none">
                         {{-- Avatar --}}
-                        <span class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-green-900">
+                        <span
+                            class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-green-900">
                             <span class="text-sm font-medium leading-none text-white">
                                 {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                             </span>
                         </span>
                         {{-- Name + role --}}
                         <span class="flex-1 min-w-0">
-                            <span class="block text-sm font-medium text-white truncate">{{ auth()->user()->name }}</span>
+                            <span
+                                class="block text-sm font-medium text-white truncate">{{ auth()->user()->name }}</span>
                             <span class="block text-xs text-green-300 capitalize">{{ auth()->user()->role }}</span>
                         </span>
                         {{-- Chevron --}}
                         <svg class="h-4 w-4 text-green-300 flex-shrink-0 transition-transform duration-150"
-                            :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                            stroke-width="2">
+                            :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
 
                     {{-- Dropdown panel — slides up from the trigger --}}
-                    <div x-show="open" x-cloak
-                        x-transition:enter="transition ease-out duration-100"
+                    <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-100"
                         x-transition:enter-start="opacity-0 -translate-y-1"
                         x-transition:enter-end="opacity-100 translate-y-0"
                         x-transition:leave="transition ease-in duration-75"
@@ -309,25 +329,38 @@
                                 class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors {{ request()->routeIs('settings.company*') ? 'bg-gray-50 font-medium' : '' }}">
                                 <span class="flex-shrink-0 text-base">🏢</span>
                                 <span>Company Settings</span>
-                                <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Admin</span>
+                                <span
+                                    class="ml-auto text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Admin</span>
                             </a>
 
                             {{-- FIRS Configuration --}}
                             @php
-                                $firsActive = \App\Models\TenantFirsCredential::where('tenant_id', auth()->user()->tenant_id)
+                                $firsActive = \App\Models\TenantFirsCredential::where(
+                                    'tenant_id',
+                                    auth()->user()->tenant_id,
+                                )
                                     ->where('is_active', true)
                                     ->exists();
+                                $canFirs = $currentTenant->planAllows('firs');
                             @endphp
-                            <a href="{{ route('settings.firs') }}"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
+                            <a href="{{ $canFirs ? route('settings.firs') : route('billing').'?upgrade_feature=firs' }}"
+                                class="flex items-center gap-3 px-4 py-3 text-sm {{ $canFirs ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 hover:bg-gray-50 opacity-70' }} transition-colors {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
                                 <span class="flex-shrink-0 text-base">⬆</span>
                                 <div class="flex-1 min-w-0">
                                     <span class="block">FIRS e-Invoicing</span>
+                                    @if($canFirs)
                                     <span class="block text-xs {{ $firsActive ? 'text-green-600' : 'text-gray-400' }}">
                                         {{ $firsActive ? '● Configured' : '○ Not configured' }}
                                     </span>
+                                    @else
+                                    <span class="block text-xs text-amber-500">Upgrade required</span>
+                                    @endif
                                 </div>
+                                @if($canFirs)
                                 <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Admin</span>
+                                @else
+                                <span class="ml-auto text-xs">🔒</span>
+                                @endif
                             </a>
                         @endif
 
@@ -358,7 +391,8 @@
                     {{-- Hamburger (mobile only) --}}
                     <button type="button" @click="sidebarOpen = true"
                         class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
@@ -368,7 +402,8 @@
                     <div class="flex items-center gap-4">
                         {{-- VAT alert badge --}}
                         @php $nextVatDue = \App\Services\VatService::VAT_FILING_DAY; @endphp
-                        <span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+                        <span
+                            class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
                             VAT Due: {{ now()->setDay($nextVatDue)->format('M d') }}
                         </span>
                         <span class="hidden sm:block text-sm text-gray-500">₦ NGN</span>
@@ -380,8 +415,7 @@
                                 {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                             </button>
 
-                            <div x-show="open" x-cloak
-                                x-transition:enter="transition ease-out duration-100"
+                            <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-100"
                                 x-transition:enter-start="opacity-0 scale-95"
                                 x-transition:enter-end="opacity-100 scale-100"
                                 x-transition:leave="transition ease-in duration-75"
@@ -391,9 +425,11 @@
 
                                 {{-- User info header --}}
                                 <div class="px-4 py-3 border-b border-gray-100">
-                                    <p class="text-sm font-medium text-gray-900 truncate">{{ auth()->user()->name }}</p>
+                                    <p class="text-sm font-medium text-gray-900 truncate">{{ auth()->user()->name }}
+                                    </p>
                                     <p class="text-xs text-gray-500 truncate">{{ auth()->user()->email }}</p>
-                                    <span class="inline-block mt-1 text-xs capitalize bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
+                                    <span
+                                        class="inline-block mt-1 text-xs capitalize bg-green-100 text-green-800 px-1.5 py-0.5 rounded">
                                         {{ auth()->user()->role }}
                                     </span>
                                 </div>
@@ -413,11 +449,16 @@
                                         <span class="text-xs bg-gray-100 text-gray-500 px-1 rounded">Admin</span>
                                     </a>
 
-                                    <a href="{{ route('settings.firs') }}"
-                                        class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
+                                    @php $canFirsTopbar = $currentTenant->planAllows('firs'); @endphp
+                                    <a href="{{ $canFirsTopbar ? route('settings.firs') : route('billing').'?upgrade_feature=firs' }}"
+                                        class="flex items-center gap-3 px-4 py-2.5 text-sm {{ $canFirsTopbar ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 hover:bg-gray-50 opacity-70' }} {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
                                         <span>⬆</span>
                                         <span class="flex-1">FIRS e-Invoicing</span>
+                                        @if($canFirsTopbar)
                                         <span class="text-xs bg-gray-100 text-gray-500 px-1 rounded">Admin</span>
+                                        @else
+                                        <span class="text-xs">🔒</span>
+                                        @endif
                                     </a>
                                 @endif
 
@@ -436,6 +477,61 @@
                     </div>
                 </div>
             </div>
+
+            {{-- ── Impersonation Banner ── --}}
+            @if(session()->has('superadmin_id'))
+            <div class="bg-orange-500 text-white text-sm font-medium px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                <span>⚠️ SuperAdmin mode — impersonating <strong>{{ $currentTenant->name }}</strong></span>
+                <form method="POST" action="{{ route('superadmin.exit-impersonate') }}">
+                    @csrf
+                    <button type="submit"
+                        class="bg-white text-orange-700 text-xs font-semibold px-3 py-1 rounded hover:bg-orange-50">
+                        Exit Impersonation
+                    </button>
+                </form>
+            </div>
+            @endif
+
+            {{-- ── Trial / Subscription Status Banner ── --}}
+            @if(isset($currentTenant))
+                @if($currentTenant->isInGracePeriod())
+                @php $graceDays = $currentTenant->graceDaysLeft(); @endphp
+                <div class="bg-orange-500 text-white text-sm font-medium px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                    <span>⚠️ Your subscription expired — <strong>{{ $graceDays }} {{ $graceDays === 1 ? 'day' : 'days' }}</strong> of grace period remaining. Renew to avoid losing access.</span>
+                    <a href="{{ route('billing') }}"
+                       class="bg-white text-orange-700 text-xs font-semibold px-3 py-1 rounded hover:bg-orange-50 whitespace-nowrap">
+                        Renew Now
+                    </a>
+                </div>
+                @elseif($currentTenant->trialExpired())
+                <div class="bg-red-600 text-white text-sm font-medium px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                    <span>🔒 Your free trial has ended — you've been moved to the Free plan. Upgrade to restore full access.</span>
+                    <a href="{{ route('billing') }}"
+                       class="bg-white text-red-700 text-xs font-semibold px-3 py-1 rounded hover:bg-red-50 whitespace-nowrap">
+                        Upgrade Now
+                    </a>
+                </div>
+                @elseif($currentTenant->isOnTrial())
+                @php $trialDaysLeft = (int) now()->diffInDays($currentTenant->trial_ends_at); @endphp
+                @if($trialDaysLeft <= 3)
+                <div class="bg-amber-500 text-white text-sm font-medium px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                    <span>⏰ Trial ends in <strong>{{ $trialDaysLeft }} {{ $trialDaysLeft === 1 ? 'day' : 'days' }}</strong> ({{ $currentTenant->trial_ends_at->format('d M Y') }}). Upgrade to keep access.</span>
+                    <a href="{{ route('billing') }}"
+                       class="bg-white text-amber-700 text-xs font-semibold px-3 py-1 rounded hover:bg-amber-50 whitespace-nowrap">
+                        Upgrade Now
+                    </a>
+                </div>
+                @else
+                <div class="bg-blue-600 text-white text-sm font-medium px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                    <span>🎁 Free trial — <strong>{{ $trialDaysLeft }} days</strong> remaining (ends {{ $currentTenant->trial_ends_at->format('d M Y') }})</span>
+                    <a href="{{ route('billing') }}"
+                       class="bg-white text-blue-700 text-xs font-semibold px-3 py-1 rounded hover:bg-blue-50 whitespace-nowrap">
+                        View Plans
+                    </a>
+                </div>
+                @endif
+            @endif
+            @endif
 
             {{-- Flash messages --}}
             <div class="px-4 pt-4 md:px-6">

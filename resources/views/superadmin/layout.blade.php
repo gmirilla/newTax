@@ -40,6 +40,7 @@
             @endphp
             {!! $navItem('superadmin.dashboard', 'Dashboard', '🏠') !!}
             {!! $navItem('superadmin.companies', 'Companies', '🏢') !!}
+            {!! $navItem('superadmin.plans.index', 'Plans', '💳') !!}
 
             <div class="pt-4 mt-4 border-t border-gray-700">
                 <p class="px-3 text-xs uppercase tracking-widest text-gray-500 mb-2">Account</p>
