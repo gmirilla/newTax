@@ -57,19 +57,32 @@ class BillingController extends Controller
             return redirect()->route('billing')->with('error', 'This plan is not available for checkout.');
         }
 
+        $cycle = in_array($request->query('cycle'), ['monthly', 'yearly']) ? $request->query('cycle') : 'monthly';
+
+        if ($cycle === 'yearly' && !$plan->price_yearly) {
+            return redirect()->route('billing')->with('error', 'Annual billing is not available for this plan.');
+        }
+
         $tenant = $request->user()->tenant;
         $tenant->loadMissing('plan');
 
-        if ($tenant->plan_id === $plan->id && $tenant->subscriptionActive() && !$tenant->isOnTrial()) {
+        $samePlanSameCycle = $tenant->plan_id === $plan->id
+            && $tenant->billing_cycle === $cycle
+            && $tenant->subscriptionActive()
+            && !$tenant->isOnTrial();
+
+        if ($samePlanSameCycle) {
             return redirect()->route('billing')->with('error', 'You are already subscribed to this plan.');
         }
 
-        $reference = 'NB-' . Str::upper(Str::random(16));
-
-        // Proration: when upgrading from an active paid subscription, charge only the
-        // price difference for the days remaining in the current billing period.
+        $reference   = 'NB-' . Str::upper(Str::random(16));
         $currentPlan = $tenant->plan;
-        $isUpgrade   = $currentPlan
+
+        // Proration applies only when upgrading within the same billing cycle.
+        // Switching cycles (monthly ↔ yearly) is treated as a fresh subscription.
+        $sameCycle = $tenant->billing_cycle === $cycle;
+        $isUpgrade = $sameCycle
+            && $currentPlan
             && $currentPlan->price_monthly > 0
             && $plan->price_monthly > $currentPlan->price_monthly
             && $tenant->subscriptionActive()
@@ -78,10 +91,11 @@ class BillingController extends Controller
 
         if ($isUpgrade) {
             $daysLeft  = max(0, (int) now()->diffInDays($tenant->subscription_expires_at));
-            $priceDiff = $plan->price_monthly - $currentPlan->price_monthly;
-            $amount    = max(100, round($priceDiff / 31 * $daysLeft, 2)); // min ₦100
+            $divisor   = $cycle === 'yearly' ? 365 : 31;
+            $priceDiff = $plan->priceForCycle($cycle) - $currentPlan->priceForCycle($cycle);
+            $amount    = max(100, round($priceDiff / $divisor * $daysLeft, 2));
         } else {
-            $amount = $plan->price_monthly;
+            $amount = $plan->priceForCycle($cycle);
         }
 
         $payload = [
@@ -91,17 +105,19 @@ class BillingController extends Controller
             'callback_url' => route('billing.callback'),
             'channels'     => ['card', 'bank', 'ussd', 'bank_transfer'],
             'metadata'     => [
-                'tenant_id'   => $tenant->id,
-                'plan_id'     => $plan->id,
-                'plan_name'   => $plan->name,
-                'is_upgrade'  => $isUpgrade,
-                'keep_expiry' => $isUpgrade ? $tenant->subscription_expires_at?->toISOString() : null,
+                'tenant_id'     => $tenant->id,
+                'plan_id'       => $plan->id,
+                'plan_name'     => $plan->name,
+                'billing_cycle' => $cycle,
+                'is_upgrade'    => $isUpgrade,
+                'keep_expiry'   => $isUpgrade ? $tenant->subscription_expires_at?->toISOString() : null,
             ],
         ];
 
-        // Paystack plan code creates a recurring subscription; omit for one-off payment
-        if ($plan->paystack_plan_code) {
-            $payload['plan'] = $plan->paystack_plan_code;
+        // Attach Paystack plan code for recurring billing (monthly or yearly)
+        $planCode = $plan->planCodeForCycle($cycle);
+        if ($planCode) {
+            $payload['plan'] = $planCode;
         }
 
         $response = $this->paystackService->initializeTransaction($payload);
@@ -147,27 +163,29 @@ class BillingController extends Controller
                 ->with('error', 'Plan not found. Contact support with reference: ' . $reference);
         }
 
-        // Upgrades keep the current expiry (proration covers the gap to upgrade immediately)
-        // Fresh subscriptions get 31 days from now
+        $billingCycle = in_array($data['metadata']['billing_cycle'] ?? '', ['monthly', 'yearly'])
+            ? $data['metadata']['billing_cycle']
+            : 'monthly';
+
+        // Upgrades keep the current expiry (proration covers the gap to upgrade immediately).
+        // Fresh subscriptions get 31 days (monthly) or 365 days (annual) from now.
         $isUpgrade  = (bool) ($data['metadata']['is_upgrade'] ?? false);
         $keepExpiry = $data['metadata']['keep_expiry'] ?? null;
         $expiresAt  = ($isUpgrade && $keepExpiry)
             ? \Carbon\Carbon::parse($keepExpiry)
-            : now()->addDays(31);
+            : ($billingCycle === 'yearly' ? now()->addDays(365) : now()->addDays(31));
 
         $tenant->assignPlan($plan, 'active', $expiresAt);
 
-        // Persist Paystack identifiers for webhook correlation and cancellation
-        $updates = [];
+        // Persist Paystack identifiers and billing cycle
+        $updates = ['billing_cycle' => $billingCycle];
         if ($code = $data['customer']['customer_code'] ?? null) {
             $updates['paystack_customer_id'] = $code;
         }
         if ($sub = $data['plan_object']['subscriptions'][0]['subscription_code'] ?? null) {
             $updates['paystack_subscription_code'] = $sub;
         }
-        if ($updates) {
-            $tenant->update($updates);
-        }
+        $tenant->update($updates);
 
         // Log the payment locally
         $tenant->subscriptionPayments()->create([
@@ -176,6 +194,7 @@ class BillingController extends Controller
             'amount'             => ($data['amount'] ?? 0) / 100,
             'currency'           => $data['currency'] ?? 'NGN',
             'type'               => $isUpgrade ? 'upgrade_proration' : 'subscription',
+            'billing_cycle'      => $billingCycle,
             'status'             => 'success',
             'paid_at'            => now(),
         ]);

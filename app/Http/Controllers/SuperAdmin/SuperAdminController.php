@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Exports\SubscriptionTransactionExport;
 use App\Http\Controllers\Controller;
 use App\Models\Plan;
+use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\View\View;
 
 class SuperAdminController extends Controller
@@ -114,6 +118,94 @@ class SuperAdminController extends Controller
         $plans = Plan::where('is_active', true)->orderBy('sort_order')->orderBy('price_monthly')->get();
 
         return view('superadmin.companies.show', compact('tenant', 'activityLog', 'plans'));
+    }
+
+    public function transactions(Request $request): View
+    {
+        $query = $this->buildTransactionQuery($request);
+
+        $payments = $query->with(['tenant', 'plan'])
+            ->orderByDesc('paid_at')
+            ->paginate(25)
+            ->withQueryString();
+
+        $stats = [
+            'total_revenue'     => SubscriptionPayment::where('status', 'success')->sum('amount'),
+            'revenue_this_month'=> SubscriptionPayment::where('status', 'success')
+                                    ->whereMonth('paid_at', now()->month)
+                                    ->whereYear('paid_at',  now()->year)
+                                    ->sum('amount'),
+            'total_count'       => SubscriptionPayment::count(),
+            'success_count'     => SubscriptionPayment::where('status', 'success')->count(),
+            'failed_count'      => SubscriptionPayment::where('status', 'failed')->count(),
+        ];
+
+        $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('superadmin.transactions.index', compact('payments', 'stats', 'plans'));
+    }
+
+    public function transactionsExportExcel(Request $request)
+    {
+        $payments = $this->buildTransactionQuery($request)
+            ->with(['tenant', 'plan'])
+            ->orderByDesc('paid_at')
+            ->get();
+
+        $filters  = $request->only(['search', 'plan', 'status', 'cycle', 'date_from', 'date_to']);
+        $filename = 'Subscription_Transactions_' . now()->format('Ymd') . '.xlsx';
+
+        return Excel::download(new SubscriptionTransactionExport($payments, $filters), $filename);
+    }
+
+    public function transactionsExportPdf(Request $request)
+    {
+        $payments = $this->buildTransactionQuery($request)
+            ->with(['tenant', 'plan'])
+            ->orderByDesc('paid_at')
+            ->get();
+
+        $filters  = $request->only(['search', 'plan', 'status', 'cycle', 'date_from', 'date_to']);
+        $filename = 'Subscription_Transactions_' . now()->format('Ymd') . '.pdf';
+
+        return Pdf::loadView('superadmin.transactions.export-pdf', compact('payments', 'filters'))
+            ->setPaper('a4', 'landscape')
+            ->download($filename);
+    }
+
+    private function buildTransactionQuery(Request $request)
+    {
+        $query = SubscriptionPayment::query();
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->whereHas('tenant', fn($q) =>
+                $q->where('name', 'ilike', "%{$term}%")
+                  ->orWhere('email', 'ilike', "%{$term}%")
+            );
+        }
+
+        if ($request->filled('plan')) {
+            $query->where('plan_id', $request->plan);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('cycle')) {
+            $query->where('billing_cycle', $request->cycle);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('paid_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('paid_at', '<=', $request->date_to);
+        }
+
+        return $query;
     }
 
     public function toggleActive(Tenant $tenant): RedirectResponse
