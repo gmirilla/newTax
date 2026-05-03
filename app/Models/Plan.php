@@ -10,7 +10,7 @@ class Plan extends Model
     protected $fillable = [
         'name', 'slug', 'description',
         'price_monthly', 'price_yearly', 'trial_days',
-        'paystack_plan_code',
+        'paystack_plan_code', 'paystack_plan_code_yearly',
         'limits', 'is_active', 'is_public', 'sort_order',
     ];
 
@@ -58,6 +58,37 @@ class Plan extends Model
             return 'Free';
         }
         return '₦' . number_format($this->price_monthly, 0) . '/mo';
+    }
+
+    /** Effective monthly cost when billed annually (price_yearly / 12). */
+    public function yearlyMonthlyEquivalent(): float
+    {
+        if (!$this->price_yearly) return (float) $this->price_monthly;
+        return round($this->price_yearly / 12, 2);
+    }
+
+    /** Percentage saved by choosing annual over 12 months of monthly billing. */
+    public function yearlyDiscount(): int
+    {
+        if (!$this->price_yearly || !$this->price_monthly) return 0;
+        $fullYear = $this->price_monthly * 12;
+        return (int) round((($fullYear - $this->price_yearly) / $fullYear) * 100);
+    }
+
+    /** Price for the given billing cycle. */
+    public function priceForCycle(string $cycle): float
+    {
+        return $cycle === 'yearly' && $this->price_yearly
+            ? (float) $this->price_yearly
+            : (float) $this->price_monthly;
+    }
+
+    /** Paystack plan code for the given billing cycle. */
+    public function planCodeForCycle(string $cycle): ?string
+    {
+        return $cycle === 'yearly'
+            ? ($this->paystack_plan_code_yearly ?: $this->paystack_plan_code)
+            : $this->paystack_plan_code;
     }
 
     public static function getDefault(): ?self

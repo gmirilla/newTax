@@ -224,6 +224,11 @@ Route::middleware(['auth', 'superadmin'])
         Route::get('/',           [SuperAdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/companies',  [SuperAdminController::class, 'companies'])->name('companies');
 
+        // Subscription transactions
+        Route::get('/transactions',              [SuperAdminController::class, 'transactions'])->name('transactions');
+        Route::get('/transactions/export/excel', [SuperAdminController::class, 'transactionsExportExcel'])->name('transactions.export.excel');
+        Route::get('/transactions/export/pdf',   [SuperAdminController::class, 'transactionsExportPdf'])->name('transactions.export.pdf');
+
         // Plans CRUD
         Route::prefix('plans')->name('plans.')->group(function () {
             Route::get('/',            [PlanController::class, 'index'])->name('index');

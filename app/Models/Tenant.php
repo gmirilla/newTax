@@ -19,7 +19,7 @@ class Tenant extends Model
         'annual_turnover', 'vat_registered', 'vat_number', 'logo',
         'currency', 'subscription_plan', 'subscription_expires_at', 'is_active',
         'is_professional_firm',
-        'plan_id', 'next_plan_id', 'subscription_status', 'trial_ends_at',
+        'plan_id', 'next_plan_id', 'subscription_status', 'billing_cycle', 'trial_ends_at',
         'paystack_customer_id', 'paystack_subscription_code',
     ];
 

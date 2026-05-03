@@ -3,7 +3,7 @@
 @section('page-title', 'Billing & Plan')
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-6" x-data="{ cancelModal: false }">
+<div class="max-w-5xl mx-auto space-y-6" x-data="{ cancelModal: false, cycle: 'monthly' }">
 
     {{-- Upgrade prompt banner (shown when redirected from a locked feature) --}}
     @if($upgradeFeature)
@@ -41,7 +41,7 @@
             </p>
         </div>
         @if($tenant->plan && $tenant->plan->price_monthly > 0)
-        <a href="{{ route('billing.checkout', $tenant->plan) }}"
+        <a href="{{ route('billing.checkout', $tenant->plan) }}?cycle={{ $tenant->billing_cycle ?? 'monthly' }}"
            class="shrink-0 text-xs font-medium text-blue-700 underline hover:text-blue-900 mt-0.5">
             Keep current plan
         </a>
@@ -57,7 +57,12 @@
             <div>
                 <p class="text-xs font-semibold uppercase tracking-widest text-gray-400">Current Plan</p>
                 <h2 class="text-2xl font-bold text-green-700 mt-1">{{ $tenant->plan?->name ?? 'No Plan' }}</h2>
-                <p class="text-sm text-gray-500 mt-0.5">{{ $tenant->plan?->priceLabel() ?? '—' }}</p>
+                <p class="text-sm text-gray-500 mt-0.5">
+                    {{ $tenant->plan?->priceLabel() ?? '—' }}
+                    @if(($tenant->billing_cycle ?? 'monthly') === 'yearly')
+                    <span class="ml-1 text-xs text-green-600 font-medium">· Annual</span>
+                    @endif
+                </p>
             </div>
 
             @php
@@ -147,11 +152,27 @@
 
     {{-- Plan comparison --}}
     <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="px-6 py-4 border-b">
-            <h3 class="text-base font-semibold text-gray-800">Available Plans</h3>
-            <p class="text-sm text-gray-500 mt-0.5">
-                Upgrades take effect immediately (prorated charge). Downgrades apply at end of billing cycle.
-            </p>
+        <div class="px-6 py-4 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h3 class="text-base font-semibold text-gray-800">Available Plans</h3>
+                <p class="text-sm text-gray-500 mt-0.5">
+                    Upgrades take effect immediately (prorated charge). Downgrades apply at end of billing cycle.
+                </p>
+            </div>
+            {{-- Billing cycle toggle --}}
+            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1 self-start sm:self-auto shrink-0">
+                <button @click="cycle = 'monthly'"
+                        :class="cycle === 'monthly' ? 'bg-white shadow text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-1.5 rounded-md text-sm transition-all">
+                    Monthly
+                </button>
+                <button @click="cycle = 'yearly'"
+                        :class="cycle === 'yearly' ? 'bg-white shadow text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-1.5 rounded-md text-sm transition-all flex items-center gap-1.5">
+                    Annual
+                    <span class="text-xs font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">Save 20%</span>
+                </button>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-{{ $plans->count() }} divide-y md:divide-y-0 md:divide-x divide-gray-100">
@@ -186,11 +207,23 @@
                         <p class="text-xs text-gray-500 mt-0.5">{{ $plan->description }}</p>
                     </div>
                     <div class="text-right shrink-0 ml-2">
+                        @if($plan->price_monthly > 0 && $plan->price_yearly)
+                        {{-- Monthly price --}}
+                        <div x-show="cycle === 'monthly'"
+                             class="text-xl font-bold {{ $isCurrent ? 'text-green-700' : 'text-gray-800' }}">
+                            ₦{{ number_format($plan->price_monthly, 0) }}<span class="text-sm font-normal text-gray-400">/mo</span>
+                        </div>
+                        {{-- Annual price —  show monthly equivalent --}}
+                        <div x-show="cycle === 'yearly'" x-cloak>
+                            <div class="text-xl font-bold {{ $isCurrent ? 'text-green-700' : 'text-gray-800' }}">
+                                ₦{{ number_format($plan->yearlyMonthlyEquivalent(), 0) }}<span class="text-sm font-normal text-gray-400">/mo</span>
+                            </div>
+                            <div class="text-xs text-gray-400">₦{{ number_format($plan->price_yearly, 0) }} billed yearly</div>
+                        </div>
+                        @else
                         <div class="text-xl font-bold {{ $isCurrent ? 'text-green-700' : 'text-gray-800' }}">
                             {{ $plan->priceLabel() }}
                         </div>
-                        @if($plan->price_yearly)
-                        <div class="text-xs text-gray-400">₦{{ number_format($plan->price_yearly, 0) }}/yr</div>
                         @endif
                     </div>
                 </div>
@@ -257,7 +290,7 @@
                     </a>
 
                 @elseif($isUpgrade)
-                    <a href="{{ route('billing.checkout', $plan) }}"
+                    <a :href="'{{ route('billing.checkout', $plan) }}?cycle=' + cycle"
                        class="w-full block text-center py-2 text-sm font-medium rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors">
                         Upgrade to {{ $plan->name }} →
                     </a>

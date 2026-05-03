@@ -9,7 +9,7 @@ class SubscriptionPayment extends Model
 {
     protected $fillable = [
         'tenant_id', 'plan_id', 'paystack_reference',
-        'amount', 'currency', 'type', 'status',
+        'amount', 'currency', 'type', 'billing_cycle', 'status',
         'paid_at', 'metadata',
     ];
 
@@ -31,9 +31,10 @@ class SubscriptionPayment extends Model
 
     public function typeLabel(): string
     {
+        $cycle = $this->billing_cycle === 'yearly' ? ' · Annual' : '';
         return match ($this->type) {
-            'upgrade_proration' => 'Upgrade (pro-rated)',
-            'subscription'      => 'Subscription',
+            'upgrade_proration' => 'Upgrade (pro-rated)' . $cycle,
+            'subscription'      => 'Subscription' . $cycle,
             'manual'            => 'Manual',
             default             => ucfirst($this->type),
         };
