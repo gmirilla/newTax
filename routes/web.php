@@ -42,7 +42,7 @@ Route::prefix('inv')->name('invoice.public.')->group(function () {
 });
 
 // ─── Authenticated + Tenant-scoped routes ───────────────────────────────────
-Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
+Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
 
     // Dashboard (all roles — DashboardController redirects staff to staff.dashboard)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
