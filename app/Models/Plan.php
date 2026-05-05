@@ -17,6 +17,8 @@ class Plan extends Model
     protected $casts = [
         'price_monthly' => 'decimal:2',
         'price_yearly'  => 'decimal:2',
+        'trial_days'    => 'integer',
+        'sort_order'    => 'integer',
         'limits'        => 'array',
         'is_active'     => 'boolean',
         'is_public'     => 'boolean',

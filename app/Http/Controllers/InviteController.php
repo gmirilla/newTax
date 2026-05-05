@@ -48,20 +48,22 @@ class InviteController extends Controller
 
         if ($user) {
             $user->update([
-                'tenant_id' => $invite->tenant_id,
-                'role'      => $invite->role,
-                'is_active' => true,
-                'name'      => $data['name'],
-                'password'  => Hash::make($data['password']),
+                'tenant_id'         => $invite->tenant_id,
+                'role'              => $invite->role,
+                'is_active'         => true,
+                'name'              => $data['name'],
+                'password'          => Hash::make($data['password']),
+                'email_verified_at' => $user->email_verified_at ?? now(),
             ]);
         } else {
             $user = User::create([
-                'tenant_id' => $invite->tenant_id,
-                'name'      => $data['name'],
-                'email'     => $invite->email,
-                'password'  => Hash::make($data['password']),
-                'role'      => $invite->role,
-                'is_active' => true,
+                'tenant_id'         => $invite->tenant_id,
+                'name'              => $data['name'],
+                'email'             => $invite->email,
+                'password'          => Hash::make($data['password']),
+                'role'              => $invite->role,
+                'is_active'         => true,
+                'email_verified_at' => now(),
             ]);
         }
 

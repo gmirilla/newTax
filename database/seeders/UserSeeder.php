@@ -10,46 +10,52 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        $verified = now();
+
         // Tenant 1 users
         User::create([
-            'tenant_id' => 1,
-            'name'      => 'Tunde Adetokunbo',
-            'email'     => 'admin@adetokunboventures.ng',
-            'password'  => Hash::make('password'),
-            'role'      => 'admin',
-            'is_active' => true,
-            'phone'     => '+234 803 000 0011',
+            'tenant_id'         => 1,
+            'name'              => 'Tunde Adetokunbo',
+            'email'             => 'admin@adetokunboventures.ng',
+            'password'          => Hash::make('password'),
+            'role'              => 'admin',
+            'is_active'         => true,
+            'phone'             => '+234 803 000 0011',
+            'email_verified_at' => $verified,
         ]);
 
         User::create([
-            'tenant_id' => 1,
-            'name'      => 'Ngozi Accountant',
-            'email'     => 'accountant@adetokunboventures.ng',
-            'password'  => Hash::make('password'),
-            'role'      => 'accountant',
-            'is_active' => true,
+            'tenant_id'         => 1,
+            'name'              => 'Ngozi Accountant',
+            'email'             => 'accountant@adetokunboventures.ng',
+            'password'          => Hash::make('password'),
+            'role'              => 'accountant',
+            'is_active'         => true,
+            'email_verified_at' => $verified,
         ]);
 
         // Tenant 2 users
         User::create([
-            'tenant_id' => 2,
-            'name'      => 'Emeka Chukwuemeka',
-            'email'     => 'admin@chukwuemekatrading.com',
-            'password'  => Hash::make('password'),
-            'role'      => 'admin',
-            'is_active' => true,
-            'phone'     => '+234 812 000 0022',
+            'tenant_id'         => 2,
+            'name'              => 'Emeka Chukwuemeka',
+            'email'             => 'admin@chukwuemekatrading.com',
+            'password'          => Hash::make('password'),
+            'role'              => 'admin',
+            'is_active'         => true,
+            'phone'             => '+234 812 000 0022',
+            'email_verified_at' => $verified,
         ]);
 
         // Super admin (no tenant)
         User::create([
-            'tenant_id'    => null,
-            'name'         => 'Platform Admin',
-            'email'        => 'superadmin@naijabooks.ng',
-            'password'     => Hash::make('admin123'),
-            'role'         => 'admin',
-            'is_active'    => true,
-            'is_superadmin'=> true,
+            'tenant_id'         => null,
+            'name'              => 'Platform Admin',
+            'email'             => 'superadmin@naijabooks.ng',
+            'password'          => Hash::make('admin123'),
+            'role'              => 'admin',
+            'is_active'         => true,
+            'is_superadmin'     => true,
+            'email_verified_at' => $verified,
         ]);
     }
 }
