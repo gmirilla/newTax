@@ -25,13 +25,13 @@
                 Record Payment
             </button>
             @endif
-            {{-- FIRS submission button --}}
+            {{-- NRS submission button --}}
             @if(in_array($invoice->status, ['sent', 'paid']) && $invoice->firs_status !== 'signed')
             <form method="POST" action="{{ route('invoices.submit-firs', $invoice) }}">
                 @csrf
                 @php
                     $firsLabel = match($invoice->firs_status ?? 'draft') {
-                        'pending', 'validating', 'signing' => '⏳ FIRS Pending…',
+                        'pending', 'validating', 'signing' => '⏳ NRS Pending…',
                         'failed'  => '↺ Retry FIRS',
                         default   => '⬆ Submit to FIRS',
                     };
@@ -46,7 +46,7 @@
                 </button>
             </form>
             @elseif($invoice->firs_status === 'signed')
-            <span class="px-3 py-1.5 bg-green-100 text-green-800 text-xs font-semibold rounded-md">✓ FIRS Signed</span>
+            <span class="px-3 py-1.5 bg-green-100 text-green-800 text-xs font-semibold rounded-md">✓ NRS Signed</span>
             @endif
 
             {{-- Share link --}}

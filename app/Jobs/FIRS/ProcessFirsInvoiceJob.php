@@ -17,7 +17,7 @@ use Illuminate\Queue\SerializesModels;
 use Throwable;
 
 /**
- * Drives the full FIRS e-Invoicing pipeline for a single invoice.
+ * Drives the full NRS e-Invoicing pipeline for a single invoice.
  *
  * State machine on invoice.firs_status:
  *   pending → validating → signing → signed

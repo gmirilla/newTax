@@ -19,7 +19,7 @@ class PaymentFailed extends Mailable
     {
         return new Envelope(
             to: [$this->tenant->email],
-            subject: 'Payment failed — action required to keep your NaijaBooks subscription',
+            subject: 'Payment failed — action required to keep your AccountTaxNG subscription',
         );
     }
 

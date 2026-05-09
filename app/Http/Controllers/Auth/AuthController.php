@@ -84,7 +84,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('dashboard')
-            ->with('success', "Welcome to NaijaBooks! Your account for {$result['tenant']->name} is ready.");
+            ->with('success', "Welcome to AccountTaxNG! Your account for {$result['tenant']->name} is ready.");
     }
 
     public function logout(Request $request): RedirectResponse

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'NaijaBooks') – Nigerian Tax & Bookkeeping</title>
+    <title>@yield('title', 'AccountTaxNG') – Nigerian Tax & Bookkeeping</title>
 
     {{-- TailwindCSS via CDN (replace with Vite in production) --}}
     <script src="https://cdn.tailwindcss.com"></script>
@@ -53,7 +53,7 @@
 
                 {{-- Close button --}}
                 <div class="flex items-center justify-between px-4 mb-2">
-                    <span class="text-2xl font-bold text-white">🇳🇬 NaijaBooks</span>
+                    <span class="text-2xl font-bold text-white">🇳🇬 AccountTaxNG</span>
                     <button @click="sidebarOpen = false" class="text-green-200 hover:text-white focus:outline-none">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -183,7 +183,7 @@
 
                 {{-- Logo --}}
                 <div class="flex flex-shrink-0 items-center px-4">
-                    <span class="text-2xl font-bold text-white">🇳🇬 NaijaBooks</span>
+                    <span class="text-2xl font-bold text-white">🇳🇬 AccountTaxNG</span>
                 </div>
 
                 {{-- Company Name --}}
@@ -354,7 +354,7 @@
                                     class="ml-auto text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Admin</span>
                             </a>
 
-                            {{-- FIRS Configuration --}}
+                            {{-- NRS Configuration --}}
                             @php
                                 $firsActive = \App\Models\TenantFirsCredential::where(
                                     'tenant_id',
@@ -362,13 +362,13 @@
                                 )
                                     ->where('is_active', true)
                                     ->exists();
-                                $canFirs = $currentTenant->planAllows('firs');
+                                $canNRS = $currentTenant->planAllows('firs');
                             @endphp
-                            <a href="{{ $canFirs ? route('settings.firs') : route('billing').'?upgrade_feature=firs' }}"
-                                class="flex items-center gap-3 px-4 py-3 text-sm {{ $canFirs ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 hover:bg-gray-50 opacity-70' }} transition-colors {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
+                            <a href="{{ $canNRS ? route('settings.firs') : route('billing').'?upgrade_feature=firs' }}"
+                                class="flex items-center gap-3 px-4 py-3 text-sm {{ $canNRS ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 hover:bg-gray-50 opacity-70' }} transition-colors {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
                                 <span class="flex-shrink-0 text-base">⬆</span>
                                 <div class="flex-1 min-w-0">
-                                    <span class="block">FIRS e-Invoicing</span>
+                                    <span class="block">NRS e-Invoicing</span>
                                     @if($canFirs)
                                     <span class="block text-xs {{ $firsActive ? 'text-green-600' : 'text-gray-400' }}">
                                         {{ $firsActive ? '● Configured' : '○ Not configured' }}
@@ -474,7 +474,7 @@
                                     <a href="{{ $canFirsTopbar ? route('settings.firs') : route('billing').'?upgrade_feature=firs' }}"
                                         class="flex items-center gap-3 px-4 py-2.5 text-sm {{ $canFirsTopbar ? 'text-gray-700 hover:bg-gray-50' : 'text-gray-400 hover:bg-gray-50 opacity-70' }} {{ request()->routeIs('settings.firs*') ? 'bg-gray-50 font-medium' : '' }}">
                                         <span>⬆</span>
-                                        <span class="flex-1">FIRS e-Invoicing</span>
+                                        <span class="flex-1">NRS e-Invoicing</span>
                                         @if($canFirsTopbar)
                                         <span class="text-xs bg-gray-100 text-gray-500 px-1 rounded">Admin</span>
                                         @else

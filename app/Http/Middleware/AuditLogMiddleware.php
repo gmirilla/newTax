@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class AuditLogMiddleware
 {
     /**
-     * Log all mutating requests (POST, PUT, PATCH, DELETE) for FIRS audit trail.
+     * Log all mutating requests (POST, PUT, PATCH, DELETE) for NRS audit trail.
      * This provides an immutable record of all financial data changes.
      */
     public function handle(Request $request, Closure $next): Response

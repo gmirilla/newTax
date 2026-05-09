@@ -71,7 +71,7 @@
             <p class="font-semibold">Cash Basis — Management Information Only</p>
             <p class="mt-0.5 text-xs">
                 Revenue shows actual payments received in this period, not invoices issued.
-                FIRS assess CIT on <strong>accrual basis</strong>. Use this view for cashflow
+                NRS assess CIT on <strong>accrual basis</strong>. Use this view for cashflow
                 insight; switch to <a href="{{ route('reports.pl', ['year'=>$year,'month'=>$month,'basis'=>'accrual']) }}"
                 class="underline font-medium">Accrual</a> for tax reporting.
             </p>

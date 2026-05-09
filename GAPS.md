@@ -1,4 +1,4 @@
-# NaijaBooks — Known Gaps & Follow-Through Tracker
+# AccountTaxNG — Known Gaps & Follow-Through Tracker
 
 Updated: 2026-04-30. Tick items off as each is completed.
 

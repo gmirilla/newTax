@@ -271,7 +271,7 @@ class SuperAdminController extends Controller
                 'customMessage' => $customMessage,
             ], function ($mail) use ($tenant) {
                 $mail->to($tenant->email)
-                     ->subject("Subscription Reminder — {$tenant->name} | NaijaBooks");
+                     ->subject("Subscription Reminder — {$tenant->name} | AccountTaxNG");
             });
 
             $tenant->update(['reminder_sent_at' => now()]);
@@ -297,7 +297,7 @@ class SuperAdminController extends Controller
                     'customMessage' => null,
                 ], function ($mail) use ($tenant) {
                     $mail->to($tenant->email)
-                         ->subject("Your subscription expires soon — NaijaBooks");
+                         ->subject("Your subscription expires soon — AccountTaxNG");
                 });
                 $tenant->update(['reminder_sent_at' => now()]);
                 $sent++;

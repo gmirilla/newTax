@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('page-title', 'Admin') — NaijaBooks Platform</title>
+    <title>@yield('page-title', 'Admin') — AccountTaxNG Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>[x-cloak]{display:none!important}</style>
@@ -27,7 +27,7 @@
     <aside class="w-60 bg-gray-900 text-white flex flex-col flex-shrink-0">
         <div class="px-5 py-5 border-b border-gray-700">
             <p class="text-xs uppercase tracking-widest text-gray-400 font-medium">Platform Admin</p>
-            <h1 class="text-lg font-bold text-white mt-0.5">NaijaBooks</h1>
+            <h1 class="text-lg font-bold text-white mt-0.5">AccountTaxNG</h1>
         </div>
 
         <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

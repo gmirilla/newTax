@@ -22,7 +22,7 @@ class SendTaxReminders extends Command
 
     public function handle(): int
     {
-        $this->info('🇳🇬 NaijaBooks Tax Reminder Engine started at ' . now()->toDateTimeString());
+        $this->info('🇳🇬 AccountTaxNG Tax Reminder Engine started at ' . now()->toDateTimeString());
 
         $sent     = 0;
         $skipped  = 0;
@@ -90,7 +90,7 @@ class SendTaxReminders extends Command
         $message = "⚠️ VAT Filing Reminder for {$tenant->name}\n"
             . "Period: {$periodName}\n"
             . "Due Date: {$dueDate} ({$daysLeft} days remaining)\n"
-            . "File your VAT return via FIRS TaxPro-Max portal or NaijaBooks.\n"
+            . "File your VAT return via NRS TaxPro-Max portal or AccountTaxNG.\n"
             . "Penalty: 5% of tax due + interest for late filing.";
 
         if ($dryRun) {
@@ -128,7 +128,7 @@ class SendTaxReminders extends Command
             . "Tax Year: {$taxYear}\n"
             . "Due Date: {$taxYear + 1}-06-30\n"
             . "Rate: {$tenant->getCitRate()}% CIT + 2.5% Education Tax\n"
-            . "File via FIRS TaxPro-Max. Penalties apply for late filing.";
+            . "File via NRS TaxPro-Max. Penalties apply for late filing.";
 
         if ($dryRun) {
             $this->line("    [DRY-RUN] Would send CIT reminder for TY {$taxYear}");
@@ -154,7 +154,7 @@ class SendTaxReminders extends Command
             ->count();
 
         if ($overdue > 0) {
-            $this->warn("    ⚠️  {$tenant->name} has {$overdue} OVERDUE VAT return(s)! FIRS penalties accruing.");
+            $this->warn("    ⚠️  {$tenant->name} has {$overdue} OVERDUE VAT return(s)! NRS penalties accruing.");
         }
     }
 }

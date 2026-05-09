@@ -19,7 +19,7 @@ class TrialEndingSoon extends Mailable
     {
         return new Envelope(
             to: [$this->tenant->email],
-            subject: 'Your NaijaBooks trial ends in 3 days',
+            subject: 'Your AccountTaxNG trial ends in 3 days',
         );
     }
 

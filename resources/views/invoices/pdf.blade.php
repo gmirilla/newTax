@@ -182,9 +182,9 @@
     {{-- ─── WHT Notice ─────────────────────────────────────────────────────── --}}
     @if($invoice->wht_applicable)
     <div class="wht-notice">
-        ⚠️ <strong>Withholding Tax Notice:</strong> As per FIRS regulations, the sum of
+        ⚠️ <strong>Withholding Tax Notice:</strong> As per NRS regulations, the sum of
         ₦{{ number_format($invoice->wht_amount, 2) }} ({{ $invoice->wht_rate }}% WHT) is deductible
-        at source by the customer and should be remitted directly to FIRS on our behalf.
+        at source by the customer and should be remitted directly to NRS on our behalf.
         A WHT credit note must be issued.
     </div>
     @endif

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->enum('firs_status', ['draft', 'pending', 'validating', 'signing', 'signed', 'failed'])
                   ->default('draft')
                   ->after('status')
-                  ->comment('FIRS e-Invoicing pipeline state — enforced as a forward-only state machine');
+                  ->comment('NRS e-Invoicing pipeline state — enforced as a forward-only state machine');
 
             $table->boolean('is_b2c')
                   ->default(false)
@@ -30,12 +30,12 @@ return new class extends Migration
 
             $table->string('irn')->nullable()->comment('Invoice Reference Number generated locally');
             $table->string('csid')->nullable()->comment('Cryptographic Stamp Identifier returned by FIRS');
-            $table->text('qr_code_data')->nullable()->comment('QR code data returned by FIRS after signing');
+            $table->text('qr_code_data')->nullable()->comment('QR code data returned by NRS after signing');
 
             $table->enum('status', ['pending', 'validating', 'validated', 'signing', 'signed', 'failed'])
                   ->default('pending');
 
-            $table->json('firs_response')->nullable()->comment('Full FIRS API response payload');
+            $table->json('firs_response')->nullable()->comment('Full NRS API response payload');
             $table->unsignedSmallInteger('attempts')->default(0);
             $table->timestamp('last_attempted_at')->nullable();
             $table->timestamps();

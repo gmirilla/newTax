@@ -8,7 +8,7 @@ class StoreFirsCredentialsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Only accountants / admins may configure FIRS credentials
+        // Only accountants / admins may configure NRS credentials
         return auth()->check() && auth()->user()->isAccountant();
     }
 

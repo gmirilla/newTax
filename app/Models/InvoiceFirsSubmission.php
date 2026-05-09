@@ -63,7 +63,7 @@ class InvoiceFirsSubmission extends Model
     {
         if (! $this->canTransitionTo($newStatus)) {
             throw new \RuntimeException(
-                "Invalid FIRS submission status transition: {$this->status} → {$newStatus}"
+                "Invalid NRS submission status transition: {$this->status} → {$newStatus}"
             );
         }
 

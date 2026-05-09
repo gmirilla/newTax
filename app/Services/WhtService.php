@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
 class WhtService
 {
     /**
-     * Nigerian Withholding Tax (WHT) Rates per FIRS guidelines.
+     * Nigerian Withholding Tax (WHT) Rates per NRS guidelines.
      * WHT is deducted at source by the payer and remitted to FIRS.
      *
      * Rates vary based on:
@@ -148,7 +148,7 @@ class WhtService
     }
 
     /**
-     * Generate monthly WHT schedule for FIRS remittance.
+     * Generate monthly WHT schedule for NRS remittance.
      * WHT is remitted monthly along with VAT.
      */
     public function generateMonthlySchedule(Tenant $tenant, int $year, int $month): array

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email — NaijaBooks</title>
+    <title>Verify Your Email — AccountTaxNG</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center px-4 py-12">
@@ -16,7 +16,7 @@
             <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
                 <span class="text-white font-bold text-sm">N</span>
             </div>
-            <span class="text-xl font-bold text-gray-900">NaijaBooks</span>
+            <span class="text-xl font-bold text-gray-900">AccountTaxNG</span>
         </div>
     </div>
 

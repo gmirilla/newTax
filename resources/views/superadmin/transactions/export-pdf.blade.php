@@ -46,7 +46,7 @@
 <body>
 
 <div class="header">
-    <div class="brand">NaijaBooks — Platform Admin</div>
+    <div class="brand">AccountTaxNG — Platform Admin</div>
     <div class="title">Subscription Transactions</div>
     <div class="meta">
         Generated {{ now()->format('d M Y, H:i') }}
@@ -132,7 +132,7 @@
     </tfoot>
 </table>
 
-<div class="footer">NaijaBooks Platform &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; {{ now()->format('d M Y') }}</div>
+<div class="footer">AccountTaxNG Platform &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; {{ now()->format('d M Y') }}</div>
 
 </body>
 </html>

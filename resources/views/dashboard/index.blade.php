@@ -26,7 +26,7 @@
         <div class="mt-3 p-3 bg-red-50 rounded-md">
             <p class="text-sm text-red-700">
                 ⚠️ <strong>{{ $dashboard['vat']['overdue_count'] }} overdue VAT return(s)!</strong>
-                FIRS penalties apply after the 21st. File immediately to avoid sanctions.
+                NRS penalties apply after the 21st. File immediately to avoid sanctions.
             </p>
         </div>
         @endif

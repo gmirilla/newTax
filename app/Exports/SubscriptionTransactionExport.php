@@ -35,7 +35,7 @@ class SubscriptionTransactionExport implements FromArray, WithStyles, WithTitle,
     {
         $rows = [];
 
-        $rows[] = ['NaijaBooks — Platform Admin', '', '', '', '', '', ''];
+        $rows[] = ['AccountTaxNG — Platform Admin', '', '', '', '', '', ''];
         $rows[] = ['Subscription Transactions Export', '', '', '', '', '', ''];
         $rows[] = [$this->buildFilterDesc() ?: 'All transactions', '', '', '', '', '', ''];
         $rows[] = ['Generated: ' . now()->format('d M Y H:i'), '', '', '', '', '', ''];

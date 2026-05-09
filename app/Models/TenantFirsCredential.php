@@ -82,8 +82,8 @@ class TenantFirsCredential extends Model
         throw_unless(
             $credential,
             RuntimeException::class,
-            "No active FIRS credentials found for tenant {$tenantId}. "
-            . 'Please configure your FIRS credentials under Settings → FIRS.'
+            "No active NRS credentials found for tenant {$tenantId}. "
+            . 'Please configure your NRS credentials under Settings → FIRS.'
         );
 
         return $credential;

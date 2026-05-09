@@ -36,7 +36,7 @@ class IrnService
 
     private function normaliseTin(string $tin): string
     {
-        // Strip spaces and hyphens; FIRS TINs are 10 digits
+        // Strip spaces and hyphens; NRS TINs are 10 digits
         return preg_replace('/[\s\-]/', '', $tin);
     }
 }

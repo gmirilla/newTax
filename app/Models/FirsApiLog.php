@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Immutable audit trail of every FIRS API call.
+ * Immutable audit trail of every NRS API call.
  * Never update or soft-delete records — only append.
  */
 class FirsApiLog extends Model

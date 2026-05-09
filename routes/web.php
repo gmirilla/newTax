@@ -20,10 +20,16 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\MarketingController;
 use Illuminate\Support\Facades\Route;
 
-// Landing page
-Route::get('/', fn() => redirect()->route('dashboard'));
+// ─── Marketing / Public site ─────────────────────────────────────────────────
+Route::get('/',          [MarketingController::class, 'home'])->name('home');
+Route::get('/features',  [MarketingController::class, 'features'])->name('marketing.features');
+Route::get('/pricing',   [MarketingController::class, 'pricing'])->name('marketing.pricing');
+Route::get('/about',     [MarketingController::class, 'about'])->name('marketing.about');
+Route::get('/contact',   [MarketingController::class, 'contact'])->name('marketing.contact');
+Route::post('/contact',  [MarketingController::class, 'contactSubmit'])->name('marketing.contact.submit');
 
 // ─── Paystack Webhook (no auth, CSRF excluded — see bootstrap/app.php) ───────
 Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])

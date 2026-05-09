@@ -50,7 +50,7 @@ class UserSeeder extends Seeder
         User::create([
             'tenant_id'         => null,
             'name'              => 'Platform Admin',
-            'email'             => 'superadmin@naijabooks.ng',
+            'email'             => 'superadmin@accounttaxng.com',
             'password'          => Hash::make('admin123'),
             'role'              => 'admin',
             'is_active'         => true,

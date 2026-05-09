@@ -72,7 +72,7 @@
                     @php
                         $features = [
                             'payroll'          => 'Payroll',
-                            'firs'             => 'FIRS e-Invoice',
+                            'firs'             => 'NRS e-Invoice',
                             'advanced_reports' => 'Adv. Reports',
                             'api_access'       => 'API Access',
                         ];

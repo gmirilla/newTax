@@ -112,7 +112,7 @@
             @csrf
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">FIRS Reference Number</label>
+                    <label class="block text-sm font-medium text-gray-700">NRS Reference Number</label>
                     <input type="text" name="filing_reference" placeholder="e.g. CIT/{{ $year }}/00123"
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                 </div>
@@ -127,7 +127,7 @@
                         class="px-6 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700">
                     Mark as Filed with FIRS
                 </button>
-                <p class="text-xs text-gray-400">Submit the official return via your FIRS TaxPro-Max account first.</p>
+                <p class="text-xs text-gray-400">Submit the official return via your NRS TaxPro-Max account first.</p>
             </div>
         </form>
     </div>
@@ -135,7 +135,7 @@
     <div class="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
         ✓ CIT for {{ $year }} is recorded as <strong>{{ ucfirst($record->status) }}</strong>.
         @if($record->filing_reference)
-            FIRS Ref: <strong>{{ $record->filing_reference }}</strong>.
+            NRS Ref: <strong>{{ $record->filing_reference }}</strong>.
         @endif
         <a href="{{ route('tax.cit.index') }}" class="underline ml-2">View CIT history →</a>
     </div>

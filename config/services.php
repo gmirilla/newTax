@@ -35,7 +35,7 @@ return [
         ],
     ],
 
-    // ── FIRS e-Invoicing ─────────────────────────────────────────────────────
+    // ── NRS e-Invoicing ─────────────────────────────────────────────────────
     'firs' => [
         'base_url' => env('FIRS_BASE_URL', 'https://sandbox.einvoice.firs.gov.ng'),
         'timeout'  => env('FIRS_TIMEOUT', 30),

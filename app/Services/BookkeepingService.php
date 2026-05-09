@@ -302,7 +302,7 @@ class BookkeepingService
                 : $credits - $debits;
 
             // Include the account's opening balance for cumulative (balance sheet) queries.
-            // Opening balance represents the position before the company started using NaijaBooks.
+            // Opening balance represents the position before the company started using AccountTaxNG.
             // Only applied when $start is null (balance-sheet / all-time mode), not for P&L periods.
             $openingBalance = ($start === null) ? (float) $account->opening_balance : 0.0;
 
@@ -759,7 +759,7 @@ class BookkeepingService
      *   $accountType — show all accounts of a given type (asset/liability/equity/revenue/expense)
      *   $search      — case-insensitive substring match on account code or name
      *
-     * Opening balance = account.opening_balance (pre-NaijaBooks balance)
+     * Opening balance = account.opening_balance (pre-AccountTaxNG balance)
      *                 + net of all posted journal entries before $start
      * This ensures the running balance is correct from the very first entry.
      *
@@ -797,7 +797,7 @@ class BookkeepingService
         foreach ($accounts as $account) {
             $normalDebit = in_array($account->type, ['asset', 'expense']);
 
-            // Opening balance = model's pre-NaijaBooks balance + net of all journal entries before $start
+            // Opening balance = model's pre-AccountTaxNG balance + net of all journal entries before $start
             $openDebits  = (float) JournalEntry::where('tenant_id', $tenant->id)
                 ->where('account_id', $account->id)
                 ->where('entry_type', 'debit')

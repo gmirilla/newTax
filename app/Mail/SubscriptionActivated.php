@@ -23,8 +23,8 @@ class SubscriptionActivated extends Mailable
     public function envelope(): Envelope
     {
         $subject = $this->type === 'upgrade_proration'
-            ? "You've upgraded to {$this->plan->name} on NaijaBooks"
-            : "Welcome to {$this->plan->name} — NaijaBooks";
+            ? "You've upgraded to {$this->plan->name} on AccountTaxNG"
+            : "Welcome to {$this->plan->name} — AccountTaxNG";
 
         return new Envelope(
             to: [$this->tenant->email],
