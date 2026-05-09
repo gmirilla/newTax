@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan:*)"
+      "Bash(php artisan:*)",
+      "Bash(php -l resources/views/marketing/home.blade.php)",
+      "Bash(php -l resources/views/marketing/features.blade.php)",
+      "Bash(php -l resources/views/marketing/pricing.blade.php)",
+      "Bash(php -l resources/views/marketing/about.blade.php)",
+      "Bash(php -l resources/views/marketing/contact.blade.php)",
+      "Bash(grep -rn ']\\) as $item\\\\]\\)\\\\|]\\) as $[a-z]*\\\\]\\)' resources/views/marketing/ resources/views/auth/)",
+      "Bash(grep -rn \"]\\) as \\\\$\" resources/views/marketing/ resources/views/auth/)",
+      "Bash(grep -n \"]\\) as \\\\$\" resources/views/marketing/features.blade.php)",
+      "Bash(grep -rn \"]\\) as \\\\$\" resources/views/marketing/ resources/views/auth/register.blade.php)"
     ]
   }
 }

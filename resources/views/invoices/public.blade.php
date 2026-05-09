@@ -114,7 +114,7 @@
         <div class="mx-8 mt-4 bg-amber-50 border border-amber-200 rounded-md px-4 py-3 text-sm text-amber-800">
             <strong>Withholding Tax Notice:</strong> The sum of
             &#8358;{{ number_format($invoice->wht_amount, 2) }} ({{ $invoice->wht_rate }}% WHT) is deductible at source
-            and must be remitted directly to FIRS on our behalf. A WHT credit note must be issued.
+            and must be remitted directly to NRS on our behalf. A WHT credit note must be issued.
         </div>
         @endif
 
@@ -251,7 +251,7 @@
 
     {{-- Powered by --}}
     <p class="no-print text-center text-xs text-gray-400 mt-4">
-        Powered by <span class="font-medium text-gray-500">NaijaBooks</span>
+        Powered by <span class="font-medium text-gray-500">AccountTaxNG</span>
     </p>
 
 </div>

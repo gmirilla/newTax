@@ -10,7 +10,7 @@
     @php
         $featureLabels = [
             'payroll'          => 'Payroll & PAYE',
-            'firs'             => 'FIRS e-Invoicing',
+            'firs'             => 'NRS e-Invoicing',
             'advanced_reports' => 'Advanced Reports',
             'api_access'       => 'API Access',
         ];
@@ -240,7 +240,7 @@
                         ];
                         $featureLines = [
                             'payroll'          => 'Payroll & PAYE',
-                            'firs'             => 'FIRS e-Invoicing',
+                            'firs'             => 'NRS e-Invoicing',
                             'advanced_reports' => 'Advanced Reports',
                             'api_access'       => 'API Access',
                         ];
@@ -284,7 +284,7 @@
                     </button>
 
                 @elseif($isEnterprise)
-                    <a href="mailto:hello@naijabooks.ng?subject=Enterprise+enquiry"
+                    <a href="mailto:hello@accounttaxng.com?subject=Enterprise+enquiry"
                        class="w-full block text-center py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors">
                         Contact Sales
                     </a>

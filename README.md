@@ -1,6 +1,6 @@
-# 🇳🇬 NaijaBooks — Nigerian SME Tax & Bookkeeping SaaS
+# 🇳🇬 AccountTaxNG — Nigerian SME Tax & Bookkeeping SaaS
 
-A production-ready multi-tenant SaaS platform for Nigerian SMEs to manage bookkeeping, invoicing, and full tax compliance with FIRS regulations.
+A production-ready multi-tenant SaaS platform for Nigerian SMEs to manage bookkeeping, invoicing, and full tax compliance with NRS regulations.
 
 ---
 
@@ -43,7 +43,7 @@ A production-ready multi-tenant SaaS platform for Nigerian SMEs to manage bookke
 - Real-time compliance score (0–100)
 - Overdue VAT return alerts
 - WHT schedule and remittance tracking
-- FIRS TaxPro-Max filing reference tracking
+- NRS TaxPro-Max filing reference tracking
 - Audit trail (immutable logs for every financial action)
 
 ### Multi-Tenancy
@@ -76,7 +76,7 @@ php artisan key:generate
 
 # 4. Configure your database in .env
 #    DB_CONNECTION=mysql
-#    DB_DATABASE=naijabooks
+#    DB_DATABASE=accounttaxng
 
 # 5. Run migrations
 php artisan migrate
@@ -235,7 +235,7 @@ composer require barryvdh/laravel-dompdf maatwebsite/excel laravel/sanctum
 - **Companies Income Tax Act (CITA)** Cap C21 LFN 2004
 - **Personal Income Tax Act (PITA)** Cap P8 LFN 2004
 - **Finance Acts** 2019, 2020, 2021, 2022, 2023
-- **FIRS Practice Note** on Withholding Tax
+- **NRS Practice Note** on Withholding Tax
 - **Contributory Pension Scheme Act 2014** (8%/10% rates)
 - **National Housing Fund Act** (2.5% NHF)
 

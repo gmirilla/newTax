@@ -271,7 +271,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Submit an invoice to FIRS for e-Invoicing validation and signing.
+     * Submit an invoice to NRS for e-Invoicing validation and signing.
      *
      * Only invoices with status 'sent' or 'paid' may be submitted.
      * If a previous submission failed the job is re-queued (retry flow).
@@ -288,13 +288,13 @@ class InvoiceController extends Controller
             return back()->with('error', 'This invoice has already been signed by FIRS.');
         }
 
-        // Ensure the tenant has active FIRS credentials configured
+        // Ensure the tenant has active NRS credentials configured
         $hasCredentials = TenantFirsCredential::where('tenant_id', $invoice->tenant_id)
             ->where('is_active', true)
             ->exists();
 
         if (! $hasCredentials) {
-            return back()->with('error', 'FIRS credentials not configured. Go to Settings → FIRS to set up your credentials.');
+            return back()->with('error', 'NRS credentials not configured. Go to Settings → NRS to set up your credentials.');
         }
 
         // Reset a previously failed submission so the job can retry
@@ -307,7 +307,7 @@ class InvoiceController extends Controller
 
         ProcessFirsInvoiceJob::dispatch($invoice);
 
-        return back()->with('success', 'Invoice queued for FIRS submission. You will be notified when signing is complete.');
+        return back()->with('success', 'Invoice queued for NRS submission. You will be notified when signing is complete.');
     }
 
     public function importForm(): View

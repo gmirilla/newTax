@@ -112,7 +112,7 @@
                         ['department',            'No',  'Text'],
                         ['employment_type',       'No',  'full_time | part_time | contract  (default: full_time)'],
                         ['state_of_residence',    'No',  'Nigerian state name — used for PAYE'],
-                        ['tin',                   'No',  'FIRS Tax Identification Number'],
+                        ['tin',                   'No',  'NRS Tax Identification Number'],
                         ['housing_allowance',     'No',  'Numeric ₦ (default 0)'],
                         ['transport_allowance',   'No',  'Numeric ₦ (default 0)'],
                         ['medical_allowance',     'No',  'Numeric ₦ (default 0)'],

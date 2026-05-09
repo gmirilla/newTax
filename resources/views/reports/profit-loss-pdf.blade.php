@@ -159,7 +159,7 @@
     @if($report['basis'] === 'cash')
     <div class="warning-box" style="margin-top:6px; background:#fffbeb; border-color:#fde68a; color:#78350f;">
         ⚠ This report uses <strong>cash basis</strong> accounting and is provided for management
-        information only. FIRS CIT assessment uses <strong>accrual basis</strong>.
+        information only. NRS CIT assessment uses <strong>accrual basis</strong>.
     </div>
     @endif
 

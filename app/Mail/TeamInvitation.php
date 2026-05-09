@@ -23,7 +23,7 @@ class TeamInvitation extends Mailable
     {
         return new Envelope(
             to: [$this->invite->email],
-            subject: "You've been invited to join {$this->tenant->name} on NaijaBooks",
+            subject: "You've been invited to join {$this->tenant->name} on AccountTaxNG",
         );
     }
 

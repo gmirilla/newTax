@@ -31,7 +31,7 @@ return new class extends Migration
             $table->date('filed_date')->nullable();
             $table->date('paid_date')->nullable();
             $table->decimal('amount_paid', 18, 2)->default(0);
-            $table->string('filing_reference')->nullable()->comment('FIRS TaxPro-Max filing ref');
+            $table->string('filing_reference')->nullable()->comment('NRS TaxPro-Max filing ref');
 
             $table->enum('status', ['pending', 'filed', 'paid', 'overdue', 'nil_return'])->default('pending');
             $table->text('notes')->nullable();

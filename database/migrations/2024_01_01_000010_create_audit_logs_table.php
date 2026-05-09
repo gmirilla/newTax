@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Audit trail for compliance and FIRS audit readiness.
+     * Audit trail for compliance and NRS audit readiness.
      */
     public function up(): void
     {

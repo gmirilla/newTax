@@ -58,7 +58,7 @@
                             <form method="POST" action="{{ route('tax.vat.filed', $return) }}" class="flex gap-1">
                                 @csrf
                                 <input type="hidden" name="filed_date" value="{{ now()->toDateString() }}">
-                                <input type="text" name="filing_reference" placeholder="FIRS Ref #" required
+                                <input type="text" name="filing_reference" placeholder="NRS Ref #" required
                                        class="border rounded text-xs px-2 py-1 w-28">
                                 <button class="text-xs bg-blue-600 text-white px-2 py-1 rounded">Mark Filed</button>
                             </form>

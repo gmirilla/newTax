@@ -1,16 +1,19 @@
 @extends('layouts.app')
 
-@section('page-title', 'FIRS e-Invoicing Setup')
+@section('page-title', 'NRS e-Invoicing Setup')
 
 @section('content')
 <div class="max-w-2xl mx-auto space-y-6">
 
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-lg font-semibold">FIRS e-Invoicing Credentials</h1>
+            <h1 class="text-lg font-semibold">NRS e-Invoicing Credentials</h1>
             <p class="text-sm text-gray-500 mt-0.5">
-                Configure your FIRS API credentials to enable e-Invoice submission.
+                Configure your NRS API credentials to enable e-Invoice submission.
                 All values are encrypted at rest.
+            </p>
+            <p class="text-sm text-gray-500 mt-0.5">
+                Please note that the NRS Form submission may involve addittional charges as levied from your chosen Access Provider
             </p>
         </div>
         @if($hasActive)
@@ -45,7 +48,7 @@
                 <label class="block text-sm font-medium text-gray-700">Service ID <span class="text-red-500">*</span></label>
                 <input type="text" name="service_id"
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500"
-                       placeholder="Your FIRS Service ID"
+                       placeholder="Your NRS Service ID"
                        value="{{ old('service_id') }}"
                        autocomplete="off">
                 @error('service_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
@@ -58,7 +61,7 @@
                 <label class="block text-sm font-medium text-gray-700">API Key <span class="text-red-500">*</span></label>
                 <input type="password" name="api_key"
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500"
-                       placeholder="Your FIRS API Key"
+                       placeholder="Your NRS API Key"
                        autocomplete="new-password">
                 @error('api_key')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
@@ -67,7 +70,7 @@
                 <label class="block text-sm font-medium text-gray-700">Secret Key <span class="text-red-500">*</span></label>
                 <input type="password" name="secret_key"
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500"
-                       placeholder="Your FIRS Secret Key"
+                       placeholder="Your NRS Secret Key"
                        autocomplete="new-password">
                 @error('secret_key')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
@@ -93,7 +96,7 @@
                 <form method="POST" action="{{ route('settings.firs.deactivate') }}" class="inline">
                     @csrf
                     <button type="submit"
-                            onclick="return confirm('Deactivate FIRS credentials? Invoices will no longer be submitted until you re-activate.')"
+                            onclick="return confirm('Deactivate NRS credentials? Invoices will no longer be submitted until you re-activate.')"
                             class="text-sm text-red-600 hover:text-red-800">
                         Deactivate credentials
                     </button>
@@ -112,9 +115,9 @@
 
     {{-- Info box --}}
     <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-xs text-blue-700 space-y-1">
-        <p class="font-semibold text-blue-800">About FIRS e-Invoicing</p>
+        <p class="font-semibold text-blue-800">About NRS e-Invoicing</p>
         <ul class="list-disc list-inside space-y-0.5">
-            <li>Credentials are obtained from the <strong>FIRS TaxPro Max portal</strong> under e-Invoicing → API Keys.</li>
+            <li>Credentials are obtained from the <strong>NRS TaxPro Max portal</strong> under e-Invoicing → API Keys.</li>
             <li>The sandbox base URL is <code class="font-mono">https://sandbox.einvoice.firs.gov.ng</code>. Set <code class="font-mono">FIRS_BASE_URL</code> in your <code>.env</code> to switch to production.</li>
             <li>All credential fields are <strong>encrypted at rest</strong> using your application key.</li>
             <li>After saving, use the <strong>Submit to FIRS</strong> button on any sent/paid invoice to initiate e-Invoicing.</li>

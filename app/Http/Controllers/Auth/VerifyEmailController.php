@@ -31,7 +31,7 @@ class VerifyEmailController extends Controller
         event(new Verified($request->user()));
 
         return redirect()->intended(route('dashboard'))
-            ->with('success', 'Email verified! Welcome to NaijaBooks.');
+            ->with('success', 'Email verified! Welcome to AccountTaxNG.');
     }
 
     public function resend(Request $request): RedirectResponse

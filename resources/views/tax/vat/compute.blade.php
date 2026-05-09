@@ -114,7 +114,7 @@
             @csrf
             <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">FIRS Reference Number</label>
+                    <label class="block text-sm font-medium text-gray-700">NRS Reference Number</label>
                     <input type="text" name="firs_reference"
                            value="{{ $vatReturn->filing_reference }}"
                            placeholder="e.g. VAT/2024/001"
@@ -130,14 +130,14 @@
                     class="px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
                 Mark as Filed
             </button>
-            <p class="text-xs text-gray-400 mt-2">Records that this VAT return was submitted to FIRS via TaxPro-Max.</p>
+            <p class="text-xs text-gray-400 mt-2">Records that this VAT return was submitted to NRS via TaxPro-Max.</p>
         </form>
     </div>
     @else
     <div class="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
         ✓ This VAT return was filed on {{ \Carbon\Carbon::parse($vatReturn->filed_date)->format('d M Y') }}.
         @if($vatReturn->filing_reference)
-            FIRS Ref: <strong>{{ $vatReturn->filing_reference }}</strong>
+            NRS Ref: <strong>{{ $vatReturn->filing_reference }}</strong>
         @endif
     </div>
     @endif

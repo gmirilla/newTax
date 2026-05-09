@@ -11,7 +11,7 @@ use Illuminate\View\View;
 class FirsOnboardingController extends Controller
 {
     /**
-     * Show the FIRS credential setup form.
+     * Show the NRS credential setup form.
      * If credentials already exist, the form is pre-populated (fields stay hidden
      * via $hidden on the model, so raw values are never exposed in the view).
      */
@@ -25,7 +25,7 @@ class FirsOnboardingController extends Controller
     }
 
     /**
-     * Persist (upsert) FIRS credentials for the authenticated tenant.
+     * Persist (upsert) NRS credentials for the authenticated tenant.
      * Credentials are encrypted at rest via Laravel's 'encrypted' cast.
      */
     public function store(StoreFirsCredentialsRequest $request): RedirectResponse
@@ -41,11 +41,11 @@ class FirsOnboardingController extends Controller
         );
 
         return redirect()->route('settings.firs')
-            ->with('success', 'FIRS credentials saved and activated.');
+            ->with('success', 'NRS credentials saved and activated.');
     }
 
     /**
-     * Deactivate (not delete) the tenant's FIRS credentials.
+     * Deactivate (not delete) the tenant's NRS credentials.
      * Useful when migrating from sandbox to production keys.
      */
     public function deactivate(Request $request): RedirectResponse
@@ -56,6 +56,6 @@ class FirsOnboardingController extends Controller
             ->update(['is_active' => false]);
 
         return redirect()->route('settings.firs')
-            ->with('success', 'FIRS credentials deactivated.');
+            ->with('success', 'NRS credentials deactivated.');
     }
 }

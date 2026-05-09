@@ -5,9 +5,9 @@ namespace App\Services\FIRS;
 use App\Models\Invoice;
 
 /**
- * Builds UBL 2.1 JSON payloads for FIRS e-Invoicing submission.
+ * Builds UBL 2.1 JSON payloads for NRS e-Invoicing submission.
  *
- * FIRS accepts BIS Billing 3.0 / PEPPOL-compatible UBL 2.1 in JSON form.
+ * NRS accepts BIS Billing 3.0 / PEPPOL-compatible UBL 2.1 in JSON form.
  * Invoice type codes follow UN/CEFACT:
  *   380 = Tax Invoice (B2B)
  *   388 = Simplified Tax Invoice (B2C)

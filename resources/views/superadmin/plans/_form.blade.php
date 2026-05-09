@@ -147,7 +147,7 @@
             @php
                 $featureList = [
                     'feature_payroll'          => ['label' => 'Payroll Module',       'desc' => 'Access to payroll processing and payslips'],
-                    'feature_firs'             => ['label' => 'FIRS e-Invoicing',     'desc' => 'Submit invoices directly to FIRS'],
+                    'feature_firs'             => ['label' => 'NRS e-Invoicing',     'desc' => 'Submit invoices directly to FIRS'],
                     'feature_advanced_reports' => ['label' => 'Advanced Reports',     'desc' => 'General Ledger, Balance Sheet exports'],
                     'feature_api_access'       => ['label' => 'API Access',           'desc' => 'Programmatic access via API keys (future)'],
                 ];

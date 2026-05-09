@@ -13,7 +13,7 @@
 </head>
 <body>
     <div class="header">
-        <h2 style="margin:0; font-size: 20px;">NaijaBooks</h2>
+        <h2 style="margin:0; font-size: 20px;">AccountTaxNG</h2>
         <p style="margin:4px 0 0; opacity: 0.85; font-size: 13px;">Nigerian SME Bookkeeping & Tax Compliance</p>
     </div>
     <div class="body">
@@ -36,7 +36,7 @@
         @else
         <div class="highlight">
             <strong style="color:#d97706;">💳 Subscription Reminder</strong><br>
-            This is a reminder regarding your <strong>{{ ucfirst($tenant->subscription_plan) }}</strong> plan on NaijaBooks.
+            This is a reminder regarding your <strong>{{ ucfirst($tenant->subscription_plan) }}</strong> plan on AccountTaxNG.
         </div>
         @endif
 
@@ -65,7 +65,7 @@
         </p>
     </div>
     <div class="footer">
-        NaijaBooks — Nigerian SME Tax & Bookkeeping Platform<br>
+        AccountTaxNG — Nigerian SME Tax & Bookkeeping Platform<br>
         This is an automated notification. Please do not reply directly to this email.
     </div>
 </body>

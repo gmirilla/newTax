@@ -23,7 +23,7 @@ class SubscriptionCancelled extends Mailable
     {
         return new Envelope(
             to: [$this->tenant->email],
-            subject: 'Subscription cancelled — NaijaBooks',
+            subject: 'Subscription cancelled — AccountTaxNG',
         );
     }
 

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * HTTP client for the FIRS e-Invoicing API.
+ * HTTP client for the NRS e-Invoicing API.
  *
  * All requests are signed with a HMAC-SHA256 signature using the tenant's
  * secret key.  Every call is logged to firs_api_logs (immutable audit trail).
@@ -30,10 +30,10 @@ class FirsApiClient
     // ── Public API ────────────────────────────────────────────────────────────
 
     /**
-     * Submit an invoice payload for FIRS structural validation.
+     * Submit an invoice payload for NRS structural validation.
      *
      * @param  array  $payload  UBL 2.1 JSON payload
-     * @return array            FIRS validation response body
+     * @return array            NRS validation response body
      * @throws RuntimeException on HTTP or API error
      */
     public function validateInvoice(array $payload): array
@@ -45,7 +45,7 @@ class FirsApiClient
      * Sign a validated invoice and retrieve IRN/CSID/QR from FIRS.
      *
      * @param  array  $payload  UBL 2.1 JSON payload (same as validateInvoice)
-     * @return array            FIRS signing response: {irn, csid, qrCode, ...}
+     * @return array            NRS signing response: {irn, csid, qrCode, ...}
      * @throws RuntimeException on HTTP or API error
      */
     public function signInvoice(array $payload): array
@@ -85,7 +85,7 @@ class FirsApiClient
 
         } catch (RequestException $e) {
             // HTTP 4xx/5xx — response already logged above
-            $msg = $responseBody['message'] ?? $responseBody['error'] ?? "FIRS API error on {$endpoint}";
+            $msg = $responseBody['message'] ?? $responseBody['error'] ?? "NRS API error on {$endpoint}";
             throw new RuntimeException("[FIRS] {$msg} (HTTP {$responseStatus})", $responseStatus, $e);
 
         } catch (ConnectionException $e) {
@@ -103,7 +103,7 @@ class FirsApiClient
     }
 
     /**
-     * Build required headers for each FIRS API request.
+     * Build required headers for each NRS API request.
      * Authentication: API Key in header + HMAC-SHA256 request signature.
      */
     private function buildHeaders(array $payload): array
