@@ -155,6 +155,10 @@
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
                             🗂️ Categories
                         </a>
+                        <a href="{{ route('inventory.units.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.units.*') ? 'bg-green-900' : '' }}">
+                            📏 Units of Measure
+                        </a>
                         <a href="{{ route('inventory.sales.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">
                             🛒 Sales Orders
@@ -344,6 +348,10 @@
                         <a href="{{ route('inventory.categories.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
                             🗂️ Categories
+                        </a>
+                        <a href="{{ route('inventory.units.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.units.*') ? 'bg-green-900' : '' }}">
+                            📏 Units of Measure
                         </a>
                         <a href="{{ route('inventory.sales.index') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">

@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Models\InventoryCategory;
 use App\Models\InventoryItem;
+use App\Models\InventoryUnit;
 use App\Models\Invoice;
 use App\Models\RestockRequest;
 use App\Models\SalesOrder;
 use App\Observers\InventoryItemObserver;
 use App\Policies\InventoryCategoryPolicy;
 use App\Policies\InventoryItemPolicy;
+use App\Policies\InventoryUnitPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\RestockRequestPolicy;
 use App\Policies\SalesOrderPolicy;
@@ -40,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(InventoryCategory::class, InventoryCategoryPolicy::class);
         Gate::policy(InventoryItem::class, InventoryItemPolicy::class);
+        Gate::policy(InventoryUnit::class, InventoryUnitPolicy::class);
         Gate::policy(SalesOrder::class, SalesOrderPolicy::class);
         Gate::policy(RestockRequest::class, RestockRequestPolicy::class);
 

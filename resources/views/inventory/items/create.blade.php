@@ -47,24 +47,27 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Unit of Measure <span class="text-red-500">*</span></label>
-                    <input type="text" name="unit" value="{{ old('unit', 'piece') }}" required
-                           list="unit-options"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"
-                           placeholder="piece, kg, carton, litre…">
-                    <datalist id="unit-options">
-                        <option value="piece">
-                        <option value="pair">
-                        <option value="kg">
-                        <option value="g">
-                        <option value="litre">
-                        <option value="ml">
-                        <option value="carton">
-                        <option value="bag">
-                        <option value="box">
-                        <option value="roll">
-                        <option value="metre">
-                        <option value="set">
-                    </datalist>
+                    @if($units->isEmpty())
+                        <p class="mt-1 text-xs text-yellow-600">
+                            No units defined yet.
+                            <a href="{{ route('inventory.units.index') }}" class="underline">Create units of measure →</a>
+                        </p>
+                        <input type="text" name="unit" value="{{ old('unit', 'piece') }}" required maxlength="30"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm"
+                               placeholder="piece, kg, carton…">
+                    @else
+                        <select name="unit" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+                            @foreach($units as $u)
+                                <option value="{{ $u->name }}" {{ old('unit', 'piece') === $u->name ? 'selected' : '' }}>
+                                    {{ $u->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-400">
+                            <a href="{{ route('inventory.units.index') }}" class="text-green-600 hover:underline">Manage units →</a>
+                        </p>
+                    @endif
                     @error('unit')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 

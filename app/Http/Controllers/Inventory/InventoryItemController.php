@@ -7,6 +7,7 @@ use App\Models\Account;
 use App\Models\InventoryAlert;
 use App\Models\InventoryCategory;
 use App\Models\InventoryItem;
+use App\Models\InventoryUnit;
 use App\Models\StockMovement;
 use App\Services\BookkeepingService;
 use Illuminate\Http\RedirectResponse;
@@ -79,13 +80,21 @@ class InventoryItemController extends Controller
     {
         $this->authorize('create', InventoryItem::class);
 
-        $categories = InventoryCategory::where('tenant_id', auth()->user()->tenant_id)
+        $tenantId = auth()->user()->tenant_id;
+
+        $categories = InventoryCategory::where('tenant_id', $tenantId)
             ->withoutGlobalScope('tenant')
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        return view('inventory.items.create', compact('categories'));
+        $units = InventoryUnit::where('tenant_id', $tenantId)
+            ->withoutGlobalScope('tenant')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('inventory.items.create', compact('categories', 'units'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -202,13 +211,21 @@ class InventoryItemController extends Controller
     {
         $this->authorize('update', $inventoryItem);
 
-        $categories = InventoryCategory::where('tenant_id', auth()->user()->tenant_id)
+        $tenantId = auth()->user()->tenant_id;
+
+        $categories = InventoryCategory::where('tenant_id', $tenantId)
             ->withoutGlobalScope('tenant')
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        return view('inventory.items.edit', compact('inventoryItem', 'categories'));
+        $units = InventoryUnit::where('tenant_id', $tenantId)
+            ->withoutGlobalScope('tenant')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('inventory.items.edit', compact('inventoryItem', 'categories', 'units'));
     }
 
     public function update(Request $request, InventoryItem $inventoryItem): RedirectResponse
