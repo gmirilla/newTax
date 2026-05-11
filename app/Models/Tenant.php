@@ -120,6 +120,31 @@ class Tenant extends Model
         return $this->hasMany(AuditLog::class);
     }
 
+    public function inventoryCategories(): HasMany
+    {
+        return $this->hasMany(InventoryCategory::class);
+    }
+
+    public function inventoryItems(): HasMany
+    {
+        return $this->hasMany(InventoryItem::class);
+    }
+
+    public function salesOrders(): HasMany
+    {
+        return $this->hasMany(SalesOrder::class);
+    }
+
+    public function restockRequests(): HasMany
+    {
+        return $this->hasMany(RestockRequest::class);
+    }
+
+    public function inventoryAlerts(): HasMany
+    {
+        return $this->hasMany(InventoryAlert::class);
+    }
+
     // --- Tax helper methods ---
 
     public function getCitRate(): float

@@ -88,7 +88,7 @@
                         <td class="px-4 py-3 text-sm font-medium text-green-700">
                             <a href="{{ route('invoices.show', $invoice) }}">{{ $invoice->invoice_number }}</a>
                         </td>
-                        <td class="px-4 py-3 text-sm">{{ $invoice->customer->name }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $invoice->customer?->name ?? 'Walk-in' }}</td>
                         <td class="px-4 py-3 text-sm">{{ $invoice->invoice_date->format('d M Y') }}</td>
                         <td class="px-4 py-3 text-sm {{ $invoice->isOverdue() ? 'text-red-600 font-medium' : '' }}">
                             {{ $invoice->due_date->format('d M Y') }}

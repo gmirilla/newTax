@@ -20,6 +20,12 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\Inventory\InventoryAlertController;
+use App\Http\Controllers\Inventory\InventoryCategoryController;
+use App\Http\Controllers\Inventory\InventoryItemController;
+use App\Http\Controllers\Inventory\InventoryReportController;
+use App\Http\Controllers\Inventory\RestockRequestController;
+use App\Http\Controllers\Inventory\SalesOrderController;
 use App\Http\Controllers\MarketingController;
 use Illuminate\Support\Facades\Route;
 
@@ -198,6 +204,80 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::post('/{payroll}/recompute',      [PayrollController::class, 'recompute'])->name('recompute')->whereNumber('payroll');
             Route::get('/{payroll}/export/pdf',      [PayrollController::class, 'downloadPdf'])->name('export.pdf')->whereNumber('payroll');
             Route::get('/{payroll}/export/excel',    [PayrollController::class, 'downloadExcel'])->name('export.excel')->whereNumber('payroll');
+        });
+
+        // ── Inventory ─────────────────────────────────────────────────────────────
+        Route::prefix('inventory')->name('inventory.')->group(function () {
+
+            // Categories (inline CRUD — no edit/show pages)
+            Route::prefix('categories')->name('categories.')->group(function () {
+                Route::get('/',          [InventoryCategoryController::class, 'index'])->name('index');
+                Route::post('/',         [InventoryCategoryController::class, 'store'])->name('store');
+                Route::put('/{category}',[InventoryCategoryController::class, 'update'])->name('update');
+                Route::delete('/{category}',[InventoryCategoryController::class, 'destroy'])->name('destroy');
+            });
+
+            // Alerts
+            Route::post('/alerts/{alert}/dismiss',  [InventoryAlertController::class, 'dismiss'])->name('alerts.dismiss');
+            Route::post('/alerts/dismiss-all',      [InventoryAlertController::class, 'dismissAll'])->name('alerts.dismiss-all');
+
+            // Items
+            Route::prefix('items')->name('items.')->group(function () {
+                Route::get('/',                           [InventoryItemController::class, 'index'])->name('index');
+                Route::get('/create',                     [InventoryItemController::class, 'create'])->name('create');
+                Route::post('/',                          [InventoryItemController::class, 'store'])->name('store');
+                Route::get('/{inventoryItem}',            [InventoryItemController::class, 'show'])->name('show');
+                Route::get('/{inventoryItem}/edit',       [InventoryItemController::class, 'edit'])->name('edit');
+                Route::put('/{inventoryItem}',            [InventoryItemController::class, 'update'])->name('update');
+                Route::delete('/{inventoryItem}',         [InventoryItemController::class, 'destroy'])->name('destroy');
+                Route::post('/{inventoryItem}/adjust',    [InventoryItemController::class, 'adjustStock'])->name('adjust');
+            });
+
+            // Restock Requests
+            Route::prefix('restock')->name('restock.')->group(function () {
+                Route::get('/',                              [RestockRequestController::class, 'index'])->name('index');
+                Route::get('/create',                        [RestockRequestController::class, 'create'])->name('create');
+                Route::post('/',                             [RestockRequestController::class, 'store'])->name('store');
+                Route::get('/{restockRequest}',              [RestockRequestController::class, 'show'])->name('show');
+                Route::post('/{restockRequest}/approve',     [RestockRequestController::class, 'approve'])->name('approve');
+                Route::post('/{restockRequest}/reject',      [RestockRequestController::class, 'reject'])->name('reject');
+                Route::post('/{restockRequest}/receive',     [RestockRequestController::class, 'receive'])->name('receive');
+                Route::post('/{restockRequest}/cancel',      [RestockRequestController::class, 'cancel'])->name('cancel');
+            });
+
+            // Sales Orders
+            Route::prefix('sales')->name('sales.')->group(function () {
+                Route::get('/',                             [SalesOrderController::class, 'index'])->name('index');
+                Route::get('/create',                       [SalesOrderController::class, 'create'])->name('create');
+                Route::post('/',                            [SalesOrderController::class, 'store'])->name('store');
+                Route::get('/{salesOrder}',                 [SalesOrderController::class, 'show'])->name('show');
+                Route::get('/{salesOrder}/edit',            [SalesOrderController::class, 'edit'])->name('edit');
+                Route::put('/{salesOrder}',                 [SalesOrderController::class, 'update'])->name('update');
+                Route::post('/{salesOrder}/confirm',        [SalesOrderController::class, 'confirm'])->name('confirm');
+                Route::post('/{salesOrder}/cancel',         [SalesOrderController::class, 'cancel'])->name('cancel');
+            });
+
+            // Inventory Reports
+            Route::prefix('reports')->name('reports.')->group(function () {
+                Route::get('/stock-valuation',        [InventoryReportController::class, 'stockValuation'])->name('stock-valuation');
+                Route::get('/stock-valuation/pdf',    [InventoryReportController::class, 'stockValuationPdf'])->name('stock-valuation.pdf');
+                Route::get('/stock-valuation/excel',  [InventoryReportController::class, 'stockValuationExcel'])->name('stock-valuation.excel');
+                Route::get('/low-stock',              [InventoryReportController::class, 'lowStock'])->name('low-stock');
+                Route::get('/low-stock/pdf',          [InventoryReportController::class, 'lowStockPdf'])->name('low-stock.pdf');
+                Route::get('/low-stock/excel',        [InventoryReportController::class, 'lowStockExcel'])->name('low-stock.excel');
+                Route::get('/movements',              [InventoryReportController::class, 'movements'])->name('movements');
+                Route::get('/movements/pdf',          [InventoryReportController::class, 'movementsPdf'])->name('movements.pdf');
+                Route::get('/movements/excel',        [InventoryReportController::class, 'movementsExcel'])->name('movements.excel');
+                Route::get('/sales-by-item',          [InventoryReportController::class, 'salesByItem'])->name('sales-by-item');
+                Route::get('/sales-by-item/pdf',      [InventoryReportController::class, 'salesByItemPdf'])->name('sales-by-item.pdf');
+                Route::get('/sales-by-item/excel',    [InventoryReportController::class, 'salesByItemExcel'])->name('sales-by-item.excel');
+                Route::get('/sales-by-period',        [InventoryReportController::class, 'salesByPeriod'])->name('sales-by-period');
+                Route::get('/sales-by-period/pdf',    [InventoryReportController::class, 'salesByPeriodPdf'])->name('sales-by-period.pdf');
+                Route::get('/sales-by-period/excel',  [InventoryReportController::class, 'salesByPeriodExcel'])->name('sales-by-period.excel');
+                Route::get('/restock-history',        [InventoryReportController::class, 'restockHistory'])->name('restock-history');
+                Route::get('/restock-history/pdf',    [InventoryReportController::class, 'restockHistoryPdf'])->name('restock-history.pdf');
+                Route::get('/restock-history/excel',  [InventoryReportController::class, 'restockHistoryExcel'])->name('restock-history.excel');
+            });
         });
 
         // Reports

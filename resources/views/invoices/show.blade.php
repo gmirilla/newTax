@@ -158,6 +158,7 @@
         <div class="p-6 grid grid-cols-2 gap-6 border-b text-sm">
             <div>
                 <p class="text-xs text-gray-400 uppercase font-medium mb-1">Bill To</p>
+                @if($invoice->customer)
                 <p class="font-semibold text-gray-900">{{ $invoice->customer->name }}</p>
                 @if($invoice->customer->email)
                     <p class="text-gray-500">{{ $invoice->customer->email }}</p>
@@ -167,6 +168,9 @@
                 @endif
                 @if($invoice->customer->tin)
                     <p class="text-xs text-gray-400 mt-1">TIN: {{ $invoice->customer->tin }}</p>
+                @endif
+                @else
+                <p class="font-semibold text-gray-900">Walk-in Customer</p>
                 @endif
             </div>
             <div class="text-right">

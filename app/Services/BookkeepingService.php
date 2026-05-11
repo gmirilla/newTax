@@ -334,6 +334,11 @@ class BookkeepingService
             ->whereNull('transaction_id')
             ->whereIn('status', ['sent', 'partial', 'paid', 'overdue'])
             ->whereBetween('invoice_date', [$start->toDateString(), $end->toDateString()])
+            // Exclude supplier bills (no customer, not a B2C walk-in sale)
+            ->where(function ($q) {
+                $q->whereNotNull('customer_id')
+                  ->orWhere('is_b2c', true);
+            })
             ->with('items')
             ->get();
 
@@ -508,6 +513,11 @@ class BookkeepingService
             ->whereNull('transaction_id')
             ->whereIn('status', ['sent', 'partial', 'overdue'])
             ->where('invoice_date', '<=', $asOf->toDateString())
+            // Exclude supplier bills (no customer, not a B2C walk-in sale)
+            ->where(function ($q) {
+                $q->whereNotNull('customer_id')
+                  ->orWhere('is_b2c', true);
+            })
             ->sum('balance_due');
 
         if ((float) $total == 0) {
