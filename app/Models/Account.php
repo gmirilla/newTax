@@ -40,8 +40,10 @@ class Account extends Model
         ['code' => '2100', 'name' => 'VAT Payable',            'type' => 'liability', 'sub_type' => 'vat_payable'],
         ['code' => '2101', 'name' => 'Input VAT Control',      'type' => 'liability', 'sub_type' => 'vat_control'],
         ['code' => '2200', 'name' => 'WHT Payable',            'type' => 'liability', 'sub_type' => 'wht_payable'],
-        ['code' => '2300', 'name' => 'PAYE Payable',           'type' => 'liability', 'sub_type' => 'paye_payable'],
-        ['code' => '2400', 'name' => 'CIT Payable',            'type' => 'liability', 'sub_type' => 'cit_payable'],
+        ['code' => '2300', 'name' => 'PAYE Payable',                   'type' => 'liability', 'sub_type' => 'paye_payable'],
+        ['code' => '2301', 'name' => 'Pension Contributions Payable', 'type' => 'liability', 'sub_type' => 'other_liability'],
+        ['code' => '2302', 'name' => 'NHF Contributions Payable',     'type' => 'liability', 'sub_type' => 'other_liability'],
+        ['code' => '2400', 'name' => 'CIT Payable',                   'type' => 'liability', 'sub_type' => 'cit_payable'],
         ['code' => '2500', 'name' => 'Bank Loan',              'type' => 'liability', 'sub_type' => 'loan'],
         // Equity (3xxx)
         ['code' => '3001', 'name' => "Owner's Equity",         'type' => 'equity', 'sub_type' => 'owners_equity'],

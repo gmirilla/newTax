@@ -10,7 +10,17 @@
       "Bash(grep -rn ']\\) as $item\\\\]\\)\\\\|]\\) as $[a-z]*\\\\]\\)' resources/views/marketing/ resources/views/auth/)",
       "Bash(grep -rn \"]\\) as \\\\$\" resources/views/marketing/ resources/views/auth/)",
       "Bash(grep -n \"]\\) as \\\\$\" resources/views/marketing/features.blade.php)",
-      "Bash(grep -rn \"]\\) as \\\\$\" resources/views/marketing/ resources/views/auth/register.blade.php)"
+      "Bash(grep -rn \"]\\) as \\\\$\" resources/views/marketing/ resources/views/auth/register.blade.php)",
+      "Bash(php -r \"require 'vendor/autoload.php'; echo 'OK';\")",
+      "Bash(php -l app/Http/Controllers/Inventory/SalesOrderController.php)",
+      "Bash(php -l app/Http/Controllers/Inventory/RestockRequestController.php)",
+      "Bash(php -l app/Notifications/RestockRequestedNotification.php)",
+      "Bash(php -l app/Notifications/RestockStatusNotification.php)",
+      "Bash(php -l app/Services/BookkeepingService.php)",
+      "Bash(php -l app/Models/Account.php)",
+      "Bash(php -l \"/c/claude/newTax/app/Http/Controllers/Inventory/InventoryReportController.php\")",
+      "Bash(php -l \"/c/claude/newTax/routes/web.php\")",
+      "Bash(git ls-tree *)"
     ]
   }
 }

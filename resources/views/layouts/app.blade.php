@@ -137,6 +137,72 @@
                     </div>
 
                     <div class="mt-2 pt-2 space-y-1 px-2">
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory</p>
+                        <a href="{{ route('inventory.items.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.items.*') ? 'bg-green-900' : '' }}">
+                            📦 Items & Stock
+                            @php
+                                $__alertCount = \App\Models\InventoryAlert::where('tenant_id', auth()->user()->tenant_id ?? 0)
+                                    ->withoutGlobalScope('tenant')->whereNull('seen_at')->count();
+                            @endphp
+                            @if($__alertCount > 0)
+                            <span class="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-xs font-bold bg-red-500 text-white">
+                                {{ $__alertCount > 99 ? '99+' : $__alertCount }}
+                            </span>
+                            @endif
+                        </a>
+                        <a href="{{ route('inventory.categories.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
+                            🗂️ Categories
+                        </a>
+                        <a href="{{ route('inventory.sales.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">
+                            🛒 Sales Orders
+                        </a>
+                        <a href="{{ route('inventory.restock.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.restock.*') ? 'bg-green-900' : '' }}">
+                            🔄 Restock Requests
+                            @php
+                                $__pendingRestocks = \App\Models\RestockRequest::where('tenant_id', auth()->user()->tenant_id ?? 0)
+                                    ->withoutGlobalScope('tenant')->where('status', 'pending')->count();
+                            @endphp
+                            @if($__pendingRestocks > 0)
+                            <span class="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-xs font-bold bg-yellow-400 text-yellow-900">
+                                {{ $__pendingRestocks > 99 ? '99+' : $__pendingRestocks }}
+                            </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <div class="mt-2 pt-2 space-y-1 px-2">
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory Reports</p>
+                        <a href="{{ route('inventory.reports.stock-valuation') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.stock-valuation*') ? 'bg-green-900' : '' }}">
+                            📊 Stock Valuation
+                        </a>
+                        <a href="{{ route('inventory.reports.low-stock') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.low-stock*') ? 'bg-green-900' : '' }}">
+                            ⚠️ Low Stock
+                        </a>
+                        <a href="{{ route('inventory.reports.movements') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.movements*') ? 'bg-green-900' : '' }}">
+                            📋 Stock Movements
+                        </a>
+                        <a href="{{ route('inventory.reports.sales-by-item') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-item*') ? 'bg-green-900' : '' }}">
+                            🏷️ Sales by Item
+                        </a>
+                        <a href="{{ route('inventory.reports.sales-by-period') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-period*') ? 'bg-green-900' : '' }}">
+                            📅 Sales by Period
+                        </a>
+                        <a href="{{ route('inventory.reports.restock-history') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.restock-history*') ? 'bg-green-900' : '' }}">
+                            🔄 Restock History
+                        </a>
+                    </div>
+
+                    <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Reports</p>
                         <a href="{{ route('reports.pl') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.pl*') ? 'bg-green-900' : '' }}">
@@ -261,6 +327,72 @@
                     </div>
 
                     <div class="mt-2 pt-2 space-y-1 px-2">
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory</p>
+                        <a href="{{ route('inventory.items.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.items.*') ? 'bg-green-900' : '' }}">
+                            📦 Items & Stock
+                            @php
+                                $__alertCount = \App\Models\InventoryAlert::where('tenant_id', auth()->user()->tenant_id ?? 0)
+                                    ->withoutGlobalScope('tenant')->whereNull('seen_at')->count();
+                            @endphp
+                            @if($__alertCount > 0)
+                            <span class="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-xs font-bold bg-red-500 text-white">
+                                {{ $__alertCount > 99 ? '99+' : $__alertCount }}
+                            </span>
+                            @endif
+                        </a>
+                        <a href="{{ route('inventory.categories.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
+                            🗂️ Categories
+                        </a>
+                        <a href="{{ route('inventory.sales.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">
+                            🛒 Sales Orders
+                        </a>
+                        <a href="{{ route('inventory.restock.index') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.restock.*') ? 'bg-green-900' : '' }}">
+                            🔄 Restock Requests
+                            @php
+                                $__pendingRestocks = \App\Models\RestockRequest::where('tenant_id', auth()->user()->tenant_id ?? 0)
+                                    ->withoutGlobalScope('tenant')->where('status', 'pending')->count();
+                            @endphp
+                            @if($__pendingRestocks > 0)
+                            <span class="ml-auto inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full text-xs font-bold bg-yellow-400 text-yellow-900">
+                                {{ $__pendingRestocks > 99 ? '99+' : $__pendingRestocks }}
+                            </span>
+                            @endif
+                        </a>
+                    </div>
+
+                    <div class="mt-2 pt-2 space-y-1 px-2">
+                        <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory Reports</p>
+                        <a href="{{ route('inventory.reports.stock-valuation') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.stock-valuation*') ? 'bg-green-900' : '' }}">
+                            📊 Stock Valuation
+                        </a>
+                        <a href="{{ route('inventory.reports.low-stock') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.low-stock*') ? 'bg-green-900' : '' }}">
+                            ⚠️ Low Stock
+                        </a>
+                        <a href="{{ route('inventory.reports.movements') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.movements*') ? 'bg-green-900' : '' }}">
+                            📋 Stock Movements
+                        </a>
+                        <a href="{{ route('inventory.reports.sales-by-item') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-item*') ? 'bg-green-900' : '' }}">
+                            🏷️ Sales by Item
+                        </a>
+                        <a href="{{ route('inventory.reports.sales-by-period') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-period*') ? 'bg-green-900' : '' }}">
+                            📅 Sales by Period
+                        </a>
+                        <a href="{{ route('inventory.reports.restock-history') }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.restock-history*') ? 'bg-green-900' : '' }}">
+                            🔄 Restock History
+                        </a>
+                    </div>
+
+                    <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Reports</p>
                         <a href="{{ route('reports.pl') }}"
                             class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('reports.pl*') ? 'bg-green-900' : '' }}">
@@ -369,7 +501,7 @@
                                 <span class="flex-shrink-0 text-base">⬆</span>
                                 <div class="flex-1 min-w-0">
                                     <span class="block">NRS e-Invoicing</span>
-                                    @if($canFirs)
+                                    @if($canNRS)
                                     <span class="block text-xs {{ $firsActive ? 'text-green-600' : 'text-gray-400' }}">
                                         {{ $firsActive ? '● Configured' : '○ Not configured' }}
                                     </span>
@@ -377,7 +509,7 @@
                                     <span class="block text-xs text-amber-500">Upgrade required</span>
                                     @endif
                                 </div>
-                                @if($canFirs)
+                                @if($canNRS)
                                 <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-medium">Admin</span>
                                 @else
                                 <span class="ml-auto text-xs">🔒</span>
