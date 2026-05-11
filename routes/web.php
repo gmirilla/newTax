@@ -22,6 +22,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\Inventory\InventoryAlertController;
 use App\Http\Controllers\Inventory\InventoryCategoryController;
+use App\Http\Controllers\Inventory\InventoryUnitController;
 use App\Http\Controllers\Inventory\InventoryItemController;
 use App\Http\Controllers\Inventory\InventoryReportController;
 use App\Http\Controllers\Inventory\RestockRequestController;
@@ -215,6 +216,14 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::post('/',         [InventoryCategoryController::class, 'store'])->name('store');
                 Route::put('/{category}',[InventoryCategoryController::class, 'update'])->name('update');
                 Route::delete('/{category}',[InventoryCategoryController::class, 'destroy'])->name('destroy');
+            });
+
+            // Units of Measure (inline CRUD — no edit/show pages)
+            Route::prefix('units')->name('units.')->group(function () {
+                Route::get('/',       [InventoryUnitController::class, 'index'])->name('index');
+                Route::post('/',      [InventoryUnitController::class, 'store'])->name('store');
+                Route::put('/{unit}', [InventoryUnitController::class, 'update'])->name('update');
+                Route::delete('/{unit}', [InventoryUnitController::class, 'destroy'])->name('destroy');
             });
 
             // Alerts

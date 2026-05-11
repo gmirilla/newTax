@@ -69,6 +69,9 @@ class TenancyService
             // Provision default chart of accounts
             $this->bookkeepingService->provisionDefaultAccounts($tenant);
 
+            // Provision default units of measure
+            $this->provisionDefaultUnits($tenant);
+
             return ['tenant' => $tenant, 'admin' => $admin];
         });
     }
@@ -90,5 +93,21 @@ class TenancyService
     public function getCurrentTenant(): ?Tenant
     {
         return app()->has('currentTenant') ? app('currentTenant') : null;
+    }
+
+    private function provisionDefaultUnits(Tenant $tenant): void
+    {
+        $now = now();
+        $defaults = ['piece', 'pair', 'kg', 'g', 'litre', 'ml', 'carton', 'bag', 'box', 'roll', 'metre', 'set'];
+
+        foreach ($defaults as $name) {
+            DB::table('inventory_units')->insertOrIgnore([
+                'tenant_id'  => $tenant->id,
+                'name'       => $name,
+                'is_active'  => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
     }
 }

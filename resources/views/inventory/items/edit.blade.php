@@ -46,15 +46,30 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Unit of Measure <span class="text-red-500">*</span></label>
-                    <input type="text" name="unit" value="{{ old('unit', $inventoryItem->unit) }}" required
-                           list="unit-options"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
-                    <datalist id="unit-options">
-                        <option value="piece"><option value="pair"><option value="kg">
-                        <option value="g"><option value="litre"><option value="ml">
-                        <option value="carton"><option value="bag"><option value="box">
-                        <option value="roll"><option value="metre"><option value="set">
-                    </datalist>
+                    @if($units->isEmpty())
+                        <input type="text" name="unit" value="{{ old('unit', $inventoryItem->unit) }}" required maxlength="30"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+                        <p class="mt-1 text-xs text-yellow-600">
+                            <a href="{{ route('inventory.units.index') }}" class="underline">Manage units of measure →</a>
+                        </p>
+                    @else
+                        @php $currentUnit = old('unit', $inventoryItem->unit); @endphp
+                        <select name="unit" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+                            {{-- If the item's current unit isn't in the active list, still show it --}}
+                            @if($units->pluck('name')->doesntContain($currentUnit))
+                                <option value="{{ $currentUnit }}" selected>{{ $currentUnit }} (current)</option>
+                            @endif
+                            @foreach($units as $u)
+                                <option value="{{ $u->name }}" {{ $currentUnit === $u->name ? 'selected' : '' }}>
+                                    {{ $u->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-400">
+                            <a href="{{ route('inventory.units.index') }}" class="text-green-600 hover:underline">Manage units →</a>
+                        </p>
+                    @endif
                     @error('unit')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
 
