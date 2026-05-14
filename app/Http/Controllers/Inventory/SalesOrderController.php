@@ -50,9 +50,9 @@ class SalesOrderController extends Controller
         $stats = SalesOrder::where('tenant_id', $tenant->id)
             ->withoutGlobalScope('tenant')
             ->selectRaw("
-                COUNT(*) FILTER (WHERE status = 'confirmed') AS confirmed,
-                COUNT(*) FILTER (WHERE status = 'draft')     AS drafts,
-                COALESCE(SUM(total_amount) FILTER (WHERE status = 'confirmed'), 0) AS total_revenue
+                SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) AS confirmed,
+                SUM(CASE WHEN status = 'draft'     THEN 1 ELSE 0 END) AS drafts,
+                COALESCE(SUM(CASE WHEN status = 'confirmed' THEN total_amount ELSE 0 END), 0) AS total_revenue
             ")
             ->first();
 

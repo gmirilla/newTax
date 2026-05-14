@@ -299,10 +299,17 @@ class InventoryReportController extends Controller
 
         $filters = ['from' => $from->toDateString(), 'to' => $to->toDateString(), 'group_by' => $groupBy];
 
+        $isPgsql = DB::getDriverName() === 'pgsql';
         $periodExpr = match ($groupBy) {
-            'month' => "TO_CHAR(sale_date, 'YYYY-MM')",
-            'week'  => "TO_CHAR(DATE_TRUNC('week', sale_date), 'YYYY-MM-DD')",
-            default => "TO_CHAR(sale_date, 'YYYY-MM-DD')",
+            'month' => $isPgsql
+                ? "TO_CHAR(sale_date, 'YYYY-MM')"
+                : "DATE_FORMAT(sale_date, '%Y-%m')",
+            'week'  => $isPgsql
+                ? "TO_CHAR(DATE_TRUNC('week', sale_date), 'YYYY-MM-DD')"
+                : "DATE_FORMAT(DATE_SUB(sale_date, INTERVAL WEEKDAY(sale_date) DAY), '%Y-%m-%d')",
+            default => $isPgsql
+                ? "TO_CHAR(sale_date, 'YYYY-MM-DD')"
+                : "DATE_FORMAT(sale_date, '%Y-%m-%d')",
         };
 
         $rows = SalesOrder::select(
