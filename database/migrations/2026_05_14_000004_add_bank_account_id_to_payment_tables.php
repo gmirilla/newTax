@@ -9,17 +9,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->unsignedBigInteger('bank_account_id')->nullable()->after('payment_account_id');
+            $table->unsignedBigInteger('bank_account_id')->nullable();
             $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->nullOnDelete();
         });
 
         Schema::table('transactions', function (Blueprint $table) {
-            $table->unsignedBigInteger('bank_account_id')->nullable()->after('id');
+            $table->unsignedBigInteger('bank_account_id')->nullable();
             $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->nullOnDelete();
         });
 
         Schema::table('sales_orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('bank_account_id')->nullable()->after('payment_method');
+            $table->unsignedBigInteger('bank_account_id')->nullable();
             $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->nullOnDelete();
         });
     }
