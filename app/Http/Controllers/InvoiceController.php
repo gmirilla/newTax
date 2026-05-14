@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\InvoiceRequest;
 use App\Imports\InvoicesImport;
 use App\Jobs\FIRS\ProcessFirsInvoiceJob;
+use App\Jobs\SendInvoiceEmail;
 use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -248,13 +249,23 @@ class InvoiceController extends Controller
 
         // Post revenue recognition journal (DR AR / CR Revenue / CR VAT Payable)
         // Idempotent — skips if already posted or if required accounts are missing
-        $invoice->load('tenant');
+        $invoice->load(['tenant', 'customer', 'items']);
         $this->invoiceService->postRevenueJournal($invoice);
 
-        // TODO: Dispatch SendInvoiceEmail job
-        // SendInvoiceEmail::dispatch($invoice);
+        $emailSent = false;
+        if ($invoice->customer?->email) {
+            SendInvoiceEmail::dispatch($invoice);
+            $emailSent = true;
+        }
 
-        return back()->with('success', "Invoice {$invoice->invoice_number} sent and revenue recognised in ledger.");
+        $message = "Invoice {$invoice->invoice_number} sent and revenue recognised in ledger.";
+        if ($emailSent) {
+            $message .= " A copy has been emailed to {$invoice->customer->email}.";
+        } elseif ($invoice->customer && !$invoice->customer->email) {
+            $message .= " No email on file for this customer — email not sent.";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function void(Invoice $invoice): RedirectResponse

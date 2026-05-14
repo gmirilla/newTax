@@ -208,7 +208,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
         });
 
         // ── Inventory ─────────────────────────────────────────────────────────────
-        Route::prefix('inventory')->name('inventory.')->group(function () {
+        Route::prefix('inventory')->name('inventory.')->middleware('plan:inventory')->group(function () {
 
             // Categories (inline CRUD — no edit/show pages)
             Route::prefix('categories')->name('categories.')->group(function () {
@@ -267,7 +267,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             });
 
             // Inventory Reports
-            Route::prefix('reports')->name('reports.')->group(function () {
+            Route::prefix('reports')->name('reports.')->middleware('plan:inventory_reports')->group(function () {
                 Route::get('/stock-valuation',        [InventoryReportController::class, 'stockValuation'])->name('stock-valuation');
                 Route::get('/stock-valuation/pdf',    [InventoryReportController::class, 'stockValuationPdf'])->name('stock-valuation.pdf');
                 Route::get('/stock-valuation/excel',  [InventoryReportController::class, 'stockValuationExcel'])->name('stock-valuation.excel');

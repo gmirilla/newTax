@@ -86,8 +86,16 @@ Everything since commit `251f0fb` (Added Company Logo support) is unstaged. A si
 
 ## Email Delivery
 
-- [ ] **Invoice email not wired** — `InvoiceController::sendEmail()` sets status to `sent` and posts the revenue journal but the actual email dispatch is commented out (`// TODO: Dispatch SendInvoiceEmail job`). Needs: `SendInvoiceEmail` Mailable + Job, queued dispatch, and a queue worker configured in production.
-- [ ] **Quote email** — `QuoteController::send()` likely has the same gap (unverified).
+- [x] **Invoice email not wired** — implemented 2026-05-13. `InvoiceEmail` Mailable (PDF attached via DomPDF), `SendInvoiceEmail` queued Job (3 tries, 120s backoff), dispatched from `InvoiceController::sendEmail()` when customer has an email on file. Flash message adapts: confirms email address, warns if no email on file, silent for walk-in customers.
+- [x] **Quote email** — implemented 2026-05-13. Same pattern: `QuoteEmail` Mailable + `SendQuoteEmail` Job, dispatched from `QuoteController::send()`.
+
+Production queue requirement — the jobs use ShouldQueue so you need a queue worker running on the server
+# In supervisor or as a background process:
+php artisan queue:work --tries=3 --backoff=120
+
+# Or for a one-off (not recommended for production):
+php artisan queue:listen
+
 
 ---
 

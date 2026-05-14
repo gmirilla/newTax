@@ -33,6 +33,8 @@ class Plan extends Model
         'payroll'            => false,
         'firs'               => false,
         'advanced_reports'   => false,
+        'inventory'          => false,
+        'inventory_reports'  => false,
         'api_access'         => false,
     ];
 
