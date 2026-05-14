@@ -298,7 +298,7 @@ class RestockRequestController extends Controller
             // 6. Finalise the request
             $restockRequest->update([
                 'status'              => RestockRequest::STATUS_RECEIVED,
-                'quantity_requested'  => $qtyIn,
+                'quantity_received'   => $qtyIn,
                 'unit_cost'           => $unitCost,
                 'supplier_invoice_no' => $validated['supplier_invoice_no'] ?? $restockRequest->supplier_invoice_no,
                 'received_at'         => now(),

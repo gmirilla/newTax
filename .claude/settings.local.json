@@ -20,7 +20,10 @@
       "Bash(php -l app/Models/Account.php)",
       "Bash(php -l \"/c/claude/newTax/app/Http/Controllers/Inventory/InventoryReportController.php\")",
       "Bash(php -l \"/c/claude/newTax/routes/web.php\")",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "Bash(php -l app/Models/BankAccount.php)",
+      "Bash(php -l app/Policies/BankAccountPolicy.php)",
+      "Bash(php -l app/Http/Controllers/BankAccountController.php)"
     ]
   }
 }

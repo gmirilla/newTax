@@ -109,6 +109,38 @@
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                     </div>
                     <div class="col-span-2">
+                        @if($userBankAccounts->isNotEmpty())
+                        <label class="block text-xs font-medium text-gray-700">Deposit To (Bank Account) *</label>
+                        <select name="payment_account_id" id="pay_account_select" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">
+                            <option value="">— Select bank account —</option>
+                            @foreach($userBankAccounts as $ba)
+                                <option value="{{ $ba->glAccount?->id }}"
+                                        data-bank-id="{{ $ba->id }}"
+                                        {{ $ba->is_default ? 'selected' : '' }}>
+                                    {{ $ba->name }}{{ $ba->bank_name ? ' — '.$ba->bank_name : '' }}{{ $ba->is_default ? ' (default)' : '' }}
+                                </option>
+                            @endforeach
+                            <optgroup label="Other GL accounts">
+                                @foreach($bankAccounts->whereNotIn('sub_type', ['bank']) as $acct)
+                                    <option value="{{ $acct->id }}">{{ $acct->code }} – {{ $acct->name }}</option>
+                                @endforeach
+                            </optgroup>
+                        </select>
+                        <input type="hidden" name="bank_account_id" id="pay_bank_account_id">
+                        <script>
+                            document.getElementById('pay_account_select').addEventListener('change', function() {
+                                var opt = this.options[this.selectedIndex];
+                                document.getElementById('pay_bank_account_id').value = opt.dataset.bankId || '';
+                            });
+                            // Set initial value for default
+                            (function() {
+                                var sel = document.getElementById('pay_account_select');
+                                var opt = sel.options[sel.selectedIndex];
+                                document.getElementById('pay_bank_account_id').value = opt.dataset.bankId || '';
+                            })();
+                        </script>
+                        @else
                         <label class="block text-xs font-medium text-gray-700">Deposit To (Bank / Cash Account) *</label>
                         <select name="payment_account_id" required
                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">
@@ -117,6 +149,7 @@
                                 <option value="{{ $acct->id }}">{{ $acct->code }} – {{ $acct->name }}</option>
                             @endforeach
                         </select>
+                        @endif
                         <p class="text-xs text-gray-400 mt-0.5">
                             Journal: DR selected account / CR Accounts Receivable
                         </p>

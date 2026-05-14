@@ -19,7 +19,7 @@ class RestockRequest extends Model
 
     protected $fillable = [
         'tenant_id', 'item_id', 'request_number',
-        'quantity_requested', 'unit_cost',
+        'quantity_requested', 'quantity_received', 'unit_cost',
         'supplier_name', 'supplier_invoice_no', 'notes',
         'status', 'requested_by', 'approved_by',
         'approved_at', 'received_at', 'rejection_reason', 'invoice_id',
@@ -27,6 +27,7 @@ class RestockRequest extends Model
 
     protected $casts = [
         'quantity_requested' => 'decimal:3',
+        'quantity_received'  => 'decimal:3',
         'unit_cost'          => 'decimal:2',
         'approved_at'        => 'datetime',
         'received_at'        => 'datetime',
@@ -88,6 +89,11 @@ class RestockRequest extends Model
     }
 
     public function canBeCancelled(): bool
+    {
+        return in_array($this->status, [self::STATUS_PENDING, self::STATUS_APPROVED]);
+    }
+
+    public function canBeRejected(): bool
     {
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_APPROVED]);
     }

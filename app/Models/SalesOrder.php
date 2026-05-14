@@ -19,7 +19,7 @@ class SalesOrder extends Model
     protected $fillable = [
         'tenant_id', 'order_number', 'customer_id', 'customer_name',
         'sale_date', 'subtotal', 'vat_amount', 'discount_amount', 'total_amount',
-        'payment_method', 'payment_reference', 'status', 'notes',
+        'payment_method', 'payment_reference', 'bank_account_id', 'status', 'notes',
         'invoice_id', 'transaction_id', 'created_by',
     ];
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\InventoryItem;
 use App\Models\Invoice;
@@ -16,6 +17,7 @@ use App\Services\InvoiceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -124,7 +126,14 @@ class SalesOrderController extends Controller
 
         $salesOrder->load(['items.item', 'customer', 'invoice', 'transaction', 'creator']);
 
-        return view('inventory.sales.show', compact('salesOrder'));
+        $bankAccounts = BankAccount::withoutGlobalScope('tenant')
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->where('is_active', true)
+            ->orderBy('is_default', 'desc')
+            ->orderBy('sort_order')
+            ->get(['id', 'name', 'bank_name', 'is_default']);
+
+        return view('inventory.sales.show', compact('salesOrder', 'bankAccounts'));
     }
 
     // ── Edit / Update (Draft only) ────────────────────────────────────────────
@@ -185,12 +194,21 @@ class SalesOrderController extends Controller
 
     // ── Confirm ───────────────────────────────────────────────────────────────
 
-    public function confirm(SalesOrder $salesOrder): RedirectResponse
+    public function confirm(Request $request, SalesOrder $salesOrder): RedirectResponse
     {
         $this->authorize('confirm', $salesOrder);
 
         if (! $salesOrder->canBeConfirmed()) {
             return back()->with('error', 'Order cannot be confirmed in its current state.');
+        }
+
+        // Optionally record which bank account received the payment
+        if ($request->filled('bank_account_id')) {
+            $request->validate([
+                'bank_account_id' => ['integer', Rule::exists('bank_accounts', 'id')
+                    ->where('tenant_id', auth()->user()->tenant_id)],
+            ]);
+            $salesOrder->update(['bank_account_id' => $request->bank_account_id]);
         }
 
         return $this->runConfirm($salesOrder);
@@ -303,22 +321,39 @@ class SalesOrderController extends Controller
                 $invoice->recalculateTotals();
 
                 // 4. Post GL entries
-                $cashAccountCode = in_array($salesOrder->payment_method, ['bank_transfer', 'pos', 'cheque', 'online'])
-                    ? '1002'
-                    : '1001';
+                // Use the selected bank account's GL code; fall back to '1002' for
+                // electronic payments and '1001' for cash.
+                $bankGlId = null;
+                if ($salesOrder->bank_account_id) {
+                    $bankGlId = BankAccount::withoutGlobalScope('tenant')
+                        ->where('id', $salesOrder->bank_account_id)
+                        ->where('tenant_id', $salesOrder->tenant_id)
+                        ->value('gl_account_id');
+                }
 
+                $isBankPayment = in_array($salesOrder->payment_method, ['bank_transfer', 'pos', 'cheque', 'online']);
+                $cashAccountCode = $isBankPayment ? '1002' : '1001';
+
+                $accountCodes = ['1001', '1002', '4001', '2100', '5001', '1200'];
                 $accounts = Account::where('tenant_id', $salesOrder->tenant_id)
                     ->withoutGlobalScope('tenant')
-                    ->whereIn('code', ['1001', '1002', '4001', '2100', '5001', '1200'])
+                    ->whereIn('code', $accountCodes)
                     ->pluck('id', 'code');
 
+                // Resolve the debit account id: prefer the selected bank account GL,
+                // fall back to the code-based lookup.
+                $cashAccountId = $bankGlId ?? ($accounts[$cashAccountCode] ?? null);
+
                 // Pre-flight: ensure every required GL account exists
-                $required = [$cashAccountCode, '4001', '5001', '1200'];
+                $required = ['4001', '5001', '1200'];
+                if (! $bankGlId) {
+                    $required[] = $cashAccountCode;
+                }
                 if ((float) $salesOrder->vat_amount > 0) {
                     $required[] = '2100';
                 }
                 $missing = array_diff($required, $accounts->keys()->toArray());
-                if (! empty($missing)) {
+                if (! empty($missing) || ! $cashAccountId) {
                     throw ValidationException::withMessages([
                         'stock' => 'GL accounts missing from Chart of Accounts: ' . implode(', ', $missing)
                             . '. Go to Accounts and add them before confirming.',
@@ -332,7 +367,7 @@ class SalesOrderController extends Controller
 
                 $entries = [
                     [
-                        'account_id'  => $accounts[$cashAccountCode],
+                        'account_id'  => $cashAccountId,
                         'entry_type'  => 'debit',
                         'amount'      => (float) $salesOrder->total_amount,
                         'description' => "Cash receipt: {$salesOrder->order_number}",
@@ -403,16 +438,22 @@ class SalesOrderController extends Controller
     {
         $salesOrder->load('items.item');
 
-        // Reverse stock movements
+        // Reverse stock movements and restore avg_cost
         foreach ($salesOrder->items as $line) {
-            $newStock = round((float) $line->item->current_stock + (float) $line->quantity, 3);
+            $item        = $line->item;
+            $qtyReturned = (float) $line->quantity;
+            $costAtSale  = (float) $line->cost_price_at_sale;
+            $newStock    = round((float) $item->current_stock + $qtyReturned, 3);
+
+            // Weighted average cost: blend returned stock back in at the original sale cost
+            $newAvgCost = $item->recalculateAvgCost($qtyReturned, $costAtSale);
 
             StockMovement::create([
                 'tenant_id'       => $salesOrder->tenant_id,
                 'item_id'         => $line->item_id,
                 'type'            => 'adjustment_in',
-                'quantity'        => $line->quantity,
-                'unit_cost'       => $line->cost_price_at_sale,
+                'quantity'        => $qtyReturned,
+                'unit_cost'       => $costAtSale,
                 'running_balance' => $newStock,
                 'reference_type'  => SalesOrder::class,
                 'reference_id'    => $salesOrder->id,
@@ -420,7 +461,7 @@ class SalesOrderController extends Controller
                 'created_by'      => auth()->id(),
             ]);
 
-            $line->item->update(['current_stock' => $newStock]);
+            $item->update(['current_stock' => $newStock, 'avg_cost' => $newAvgCost]);
         }
 
         // Void the invoice
@@ -489,7 +530,7 @@ class SalesOrderController extends Controller
             'discount_amount'        => ['nullable', 'numeric', 'min:0'],
             'notes'                  => ['nullable', 'string', 'max:1000'],
             'items'                  => ['required', 'array', 'min:1'],
-            'items.*.item_id'        => ['required', 'integer', 'exists:inventory_items,id'],
+            'items.*.item_id'        => ['required', 'integer', Rule::exists('inventory_items', 'id')->where('tenant_id', auth()->user()->tenant_id)],
             'items.*.description'    => ['required', 'string', 'max:255'],
             'items.*.quantity'       => ['required', 'numeric', 'min:0.001'],
             'items.*.unit_price'     => ['required', 'numeric', 'min:0'],

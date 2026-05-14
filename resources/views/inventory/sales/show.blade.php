@@ -28,7 +28,7 @@
             </p>
         </div>
 
-        <div class="flex gap-2">
+        <div class="flex gap-2 relative">
             @if($salesOrder->status === 'draft')
                 @can('update', $salesOrder)
                 <a href="{{ route('inventory.sales.edit', $salesOrder) }}"
@@ -37,14 +37,42 @@
                 </a>
                 @endcan
                 @can('confirm', $salesOrder)
-                <form method="POST" action="{{ route('inventory.sales.confirm', $salesOrder) }}">
-                    @csrf
-                    <button type="submit"
-                            onclick="return confirm('Confirm this order? Stock will be deducted and an invoice generated.')"
+                <div x-data="{ open: false }">
+                    <button type="button" @click="open = !open"
                             class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
-                        Confirm & Invoice
+                        Confirm &amp; Invoice
                     </button>
-                </form>
+                    <div x-show="open" x-cloak class="absolute z-10 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+                        <p class="text-sm font-medium text-gray-900 mb-3">Confirm Order</p>
+                        <form method="POST" action="{{ route('inventory.sales.confirm', $salesOrder) }}">
+                            @csrf
+                            @if($bankAccounts->isNotEmpty())
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Deposit to Bank Account</label>
+                                <select name="bank_account_id"
+                                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:ring-green-500 focus:border-green-500">
+                                    <option value="">— Use default GL account —</option>
+                                    @foreach($bankAccounts as $ba)
+                                        <option value="{{ $ba->id }}" {{ $ba->is_default ? 'selected' : '' }}>
+                                            {{ $ba->name }}{{ $ba->bank_name ? ' — '.$ba->bank_name : '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
+                            <div class="flex gap-2">
+                                <button type="submit"
+                                        class="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                                    Confirm
+                                </button>
+                                <button type="button" @click="open = false"
+                                        class="px-3 py-2 border border-gray-300 text-sm rounded-md text-gray-700 hover:bg-gray-50">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
                 @endcan
             @endif
 
