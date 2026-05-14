@@ -43,9 +43,9 @@ class RestockRequestController extends Controller
         $stats = RestockRequest::where('tenant_id', $tenant->id)
             ->withoutGlobalScope('tenant')
             ->selectRaw("
-                COUNT(*) FILTER (WHERE status = 'pending')  AS pending,
-                COUNT(*) FILTER (WHERE status = 'approved') AS approved,
-                COUNT(*) FILTER (WHERE status = 'received') AS received
+                SUM(CASE WHEN status = 'pending'  THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
+                SUM(CASE WHEN status = 'received' THEN 1 ELSE 0 END) AS received
             ")
             ->first();
 
