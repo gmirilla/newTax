@@ -27,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password'          => 'hashed',
             'is_active'         => 'boolean',
             'is_superadmin'     => 'boolean',
+            'tenant_id'         => 'integer',
         ];
     }
 

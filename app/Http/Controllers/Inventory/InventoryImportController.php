@@ -193,7 +193,7 @@ class InventoryImportController extends Controller
         $tenantId = auth()->user()->tenant_id;
 
         // Session tenant must match — prevents session data being consumed by a different tenant
-        if ((int) $payload['tenant_id'] !== $tenantId) {
+        if ((int) $payload['tenant_id'] !== (int) $tenantId) {
             session()->forget(self::SESSION_KEY);
             abort(403);
         }
