@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendQuoteEmail;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -197,8 +198,24 @@ class QuoteController extends Controller
         if (!in_array($quote->status, ['draft', 'sent'])) {
             return back()->with('error', 'Only draft quotes can be marked as sent.');
         }
+
         $quote->update(['status' => 'sent']);
-        return back()->with('success', "Quote {$quote->quote_number} marked as sent.");
+        $quote->loadMissing(['customer', 'items', 'tenant']);
+
+        $emailSent = false;
+        if ($quote->customer?->email) {
+            SendQuoteEmail::dispatch($quote);
+            $emailSent = true;
+        }
+
+        $message = "Quote {$quote->quote_number} marked as sent.";
+        if ($emailSent) {
+            $message .= " A copy has been emailed to {$quote->customer->email}.";
+        } elseif ($quote->customer && !$quote->customer->email) {
+            $message .= " No email on file for this customer — email not sent.";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function decline(Quote $quote): RedirectResponse

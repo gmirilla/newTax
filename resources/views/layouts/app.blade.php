@@ -136,11 +136,13 @@
                         </a>
                     </div>
 
+                    @php $canInventory = $currentTenant->planAllows('inventory'); @endphp
                     <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory</p>
-                        <a href="{{ route('inventory.items.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.items.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.items.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.items.*') ? 'bg-green-900' : '' }}">
                             📦 Items & Stock
+                            @if($canInventory)
                             @php
                                 $__alertCount = \App\Models\InventoryAlert::where('tenant_id', auth()->user()->tenant_id ?? 0)
                                     ->withoutGlobalScope('tenant')->whereNull('seen_at')->count();
@@ -150,22 +152,24 @@
                                 {{ $__alertCount > 99 ? '99+' : $__alertCount }}
                             </span>
                             @endif
+                            @endif
                         </a>
-                        <a href="{{ route('inventory.categories.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.categories.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
                             🗂️ Categories
                         </a>
-                        <a href="{{ route('inventory.units.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.units.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.units.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.units.*') ? 'bg-green-900' : '' }}">
                             📏 Units of Measure
                         </a>
-                        <a href="{{ route('inventory.sales.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.sales.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">
                             🛒 Sales Orders
                         </a>
-                        <a href="{{ route('inventory.restock.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.restock.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.restock.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.restock.*') ? 'bg-green-900' : '' }}">
                             🔄 Restock Requests
+                            @if($canInventory)
                             @php
                                 $__pendingRestocks = \App\Models\RestockRequest::where('tenant_id', auth()->user()->tenant_id ?? 0)
                                     ->withoutGlobalScope('tenant')->where('status', 'pending')->count();
@@ -175,33 +179,35 @@
                                 {{ $__pendingRestocks > 99 ? '99+' : $__pendingRestocks }}
                             </span>
                             @endif
+                            @endif
                         </a>
                     </div>
 
+                    @php $canInventoryReports = $currentTenant->planAllows('inventory_reports'); @endphp
                     <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory Reports</p>
-                        <a href="{{ route('inventory.reports.stock-valuation') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.stock-valuation*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.stock-valuation') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.stock-valuation*') ? 'bg-green-900' : '' }}">
                             📊 Stock Valuation
                         </a>
-                        <a href="{{ route('inventory.reports.low-stock') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.low-stock*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.low-stock') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.low-stock*') ? 'bg-green-900' : '' }}">
                             ⚠️ Low Stock
                         </a>
-                        <a href="{{ route('inventory.reports.movements') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.movements*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.movements') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.movements*') ? 'bg-green-900' : '' }}">
                             📋 Stock Movements
                         </a>
-                        <a href="{{ route('inventory.reports.sales-by-item') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-item*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.sales-by-item') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.sales-by-item*') ? 'bg-green-900' : '' }}">
                             🏷️ Sales by Item
                         </a>
-                        <a href="{{ route('inventory.reports.sales-by-period') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-period*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.sales-by-period') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.sales-by-period*') ? 'bg-green-900' : '' }}">
                             📅 Sales by Period
                         </a>
-                        <a href="{{ route('inventory.reports.restock-history') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.restock-history*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.restock-history') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.restock-history*') ? 'bg-green-900' : '' }}">
                             🔄 Restock History
                         </a>
                     </div>
@@ -330,11 +336,13 @@
                         </a>
                     </div>
 
+                    @php $canInventory = $currentTenant->planAllows('inventory'); @endphp
                     <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory</p>
-                        <a href="{{ route('inventory.items.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.items.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.items.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.items.*') ? 'bg-green-900' : '' }}">
                             📦 Items & Stock
+                            @if($canInventory)
                             @php
                                 $__alertCount = \App\Models\InventoryAlert::where('tenant_id', auth()->user()->tenant_id ?? 0)
                                     ->withoutGlobalScope('tenant')->whereNull('seen_at')->count();
@@ -344,22 +352,24 @@
                                 {{ $__alertCount > 99 ? '99+' : $__alertCount }}
                             </span>
                             @endif
+                            @endif
                         </a>
-                        <a href="{{ route('inventory.categories.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.categories.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.categories.*') ? 'bg-green-900' : '' }}">
                             🗂️ Categories
                         </a>
-                        <a href="{{ route('inventory.units.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.units.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.units.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.units.*') ? 'bg-green-900' : '' }}">
                             📏 Units of Measure
                         </a>
-                        <a href="{{ route('inventory.sales.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.sales.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.sales.*') ? 'bg-green-900' : '' }}">
                             🛒 Sales Orders
                         </a>
-                        <a href="{{ route('inventory.restock.index') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.restock.*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventory ? route('inventory.restock.index') : route('billing').'?upgrade_feature=inventory' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventory ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.restock.*') ? 'bg-green-900' : '' }}">
                             🔄 Restock Requests
+                            @if($canInventory)
                             @php
                                 $__pendingRestocks = \App\Models\RestockRequest::where('tenant_id', auth()->user()->tenant_id ?? 0)
                                     ->withoutGlobalScope('tenant')->where('status', 'pending')->count();
@@ -369,33 +379,35 @@
                                 {{ $__pendingRestocks > 99 ? '99+' : $__pendingRestocks }}
                             </span>
                             @endif
+                            @endif
                         </a>
                     </div>
 
+                    @php $canInventoryReports = $currentTenant->planAllows('inventory_reports'); @endphp
                     <div class="mt-2 pt-2 space-y-1 px-2">
                         <p class="px-2 py-1 text-xs font-semibold text-green-300 uppercase tracking-wider">Inventory Reports</p>
-                        <a href="{{ route('inventory.reports.stock-valuation') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.stock-valuation*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.stock-valuation') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.stock-valuation*') ? 'bg-green-900' : '' }}">
                             📊 Stock Valuation
                         </a>
-                        <a href="{{ route('inventory.reports.low-stock') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.low-stock*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.low-stock') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.low-stock*') ? 'bg-green-900' : '' }}">
                             ⚠️ Low Stock
                         </a>
-                        <a href="{{ route('inventory.reports.movements') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.movements*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.movements') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.movements*') ? 'bg-green-900' : '' }}">
                             📋 Stock Movements
                         </a>
-                        <a href="{{ route('inventory.reports.sales-by-item') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-item*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.sales-by-item') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.sales-by-item*') ? 'bg-green-900' : '' }}">
                             🏷️ Sales by Item
                         </a>
-                        <a href="{{ route('inventory.reports.sales-by-period') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.sales-by-period*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.sales-by-period') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.sales-by-period*') ? 'bg-green-900' : '' }}">
                             📅 Sales by Period
                         </a>
-                        <a href="{{ route('inventory.reports.restock-history') }}"
-                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-green-700 {{ request()->routeIs('inventory.reports.restock-history*') ? 'bg-green-900' : '' }}">
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.restock-history') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                            class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ $canInventoryReports ? 'text-white hover:bg-green-700' : 'text-green-300 opacity-60 hover:bg-green-800' }} {{ request()->routeIs('inventory.reports.restock-history*') ? 'bg-green-900' : '' }}">
                             🔄 Restock History
                         </a>
                     </div>
