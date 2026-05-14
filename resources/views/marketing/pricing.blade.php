@@ -103,13 +103,15 @@
                     <p class="text-[11px] font-700 text-slate-500 uppercase tracking-wider mb-4">What's included</p>
                     <ul class="space-y-3">
                         @foreach([
-                            ['invoices_per_month', 'Invoices/month', fn($v) => $v >= 999 ? 'Unlimited invoices' : "{$v} invoices per month"],
-                            ['users', 'Team members', fn($v) => $v == 1 ? '1 user (owner only)' : "Up to {$v} users"],
-                            ['customers', 'Customers', fn($v) => $v >= 999 ? 'Unlimited customers' : "Up to {$v} customers"],
+                            ['invoices_per_month', 'Invoices/month', fn($v) => is_null($v) || $v >= 999 ? 'Unlimited invoices' : "{$v} invoices per month"],
+                            ['users', 'Team members', fn($v) => is_null($v) ? 'Unlimited users' : ($v == 1 ? '1 user (owner only)' : "Up to {$v} users")],
+                            ['customers', 'Customers', fn($v) => is_null($v) || $v >= 999 ? 'Unlimited customers' : "Up to {$v} customers"],
                             ['payroll', 'Payroll & PAYE', fn($v) => $v ? 'Payroll & PAYE automation' : null],
                             ['payroll_staff', 'Payroll staff', fn($v) => $v > 0 ? "Up to {$v} staff on payroll" : null],
                             ['firs', 'Tax automation', fn($v) => $v ? 'Full tax compliance suite' : null],
                             ['advanced_reports', 'Advanced reports', fn($v) => $v ? 'Advanced financial reports' : null],
+                            ['inventory', 'Inventory', fn($v) => $v ? 'Inventory & stock management' : null],
+                            ['inventory_reports', 'Inventory reports', fn($v) => $v ? 'Inventory analytics & reports' : null],
                             ['api_access', 'API access', fn($v) => $v ? 'API & integrations access' : null],
                         ] as [$key, $label, $formatter])
                         @php $value = $plan->limit($key); $text = $formatter($value); @endphp
@@ -127,7 +129,7 @@
                         @endif
                         @endforeach
                         {{-- Always show cloud & support --}}
-                        @foreach(['Cloud access (all devices)','Email support','Data encryption & backups','FIRS-compliant tax calculations'] as $item)
+                        @foreach(['Cloud access (all devices)','Email support','Data encryption & backups','NRS-compliant tax calculations'] as $item)
                         <li class="flex items-center gap-2.5 text-sm text-[#475569]">
                             <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                             {{ $item }}

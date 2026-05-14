@@ -43,10 +43,15 @@ class Plan extends Model
         return $this->hasMany(Tenant::class);
     }
 
-    /** Get a specific limit, falling back to the default. */
+    /** Get a specific limit, falling back to the default.
+     *  Must use array_key_exists so null (unlimited) is not confused with a missing key. */
     public function limit(string $key): mixed
     {
-        return $this->limits[$key] ?? self::LIMIT_DEFAULTS[$key] ?? null;
+        if (is_array($this->limits) && array_key_exists($key, $this->limits)) {
+            return $this->limits[$key];
+        }
+
+        return self::LIMIT_DEFAULTS[$key] ?? null;
     }
 
     /** Whether a feature flag is enabled on this plan. */
