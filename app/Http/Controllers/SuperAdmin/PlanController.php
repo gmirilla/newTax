@@ -82,14 +82,18 @@ class PlanController extends Controller
 
     private function buildLimits(Request $request): array
     {
+        // filled() returns false for both null and '' — blank number inputs arrive as null or ''
+        // depending on browser; (int) null = 0 which would wrongly disable the limit
         return [
-            'invoices_per_month' => $request->input('limit_invoices') === '' ? null : (int) $request->input('limit_invoices'),
-            'users'              => $request->input('limit_users') === '' ? null : (int) $request->input('limit_users'),
-            'payroll_staff'      => $request->input('limit_payroll_staff') === '' ? null : (int) $request->input('limit_payroll_staff'),
-            'customers'          => $request->input('limit_customers') === '' ? null : (int) $request->input('limit_customers'),
+            'invoices_per_month' => $request->filled('limit_invoices')      ? (int) $request->input('limit_invoices')      : null,
+            'users'              => $request->filled('limit_users')          ? (int) $request->input('limit_users')          : null,
+            'payroll_staff'      => $request->filled('limit_payroll_staff')  ? (int) $request->input('limit_payroll_staff')  : null,
+            'customers'          => $request->filled('limit_customers')      ? (int) $request->input('limit_customers')      : null,
             'payroll'            => $request->boolean('feature_payroll'),
             'firs'               => $request->boolean('feature_firs'),
             'advanced_reports'   => $request->boolean('feature_advanced_reports'),
+            'inventory'          => $request->boolean('feature_inventory'),
+            'inventory_reports'  => $request->boolean('feature_inventory_reports'),
             'api_access'         => $request->boolean('feature_api_access'),
         ];
     }

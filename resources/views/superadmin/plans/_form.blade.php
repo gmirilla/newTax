@@ -146,16 +146,20 @@
         <div class="grid grid-cols-2 gap-3">
             @php
                 $featureList = [
-                    'feature_payroll'          => ['label' => 'Payroll Module',       'desc' => 'Access to payroll processing and payslips'],
-                    'feature_firs'             => ['label' => 'NRS e-Invoicing',     'desc' => 'Submit invoices directly to FIRS'],
-                    'feature_advanced_reports' => ['label' => 'Advanced Reports',     'desc' => 'General Ledger, Balance Sheet exports'],
-                    'feature_api_access'       => ['label' => 'API Access',           'desc' => 'Programmatic access via API keys (future)'],
+                    'feature_payroll'            => ['label' => 'Payroll Module',       'desc' => 'Access to payroll processing and payslips'],
+                    'feature_firs'               => ['label' => 'NRS e-Invoicing',      'desc' => 'Submit invoices directly to FIRS'],
+                    'feature_advanced_reports'   => ['label' => 'Advanced Reports',     'desc' => 'General Ledger, Balance Sheet exports'],
+                    'feature_inventory'          => ['label' => 'Inventory Module',     'desc' => 'Items, stock movements, sales orders, restock'],
+                    'feature_inventory_reports'  => ['label' => 'Inventory Reports',    'desc' => 'Stock valuation, low stock, sales analytics'],
+                    'feature_api_access'         => ['label' => 'API Access',           'desc' => 'Programmatic access via API keys (future)'],
                 ];
                 $featureKeyMap = [
-                    'feature_payroll'          => 'payroll',
-                    'feature_firs'             => 'firs',
-                    'feature_advanced_reports' => 'advanced_reports',
-                    'feature_api_access'       => 'api_access',
+                    'feature_payroll'            => 'payroll',
+                    'feature_firs'               => 'firs',
+                    'feature_advanced_reports'   => 'advanced_reports',
+                    'feature_inventory'          => 'inventory',
+                    'feature_inventory_reports'  => 'inventory_reports',
+                    'feature_api_access'         => 'api_access',
                 ];
             @endphp
             @foreach($featureList as $inputName => $meta)
