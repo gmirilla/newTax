@@ -144,7 +144,15 @@ class InvoiceController extends Controller
             ->orderBy('code')
             ->get(['id', 'code', 'name']);
 
-        return view('invoices.show', compact('invoice', 'bankAccounts'));
+        $userBankAccounts = \App\Models\BankAccount::withoutGlobalScope('tenant')
+            ->where('tenant_id', $invoice->tenant_id)
+            ->where('is_active', true)
+            ->with('glAccount')
+            ->orderBy('is_default', 'desc')
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('invoices.show', compact('invoice', 'bankAccounts', 'userBankAccounts'));
     }
 
     public function edit(Invoice $invoice): View
@@ -217,12 +225,17 @@ class InvoiceController extends Controller
             'amount'             => 'required|numeric|min:0.01|max:' . $invoice->balance_due,
             'method'             => 'required|in:cash,bank_transfer,cheque,pos,online',
             'payment_account_id' => 'required|exists:accounts,id',
+            'bank_account_id'    => 'nullable|exists:bank_accounts,id',
             'reference'          => 'nullable|string|max:100',
         ]);
 
         $this->invoiceService->recordPayment($invoice, $request->only([
             'payment_date', 'amount', 'method', 'payment_account_id', 'reference', 'notes',
         ]));
+
+        if ($request->filled('bank_account_id')) {
+            $invoice->update(['bank_account_id' => $request->bank_account_id]);
+        }
 
         return back()->with('success', 'Payment recorded and journal entry posted.');
     }

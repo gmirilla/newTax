@@ -15,7 +15,7 @@ class Transaction extends Model
     protected $fillable = [
         'tenant_id', 'reference', 'transaction_date', 'type',
         'amount', 'currency', 'description', 'notes',
-        'status', 'created_by', 'approved_by', 'attachments',
+        'status', 'created_by', 'approved_by', 'attachments', 'bank_account_id',
     ];
 
     protected $casts = [

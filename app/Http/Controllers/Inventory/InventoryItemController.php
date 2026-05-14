@@ -270,8 +270,11 @@ class InventoryItemController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $inventoryItem) {
-            $direction = $validated['type'] === 'adjustment_in' ? 1 : -1;
-            $newStock  = round((float) $inventoryItem->current_stock + ($direction * (float) $validated['quantity']), 3);
+            $isIn      = $validated['type'] === 'adjustment_in';
+            $direction = $isIn ? 1 : -1;
+            $qty       = (float) $validated['quantity'];
+            $avgCost   = (float) $inventoryItem->avg_cost;
+            $newStock  = round((float) $inventoryItem->current_stock + ($direction * $qty), 3);
 
             if ($newStock < 0) {
                 throw ValidationException::withMessages([
@@ -283,14 +286,51 @@ class InventoryItemController extends Controller
                 'tenant_id'       => $inventoryItem->tenant_id,
                 'item_id'         => $inventoryItem->id,
                 'type'            => $validated['type'],
-                'quantity'        => $validated['quantity'],
-                'unit_cost'       => $inventoryItem->avg_cost,
+                'quantity'        => $qty,
+                'unit_cost'       => $avgCost,
                 'running_balance' => $newStock,
                 'notes'           => $validated['notes'],
                 'created_by'      => auth()->id(),
             ]);
 
             $inventoryItem->update(['current_stock' => $newStock]);
+
+            // Post GL: Dr/Cr Inventory (1200) against COGS (5001)
+            // adjustment_in:  Dr 1200 Inventory, Cr 5001 COGS (stock gain)
+            // adjustment_out: Dr 5001 COGS,      Cr 1200 Inventory (shrinkage/loss)
+            $value = round($qty * $avgCost, 2);
+            if ($value > 0) {
+                $accounts = Account::where('tenant_id', $inventoryItem->tenant_id)
+                    ->withoutGlobalScope('tenant')
+                    ->whereIn('code', ['1200', '5001'])
+                    ->pluck('id', 'code');
+
+                if ($accounts->has('1200') && $accounts->has('5001')) {
+                    $this->bookkeeping->postJournalEntry(
+                        $inventoryItem->tenant,
+                        [
+                            'reference'        => 'ADJ-' . $inventoryItem->id . '-' . now()->format('YmdHis'),
+                            'transaction_date' => now()->toDateString(),
+                            'type'             => 'adjustment',
+                            'description'      => ($isIn ? 'Stock gain' : 'Stock loss') . ": {$inventoryItem->name}",
+                        ],
+                        [
+                            [
+                                'account_id'  => $accounts['1200'],
+                                'entry_type'  => $isIn ? 'debit' : 'credit',
+                                'amount'      => $value,
+                                'description' => ($isIn ? 'Inventory gain' : 'Inventory reduction') . ": {$inventoryItem->name}",
+                            ],
+                            [
+                                'account_id'  => $accounts['5001'],
+                                'entry_type'  => $isIn ? 'credit' : 'debit',
+                                'amount'      => $value,
+                                'description' => ($isIn ? 'COGS reversal (stock gain)' : 'Inventory shrinkage') . ": {$inventoryItem->name}",
+                            ],
+                        ]
+                    );
+                }
+            }
         });
 
         return back()->with('success', 'Stock adjusted successfully.');

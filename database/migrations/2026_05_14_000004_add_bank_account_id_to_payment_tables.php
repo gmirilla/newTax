@@ -1,0 +1,44 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('invoices', function (Blueprint $table) {
+            $table->unsignedBigInteger('bank_account_id')->nullable()->after('payment_account_id');
+            $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->nullOnDelete();
+        });
+
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->unsignedBigInteger('bank_account_id')->nullable()->after('id');
+            $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->nullOnDelete();
+        });
+
+        Schema::table('sales_orders', function (Blueprint $table) {
+            $table->unsignedBigInteger('bank_account_id')->nullable()->after('payment_method');
+            $table->foreign('bank_account_id')->references('id')->on('bank_accounts')->nullOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('sales_orders', function (Blueprint $table) {
+            $table->dropForeign(['bank_account_id']);
+            $table->dropColumn('bank_account_id');
+        });
+
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->dropForeign(['bank_account_id']);
+            $table->dropColumn('bank_account_id');
+        });
+
+        Schema::table('invoices', function (Blueprint $table) {
+            $table->dropForeign(['bank_account_id']);
+            $table->dropColumn('bank_account_id');
+        });
+    }
+};

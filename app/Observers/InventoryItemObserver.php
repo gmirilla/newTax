@@ -19,7 +19,8 @@ class InventoryItemObserver
 
         // Clear out_of_stock alert if stock was replenished
         if ($stock > 0) {
-            InventoryAlert::where('item_id', $item->id)
+            InventoryAlert::where('tenant_id', $item->tenant_id)
+                ->where('item_id', $item->id)
                 ->where('type', 'out_of_stock')
                 ->whereNull('seen_at')
                 ->update(['seen_at' => now()]);
@@ -27,18 +28,26 @@ class InventoryItemObserver
 
         // Clear low_stock alert if stock is back above restock level
         if ($level > 0 && $stock > $level) {
-            InventoryAlert::where('item_id', $item->id)
+            InventoryAlert::where('tenant_id', $item->tenant_id)
+                ->where('item_id', $item->id)
                 ->where('type', 'low_stock')
                 ->whereNull('seen_at')
                 ->update(['seen_at' => now()]);
+        }
+
+        // No new alert needed when stock is healthy
+        if ($stock > 0 && ($level <= 0 || $stock > $level)) {
             return;
         }
 
-        if ($level <= 0 || $stock > $level) {
+        // out_of_stock fires regardless of restock_level; low_stock requires a configured level
+        if ($stock <= 0) {
+            $type = 'out_of_stock';
+        } elseif ($level > 0 && $stock <= $level) {
+            $type = 'low_stock';
+        } else {
             return;
         }
-
-        $type = $stock <= 0 ? 'out_of_stock' : 'low_stock';
 
         // Only create a new alert and notify if no unacknowledged one exists for this item+type
         $alert = InventoryAlert::firstOrCreate(

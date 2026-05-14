@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\BankAccount;
 use App\Models\InventoryCategory;
 use App\Models\InventoryItem;
 use App\Models\InventoryUnit;
@@ -9,6 +10,7 @@ use App\Models\Invoice;
 use App\Models\RestockRequest;
 use App\Models\SalesOrder;
 use App\Observers\InventoryItemObserver;
+use App\Policies\BankAccountPolicy;
 use App\Policies\InventoryCategoryPolicy;
 use App\Policies\InventoryItemPolicy;
 use App\Policies\InventoryUnitPolicy;
@@ -39,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
         InventoryItem::observe(InventoryItemObserver::class);
 
         // Policies
+        Gate::policy(BankAccount::class, BankAccountPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(InventoryCategory::class, InventoryCategoryPolicy::class);
         Gate::policy(InventoryItem::class, InventoryItemPolicy::class);

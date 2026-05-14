@@ -455,17 +455,42 @@
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-700">Pay From Account *</label>
-                <select name="payment_account" required
-                        class="mt-1 block w-full rounded border-gray-300 text-sm px-2 py-1.5 focus:ring-green-500 focus:border-green-500">
-                    <option value="">— Select bank / cash account —</option>
-                    @foreach(\App\Models\Account::where('tenant_id', auth()->user()->tenant_id)
+                @php
+                    $expPayBankAccounts = \App\Models\BankAccount::withoutGlobalScope('tenant')
+                        ->where('tenant_id', auth()->user()->tenant_id)
+                        ->where('is_active', true)
+                        ->with('glAccount')
+                        ->orderBy('is_default', 'desc')
+                        ->orderBy('sort_order')
+                        ->get();
+                    $expPayGlAccounts = \App\Models\Account::withoutGlobalScope('tenant')
+                        ->where('tenant_id', auth()->user()->tenant_id)
                         ->where('type', 'asset')
-                        ->whereIn('sub_type', ['bank', 'cash'])
+                        ->where('sub_type', 'cash')
                         ->where('is_active', true)
                         ->orderBy('code')
-                        ->get() as $acct)
-                        <option value="{{ $acct->id }}">{{ $acct->code }} – {{ $acct->name }}</option>
-                    @endforeach
+                        ->get(['id', 'code', 'name']);
+                @endphp
+                <select name="payment_account" required
+                        class="mt-1 block w-full rounded border-gray-300 text-sm px-2 py-1.5 focus:ring-green-500 focus:border-green-500">
+                    <option value="">— Select account —</option>
+                    @if($expPayBankAccounts->isNotEmpty())
+                    <optgroup label="Bank Accounts">
+                        @foreach($expPayBankAccounts as $ba)
+                            <option value="{{ $ba->glAccount?->id }}"
+                                    {{ $ba->is_default ? 'selected' : '' }}>
+                                {{ $ba->name }}{{ $ba->bank_name ? ' — '.$ba->bank_name : '' }}{{ $ba->is_default ? ' (default)' : '' }}
+                            </option>
+                        @endforeach
+                    </optgroup>
+                    @endif
+                    @if($expPayGlAccounts->isNotEmpty())
+                    <optgroup label="Cash">
+                        @foreach($expPayGlAccounts as $acct)
+                            <option value="{{ $acct->id }}">{{ $acct->code }} – {{ $acct->name }}</option>
+                        @endforeach
+                    </optgroup>
+                    @endif
                 </select>
             </div>
             <div class="flex justify-end gap-3 pt-1">

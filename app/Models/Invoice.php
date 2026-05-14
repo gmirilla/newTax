@@ -20,7 +20,7 @@ class Invoice extends Model
         'total_amount', 'amount_paid', 'balance_due',
         'vat_applicable', 'wht_applicable', 'wht_rate',
         'status', 'notes', 'terms', 'currency', 'qr_code', 'created_by',
-        'firs_status', 'is_b2c', 'public_token',
+        'firs_status', 'is_b2c', 'public_token', 'bank_account_id',
     ];
 
     protected $casts = [

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\CompanySettingsController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\Inventory\InventoryAlertController;
 use App\Http\Controllers\Inventory\InventoryCategoryController;
+use App\Http\Controllers\Inventory\InventoryImportController;
 use App\Http\Controllers\Inventory\InventoryUnitController;
 use App\Http\Controllers\Inventory\InventoryItemController;
 use App\Http\Controllers\Inventory\InventoryReportController;
@@ -92,6 +94,13 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::get('/firs',             [FirsOnboardingController::class, 'showForm'])->name('firs')->middleware('plan:firs');
             Route::post('/firs',            [FirsOnboardingController::class, 'store'])->name('firs.store')->middleware('plan:firs');
             Route::post('/firs/deactivate', [FirsOnboardingController::class, 'deactivate'])->name('firs.deactivate')->middleware('plan:firs');
+
+            // Bank accounts
+            Route::get('/bank-accounts',              [BankAccountController::class, 'index'])->name('bank-accounts.index');
+            Route::post('/bank-accounts',             [BankAccountController::class, 'store'])->name('bank-accounts.store');
+            Route::put('/bank-accounts/{bankAccount}',    [BankAccountController::class, 'update'])->name('bank-accounts.update');
+            Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+            Route::post('/bank-accounts/{bankAccount}/default', [BankAccountController::class, 'setDefault'])->name('bank-accounts.default');
         });
 
         // Team management
@@ -229,6 +238,15 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             // Alerts
             Route::post('/alerts/{alert}/dismiss',  [InventoryAlertController::class, 'dismiss'])->name('alerts.dismiss');
             Route::post('/alerts/dismiss-all',      [InventoryAlertController::class, 'dismissAll'])->name('alerts.dismiss-all');
+
+            // Bulk Import
+            Route::prefix('import')->name('import.')->group(function () {
+                Route::get('/',         [InventoryImportController::class, 'index'])->name('index');
+                Route::get('/sample',   [InventoryImportController::class, 'sample'])->name('sample');
+                Route::post('/preview', [InventoryImportController::class, 'preview'])->name('preview');
+                Route::post('/commit',  [InventoryImportController::class, 'commit'])->name('commit');
+                Route::post('/cancel',  [InventoryImportController::class, 'cancel'])->name('cancel');
+            });
 
             // Items
             Route::prefix('items')->name('items.')->group(function () {
