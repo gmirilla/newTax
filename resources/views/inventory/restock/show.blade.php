@@ -2,7 +2,7 @@
 @section('page-title', 'Restock Request ' . $restockRequest->request_number)
 
 @section('content')
-<div class="space-y-5" x-data="{ rejectOpen: false, receiveOpen: false }">
+<div class="space-y-5" x-data="{ rejectOpen: false, receiveOpen: false, payOpen: false }">
 
     {{-- Header --}}
     <div class="flex items-center justify-between flex-wrap gap-3">
@@ -292,19 +292,84 @@
             </div>
             @endif
 
-            {{-- Linked Documents --}}
+            {{-- Supplier Bill --}}
             @if($restockRequest->invoice)
-            <div class="bg-white rounded-lg shadow p-5">
-                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Supplier Bill</h2>
-                <p class="text-sm font-medium text-green-700">
-                    <a href="{{ route('invoices.show', $restockRequest->invoice) }}" class="hover:underline">
-                        {{ $restockRequest->invoice->invoice_number }}
-                    </a>
-                </p>
-                <p class="text-sm text-gray-600 mt-1">₦{{ number_format($restockRequest->invoice->total_amount, 2) }}</p>
-                <span class="inline-flex rounded-full px-2 text-xs font-semibold bg-yellow-100 text-yellow-800 mt-1">
-                    {{ ucfirst($restockRequest->invoice->status) }}
-                </span>
+            @php
+                $bill = $restockRequest->invoice;
+                $billStatusColor = match($bill->status) {
+                    'paid'    => ['bg' => 'bg-green-100', 'text' => 'text-green-800'],
+                    'partial' => ['bg' => 'bg-blue-100',  'text' => 'text-blue-800'],
+                    default   => ['bg' => 'bg-yellow-100','text' => 'text-yellow-800'],
+                };
+                $isOverdue = $bill->status !== 'paid' && $bill->due_date->isPast();
+            @endphp
+            <div class="bg-white rounded-lg shadow p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Supplier Bill</h2>
+                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ $billStatusColor['bg'] }} {{ $billStatusColor['text'] }}">
+                        {{ ucfirst($bill->status) }}
+                        @if($isOverdue) · Overdue @endif
+                    </span>
+                </div>
+
+                <p class="text-sm font-medium text-green-700">{{ $bill->invoice_number }}</p>
+
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <p class="text-gray-500 mb-0.5">Total</p>
+                        <p class="font-semibold text-gray-900">₦{{ number_format($bill->total_amount, 2) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 mb-0.5">Paid</p>
+                        <p class="font-semibold text-green-700">₦{{ number_format($bill->amount_paid, 2) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 mb-0.5">Balance</p>
+                        <p class="font-semibold {{ (float)$bill->balance_due > 0 ? 'text-red-600' : 'text-gray-400' }}">
+                            ₦{{ number_format($bill->balance_due, 2) }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="text-xs text-gray-500 space-y-0.5">
+                    <p>Invoice date: {{ $bill->invoice_date->format('d M Y') }}</p>
+                    <p class="{{ $isOverdue ? 'text-red-600 font-medium' : '' }}">
+                        Due: {{ $bill->due_date->format('d M Y') }}
+                        @if($isOverdue) ({{ $bill->due_date->diffForHumans() }}) @endif
+                    </p>
+                </div>
+
+                {{-- Payment history --}}
+                @if($bill->payments->count() > 0)
+                <div class="border-t pt-3">
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment History</p>
+                    <div class="space-y-2">
+                        @foreach($bill->payments as $pmt)
+                        <div class="flex items-center justify-between text-xs text-gray-600">
+                            <div>
+                                <p class="font-medium text-gray-800">₦{{ number_format($pmt->amount, 2) }}</p>
+                                <p class="text-gray-400">
+                                    {{ $pmt->payment_date->format('d M Y') }}
+                                    · {{ ucfirst(str_replace('_', ' ', $pmt->method)) }}
+                                    @if($pmt->reference) · {{ $pmt->reference }} @endif
+                                </p>
+                            </div>
+                            <span class="text-gray-400 text-[10px]">
+                                {{ $pmt->recorder?->name ?? '—' }}
+                            </span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
+                {{-- Record Payment button --}}
+                @can('pay', $restockRequest)
+                <button type="button" @click="payOpen = true"
+                        class="w-full inline-flex items-center justify-center px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                    Record Supplier Payment
+                </button>
+                @endcan
             </div>
             @endif
         </div>
@@ -337,6 +402,103 @@
                         <button type="submit"
                                 class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">
                             Reject Request
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endcan
+
+    {{-- Record Supplier Payment Modal --}}
+    @can('pay', $restockRequest)
+    <div x-show="payOpen" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
+         x-transition>
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 space-y-4"
+             @click.outside="payOpen = false">
+            <h3 class="text-base font-semibold text-gray-900">Record Supplier Payment</h3>
+            <p class="text-sm text-gray-500">
+                Bill <strong>{{ $restockRequest->invoice->invoice_number }}</strong> —
+                Balance due: <strong>₦{{ number_format($restockRequest->invoice->balance_due, 2) }}</strong>
+            </p>
+            <form method="POST" action="{{ route('inventory.restock.pay', $restockRequest) }}">
+                @csrf
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Amount (₦) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" name="amount"
+                                   value="{{ $restockRequest->invoice->balance_due }}"
+                                   min="0.01" step="0.01"
+                                   max="{{ $restockRequest->invoice->balance_due }}"
+                                   required
+                                   class="w-full rounded-md border-gray-300 text-sm shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Payment Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="payment_date"
+                                   value="{{ now()->toDateString() }}"
+                                   required
+                                   class="w-full rounded-md border-gray-300 text-sm shadow-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Bank Account <span class="text-red-500">*</span>
+                        </label>
+                        <select name="bank_account_id" required
+                                class="w-full rounded-md border-gray-300 text-sm shadow-sm">
+                            <option value="">— Select bank account —</option>
+                            @foreach($bankAccounts as $bank)
+                                <option value="{{ $bank->id }}">
+                                    {{ $bank->name }}
+                                    @if($bank->bank_name) — {{ $bank->bank_name }} @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Method <span class="text-red-500">*</span></label>
+                            <select name="method" required class="w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="cheque">Cheque</option>
+                                <option value="cash">Cash</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Reference / Txn ID</label>
+                            <input type="text" name="reference" placeholder="Optional"
+                                   class="w-full rounded-md border-gray-300 text-sm shadow-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <input type="text" name="notes" placeholder="Optional"
+                               class="w-full rounded-md border-gray-300 text-sm shadow-sm">
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-blue-800">
+                        GL: <strong>Dr AP 2001</strong> / <strong>Cr Bank GL</strong> — reduces the accounts payable balance.
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="button" @click="payOpen = false"
+                                class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                            Record Payment
                         </button>
                     </div>
                 </div>

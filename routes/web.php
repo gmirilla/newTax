@@ -29,6 +29,7 @@ use App\Http\Controllers\Inventory\InventoryItemController;
 use App\Http\Controllers\Inventory\InventoryReportController;
 use App\Http\Controllers\Inventory\RestockRequestController;
 use App\Http\Controllers\Inventory\SalesOrderController;
+use App\Http\Controllers\Inventory\SupplierBillController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Manufacturing\BomController;
 use App\Http\Controllers\Manufacturing\ProductionOrderController;
@@ -274,8 +275,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::post('/{restockRequest}/approve',     [RestockRequestController::class, 'approve'])->name('approve');
                 Route::post('/{restockRequest}/reject',      [RestockRequestController::class, 'reject'])->name('reject');
                 Route::post('/{restockRequest}/receive',     [RestockRequestController::class, 'receive'])->name('receive');
+                Route::post('/{restockRequest}/pay',         [RestockRequestController::class, 'pay'])->name('pay');
                 Route::post('/{restockRequest}/cancel',      [RestockRequestController::class, 'cancel'])->name('cancel');
             });
+
+            // Supplier Bills
+            Route::get('/bills', [SupplierBillController::class, 'index'])->name('bills.index');
 
             // Sales Orders
             Route::prefix('sales')->name('sales.')->group(function () {

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\AuditLog;
+use App\Models\BankAccount;
 use App\Models\Invoice;
+use App\Models\InvoicePayment;
 use App\Models\InventoryItem;
 use App\Models\RestockRequest;
 use App\Models\StockMovement;
@@ -124,9 +126,13 @@ class RestockRequestController extends Controller
     {
         $this->authorize('view', $restockRequest);
 
-        $restockRequest->load(['item.category', 'requester', 'approver', 'invoice', 'productionOrder.finishedItem']);
+        $restockRequest->load(['item.category', 'requester', 'approver', 'invoice.payments.recorder', 'productionOrder.finishedItem']);
 
-        return view('inventory.restock.show', compact('restockRequest'));
+        $bankAccounts = $restockRequest->canBePaid()
+            ? BankAccount::where('tenant_id', auth()->user()->tenant_id)->where('is_active', true)->orderBy('name')->get()
+            : collect();
+
+        return view('inventory.restock.show', compact('restockRequest', 'bankAccounts'));
     }
 
     // ── Approve ───────────────────────────────────────────────────────────────
@@ -352,6 +358,111 @@ class RestockRequestController extends Controller
 
         return redirect()->route('inventory.restock.show', $restockRequest)
             ->with('success', "Goods received. Stock updated and supplier bill generated.");
+    }
+
+    // ── Pay Supplier Bill ─────────────────────────────────────────────────────
+
+    public function pay(Request $request, RestockRequest $restockRequest): RedirectResponse
+    {
+        $this->authorize('pay', $restockRequest);
+
+        $bill = $restockRequest->invoice;
+        if (! $bill || (float) $bill->balance_due <= 0) {
+            return back()->with('error', 'No outstanding balance on this supplier bill.');
+        }
+
+        $validated = $request->validate([
+            'amount'          => ['required', 'numeric', 'min:0.01', 'max:' . $bill->balance_due],
+            'bank_account_id' => ['required', 'integer', 'exists:bank_accounts,id'],
+            'payment_date'    => ['required', 'date'],
+            'method'          => ['required', 'string', 'in:bank_transfer,cash,cheque,other'],
+            'reference'       => ['nullable', 'string', 'max:100'],
+            'notes'           => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $amount = (float) $validated['amount'];
+        $tenant = $restockRequest->tenant;
+
+        DB::transaction(function () use ($validated, $restockRequest, $bill, $amount, $tenant) {
+            $bankAccount = BankAccount::withoutGlobalScope('tenant')
+                ->where('id', $validated['bank_account_id'])
+                ->where('tenant_id', $tenant->id)
+                ->with('glAccount')
+                ->firstOrFail();
+
+            if (! $bankAccount->glAccount) {
+                throw new \RuntimeException('Selected bank account has no GL account linked. Configure it in Settings → Bank Accounts.');
+            }
+
+            $apAccount = Account::where('tenant_id', $tenant->id)
+                ->withoutGlobalScope('tenant')
+                ->where('code', '2001')
+                ->first();
+
+            if (! $apAccount) {
+                throw new \RuntimeException('AP account (2001) not found in Chart of Accounts.');
+            }
+
+            InvoicePayment::create([
+                'tenant_id'    => $tenant->id,
+                'invoice_id'   => $bill->id,
+                'payment_date' => $validated['payment_date'],
+                'amount'       => $amount,
+                'method'       => $validated['method'],
+                'reference'    => $validated['reference'] ?? null,
+                'notes'        => $validated['notes'] ?? null,
+                'recorded_by'  => auth()->id(),
+            ]);
+
+            $bill->amount_paid = round((float) $bill->amount_paid + $amount, 2);
+            $bill->balance_due = round((float) $bill->total_amount - $bill->amount_paid, 2);
+            $bill->status      = $bill->balance_due <= 0 ? 'paid' : 'partial';
+            $bill->save();
+
+            $this->bookkeeping->postJournalEntry(
+                $tenant,
+                [
+                    'transaction_date' => $validated['payment_date'],
+                    'type'             => 'payment',
+                    'description'      => "Supplier payment: {$bill->invoice_number}"
+                                       . ($restockRequest->supplier_name ? " — {$restockRequest->supplier_name}" : ''),
+                    'reference'        => 'PAY-' . $bill->invoice_number,
+                ],
+                [
+                    [
+                        'account_id'  => $apAccount->id,
+                        'entry_type'  => 'debit',
+                        'amount'      => $amount,
+                        'description' => "AP settled: {$bill->invoice_number}",
+                    ],
+                    [
+                        'account_id'  => $bankAccount->glAccount->id,
+                        'entry_type'  => 'credit',
+                        'amount'      => $amount,
+                        'description' => "Paid to supplier: " . ($restockRequest->supplier_name ?? $bill->invoice_number),
+                    ],
+                ]
+            );
+        });
+
+        $restockRequest->refresh()->load('invoice');
+
+        AuditLog::record('supplier_bill.payment_recorded', $restockRequest,
+            [],
+            [
+                'reference'    => $bill->invoice_number,
+                'item'         => $restockRequest->item?->name,
+                'amount'       => $amount,
+                'payment_date' => $validated['payment_date'],
+                'method'       => $validated['method'],
+                'balance_due'  => $restockRequest->invoice?->balance_due,
+            ],
+            'inventory,payment'
+        );
+
+        return back()->with('success',
+            '₦' . number_format($amount, 2) . ' payment recorded against ' . $bill->invoice_number . '.'
+        );
     }
 
     // ── Cancel ────────────────────────────────────────────────────────────────

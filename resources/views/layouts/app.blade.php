@@ -39,6 +39,11 @@
         ? \App\Models\RestockRequest::where('tenant_id', auth()->user()->tenant_id ?? 0)
               ->withoutGlobalScope('tenant')->where('status', 'pending')->count()
         : 0;
+    $navOutstandingBills = $canInventory
+        ? \App\Models\Invoice::where('tenant_id', auth()->user()->tenant_id ?? 0)
+              ->whereNull('customer_id')->where('invoice_number', 'like', 'BILL-%')
+              ->whereIn('status', ['sent', 'partial'])->count()
+        : 0;
 
     // Section auto-open states — true when the current page belongs to that group
     $navInSales     = request()->routeIs('quotes.*', 'invoices.*', 'transactions.*');

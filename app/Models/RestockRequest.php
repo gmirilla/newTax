@@ -104,4 +104,11 @@ class RestockRequest extends Model
     {
         return in_array($this->status, [self::STATUS_PENDING, self::STATUS_APPROVED]);
     }
+
+    public function canBePaid(): bool
+    {
+        return $this->status === self::STATUS_RECEIVED
+            && $this->invoice_id !== null
+            && ($this->invoice?->balance_due ?? 0) > 0;
+    }
 }

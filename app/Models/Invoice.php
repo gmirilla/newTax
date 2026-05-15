@@ -90,6 +90,11 @@ class Invoice extends Model
         return $this->hasOne(InvoiceFirsSubmission::class);
     }
 
+    public function restockRequest(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\RestockRequest::class, 'invoice_id');
+    }
+
     public function isOverdue(): bool
     {
         return $this->status !== 'paid'

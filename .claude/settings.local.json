@@ -23,7 +23,11 @@
       "Bash(git ls-tree *)",
       "Bash(php -l app/Models/BankAccount.php)",
       "Bash(php -l app/Policies/BankAccountPolicy.php)",
-      "Bash(php -l app/Http/Controllers/BankAccountController.php)"
+      "Bash(php -l app/Http/Controllers/BankAccountController.php)",
+      "Bash(php -l app/Http/Controllers/Inventory/SupplierBillController.php)",
+      "Bash(php -l app/Models/Invoice.php)",
+      "Bash(php -l app/Models/RestockRequest.php)",
+      "Bash(php -l app/Policies/RestockRequestPolicy.php)"
     ]
   }
 }
