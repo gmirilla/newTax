@@ -20,8 +20,8 @@ class SupplierBillController extends Controller
             ->with(['restockRequest.item', 'payments'])
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), fn($q) => $q->where(function ($q) use ($request) {
-                $q->where('invoice_number', 'ilike', '%' . $request->search . '%')
-                  ->orWhere('notes', 'ilike', '%' . $request->search . '%');
+                $q->where('invoice_number', 'like', '%' . $request->search . '%')
+                  ->orWhere('notes', 'like', '%' . $request->search . '%');
             }))
             ->when($request->filled('from'), fn($q) => $q->whereDate('invoice_date', '>=', $request->from))
             ->when($request->filled('to'),   fn($q) => $q->whereDate('invoice_date', '<=', $request->to));
@@ -32,10 +32,10 @@ class SupplierBillController extends Controller
             ->whereNull('customer_id')
             ->where('invoice_number', 'like', 'BILL-%')
             ->selectRaw("
-                COUNT(*) FILTER (WHERE status IN ('sent','partial')) AS outstanding_count,
-                COALESCE(SUM(balance_due) FILTER (WHERE status IN ('sent','partial')), 0) AS outstanding_value,
-                COUNT(*) FILTER (WHERE status IN ('sent','partial') AND due_date < CURRENT_DATE) AS overdue_count,
-                COALESCE(SUM(balance_due) FILTER (WHERE status IN ('sent','partial') AND due_date < CURRENT_DATE), 0) AS overdue_value
+                SUM(CASE WHEN status IN ('sent','partial') THEN 1 ELSE 0 END) AS outstanding_count,
+                COALESCE(SUM(CASE WHEN status IN ('sent','partial') THEN balance_due ELSE 0 END), 0) AS outstanding_value,
+                SUM(CASE WHEN status IN ('sent','partial') AND due_date < CURDATE() THEN 1 ELSE 0 END) AS overdue_count,
+                COALESCE(SUM(CASE WHEN status IN ('sent','partial') AND due_date < CURDATE() THEN balance_due ELSE 0 END), 0) AS overdue_value
             ")
             ->first();
 
