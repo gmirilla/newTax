@@ -3,7 +3,9 @@
 @section('page-title', 'Team Members')
 
 @section('content')
-<div class="max-w-4xl mx-auto space-y-6" x-data="{ inviteModal: false }">
+{{-- Single x-data wrapper covers both the page content and the invite modal --}}
+<div x-data="{ inviteModal: false }">
+<div class="max-w-4xl mx-auto space-y-6">
 
     {{-- Header --}}
     <div class="flex items-center justify-between">
@@ -30,7 +32,7 @@
         @else
         <a href="{{ route('billing') }}?upgrade_feature=users"
            class="px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-md hover:bg-amber-600">
-            🔒 Upgrade to Add More
+            Upgrade to Add More
         </a>
         @endif
     </div>
@@ -54,15 +56,19 @@
                     <th class="px-6 py-3 text-right font-semibold">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
-                @foreach($users as $member)
-                @php
-                    $isSelf    = $member->id === auth()->id();
-                    $isAdmin   = $member->role === 'admin';
-                    $showMods  = !$isSelf && !$isAdmin;
-                    $modAccess = $member->module_access ?? \App\Models\User::moduleDefaults($member->role);
-                @endphp
-                <tr x-data="{ modulesOpen: false }" class="hover:bg-gray-50">
+
+            {{-- Each member gets its own <tbody> so x-data scope covers both the main row
+                 and the collapsible module-access row (siblings need a shared ancestor) --}}
+            @foreach($users as $member)
+            @php
+                $isSelf    = $member->id === auth()->id();
+                $isAdmin   = $member->role === 'admin';
+                $showMods  = !$isSelf && !$isAdmin;
+                $modAccess = $member->module_access ?? \App\Models\User::moduleDefaults($member->role);
+            @endphp
+            <tbody x-data="{ modulesOpen: false }" class="divide-y divide-gray-100">
+
+                <tr class="hover:bg-gray-50">
                     <td class="px-6 py-3 font-medium text-gray-900">
                         {{ $member->name }}
                         @if($isSelf)
@@ -114,8 +120,8 @@
                         @if(!$isSelf)
                         <div class="flex items-center justify-end gap-3">
                             @if($showMods)
-                            <button @click="modulesOpen = !modulesOpen"
-                                    :class="modulesOpen ? 'text-indigo-700' : 'text-indigo-500 hover:text-indigo-700'"
+                            <button type="button" @click="modulesOpen = !modulesOpen"
+                                    :class="modulesOpen ? 'text-indigo-700 underline' : 'text-indigo-500 hover:text-indigo-700'"
                                     class="text-xs font-medium">
                                 <span x-text="modulesOpen ? 'Hide Access' : 'Module Access'"></span>
                             </button>
@@ -139,17 +145,14 @@
                     </td>
                 </tr>
 
-                {{-- Module access panel (inline below the row) --}}
+                {{-- Module access panel — sibling row inside the same tbody x-data scope --}}
                 @if($showMods)
-                <tr x-show="modulesOpen" x-cloak>
-                    <td colspan="5" class="px-6 pb-4 bg-indigo-50/40 border-t border-indigo-100">
+                <tr x-show="modulesOpen" x-cloak style="display: none;">
+                    <td colspan="5" class="px-6 pb-4 bg-indigo-50/50 border-b border-indigo-100">
                         <form method="POST" action="{{ route('team.modules', $member) }}">
                             @csrf
                             <p class="text-xs font-semibold text-indigo-700 mt-3 mb-2">
                                 Module access for {{ $member->name }}
-                                @if($isAdmin)
-                                    <span class="font-normal text-gray-400 ml-1">— Admins always have full access</span>
-                                @endif
                             </p>
                             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
                                 @foreach(\App\Models\User::MODULE_LIST as $modKey => $modLabel)
@@ -176,8 +179,9 @@
                 </tr>
                 @endif
 
-                @endforeach
             </tbody>
+            @endforeach
+
         </table>
     </div>
 
@@ -221,8 +225,7 @@
                         <div class="flex items-center justify-end gap-3">
                             <form method="POST" action="{{ route('team.invite.resend', $invite) }}">
                                 @csrf
-                                <button type="submit"
-                                        class="text-xs text-green-600 hover:text-green-800 font-medium">
+                                <button type="submit" class="text-xs text-green-600 hover:text-green-800 font-medium">
                                     Resend
                                 </button>
                             </form>
@@ -268,8 +271,9 @@
 
 </div>
 
-{{-- Invite Modal --}}
+{{-- Invite Modal — inside the x-data wrapper so inviteModal is in scope --}}
 <div x-show="inviteModal" x-cloak
+     style="display: none;"
      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
      @keydown.escape.window="inviteModal = false">
     <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
@@ -307,4 +311,5 @@
     </div>
 </div>
 
+</div>{{-- end x-data wrapper --}}
 @endsection
