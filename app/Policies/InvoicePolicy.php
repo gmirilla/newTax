@@ -9,7 +9,7 @@ class InvoicePolicy
 {
     public function view(User $user, Invoice $invoice): bool
     {
-        return $user->tenant_id === $invoice->tenant_id && $user->canAccess('invoices');
+        return $user->tenant_id == $invoice->tenant_id && $user->canAccess('invoices');
     }
 
     public function create(User $user): bool
@@ -19,14 +19,14 @@ class InvoicePolicy
 
     public function update(User $user, Invoice $invoice): bool
     {
-        return $user->tenant_id === $invoice->tenant_id
+        return $user->tenant_id == $invoice->tenant_id
             && $user->isAccountant()
             && !in_array($invoice->status, ['void']);
     }
 
     public function delete(User $user, Invoice $invoice): bool
     {
-        return $user->tenant_id === $invoice->tenant_id
+        return $user->tenant_id == $invoice->tenant_id
             && $user->isAdmin();
     }
 }

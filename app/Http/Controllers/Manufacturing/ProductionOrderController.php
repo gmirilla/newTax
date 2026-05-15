@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Manufacturing;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\AuditLog;
 use App\Models\Bom;
 use App\Models\InventoryItem;
 use App\Models\ProductionOrder;
@@ -138,6 +139,21 @@ class ProductionOrderController extends Controller
             'status'     => ProductionOrder::STATUS_IN_PRODUCTION,
             'started_at' => now(),
         ]);
+
+        $productionOrder->loadMissing('creator', 'finishedItem');
+        AuditLog::record(
+            'production_order.started',
+            $productionOrder,
+            ['status' => 'draft'],
+            [
+                'reference'      => $productionOrder->order_number,
+                'initiator_id'   => $productionOrder->created_by,
+                'initiator_name' => $productionOrder->creator?->name ?? 'Unknown',
+                'item'           => $productionOrder->finishedItem?->name,
+                'qty_planned'    => $productionOrder->quantity_planned,
+            ],
+            'manufacturing,approval'
+        );
 
         return back()->with('success', "Production order {$productionOrder->order_number} started.");
     }
@@ -305,6 +321,22 @@ class ProductionOrderController extends Controller
             ]);
         });
 
+        $productionOrder->loadMissing('creator', 'finishedItem');
+        AuditLog::record(
+            'production_order.completed',
+            $productionOrder,
+            ['status' => 'in_production'],
+            [
+                'reference'      => $productionOrder->order_number,
+                'initiator_id'   => $productionOrder->created_by,
+                'initiator_name' => $productionOrder->creator?->name ?? 'Unknown',
+                'item'           => $productionOrder->finishedItem?->name,
+                'qty_produced'   => $productionOrder->quantity_produced,
+                'additional_cost'=> $productionOrder->additional_cost,
+            ],
+            'manufacturing,approval'
+        );
+
         return redirect()->route('manufacturing.production.show', $productionOrder)
             ->with('success', "Production order {$productionOrder->order_number} completed. Finished goods added to stock.");
     }
@@ -315,7 +347,23 @@ class ProductionOrderController extends Controller
     {
         $this->authorize('cancel', $productionOrder);
 
+        $oldStatus = $productionOrder->status;
+        $productionOrder->loadMissing('creator', 'finishedItem');
         $productionOrder->update(['status' => ProductionOrder::STATUS_CANCELLED]);
+
+        AuditLog::record(
+            'production_order.cancelled',
+            $productionOrder,
+            ['status' => $oldStatus],
+            [
+                'reference'      => $productionOrder->order_number,
+                'initiator_id'   => $productionOrder->created_by,
+                'initiator_name' => $productionOrder->creator?->name ?? 'Unknown',
+                'item'           => $productionOrder->finishedItem?->name,
+                'qty_planned'    => $productionOrder->quantity_planned,
+            ],
+            'manufacturing,approval'
+        );
 
         return redirect()->route('manufacturing.production.index')
             ->with('success', "Production order {$productionOrder->order_number} cancelled.");

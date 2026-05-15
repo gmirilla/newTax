@@ -19,13 +19,13 @@ class BankAccountPolicy
 
     public function update(User $user, BankAccount $bankAccount): bool
     {
-        return $user->isAdmin() && $user->tenant_id === $bankAccount->tenant_id;
+        return $user->isAdmin() && $user->tenant_id == $bankAccount->tenant_id;
     }
 
     public function delete(User $user, BankAccount $bankAccount): bool
     {
         return $user->isAdmin()
-            && $user->tenant_id === $bankAccount->tenant_id
+            && $user->tenant_id == $bankAccount->tenant_id
             && ! $bankAccount->is_default;
     }
 }

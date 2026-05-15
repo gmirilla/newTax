@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\InventoryItem;
 use App\Models\RestockRequest;
@@ -140,10 +141,22 @@ class RestockRequestController extends Controller
             'approved_at' => now(),
         ]);
 
-        // Notify the requester
         $restockRequest->load('item', 'requester');
         optional($restockRequest->requester)->notify(
             new RestockStatusNotification($restockRequest, 'approved')
+        );
+
+        AuditLog::record('restock_request.approved', $restockRequest,
+            ['status' => 'pending'],
+            [
+                'reference'      => $restockRequest->request_number,
+                'initiator_id'   => $restockRequest->requested_by,
+                'initiator_name' => $restockRequest->requester?->name ?? 'Unknown',
+                'item'           => $restockRequest->item->name,
+                'qty_requested'  => $restockRequest->quantity_requested,
+                'unit_cost'      => $restockRequest->unit_cost,
+            ],
+            'inventory,approval'
         );
 
         return back()->with('success', "Request {$restockRequest->request_number} approved.");
@@ -167,6 +180,18 @@ class RestockRequestController extends Controller
         $restockRequest->load('item', 'requester');
         optional($restockRequest->requester)->notify(
             new RestockStatusNotification($restockRequest, 'rejected')
+        );
+
+        AuditLog::record('restock_request.rejected', $restockRequest,
+            ['status' => 'pending'],
+            [
+                'reference'        => $restockRequest->request_number,
+                'initiator_id'     => $restockRequest->requested_by,
+                'initiator_name'   => $restockRequest->requester?->name ?? 'Unknown',
+                'item'             => $restockRequest->item->name,
+                'rejection_reason' => $validated['rejection_reason'],
+            ],
+            'inventory,approval'
         );
 
         return back()->with('success', "Request {$restockRequest->request_number} rejected.");
@@ -306,10 +331,23 @@ class RestockRequestController extends Controller
             ]);
         });
 
-        // Notify requester of receipt
         $restockRequest->refresh()->load('item', 'requester');
         optional($restockRequest->requester)->notify(
             new RestockStatusNotification($restockRequest, 'received')
+        );
+
+        AuditLog::record('restock_request.received', $restockRequest,
+            ['status' => 'approved'],
+            [
+                'reference'      => $restockRequest->request_number,
+                'initiator_id'   => $restockRequest->requested_by,
+                'initiator_name' => $restockRequest->requester?->name ?? 'Unknown',
+                'item'           => $restockRequest->item->name,
+                'qty_received'   => $validated['quantity_received'],
+                'unit_cost'      => $validated['unit_cost'],
+                'total_cost'     => round((float)$validated['quantity_received'] * (float)$validated['unit_cost'], 2),
+            ],
+            'inventory,approval'
         );
 
         return redirect()->route('inventory.restock.show', $restockRequest)
@@ -322,7 +360,20 @@ class RestockRequestController extends Controller
     {
         $this->authorize('cancel', $restockRequest);
 
+        $oldStatus = $restockRequest->status;
+        $restockRequest->load('item', 'requester');
         $restockRequest->update(['status' => RestockRequest::STATUS_CANCELLED]);
+
+        AuditLog::record('restock_request.cancelled', $restockRequest,
+            ['status' => $oldStatus],
+            [
+                'reference'      => $restockRequest->request_number,
+                'initiator_id'   => $restockRequest->requested_by,
+                'initiator_name' => $restockRequest->requester?->name ?? 'Unknown',
+                'item'           => $restockRequest->item->name,
+            ],
+            'inventory,approval'
+        );
 
         return redirect()->route('inventory.restock.index')
             ->with('success', "Request {$restockRequest->request_number} cancelled.");

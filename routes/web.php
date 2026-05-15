@@ -29,6 +29,7 @@ use App\Http\Controllers\Inventory\InventoryItemController;
 use App\Http\Controllers\Inventory\InventoryReportController;
 use App\Http\Controllers\Inventory\RestockRequestController;
 use App\Http\Controllers\Inventory\SalesOrderController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Manufacturing\BomController;
 use App\Http\Controllers\Manufacturing\ProductionOrderController;
 use App\Http\Controllers\MarketingController;
@@ -351,6 +352,9 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::get('/cit',                [ReportController::class, 'citReport'])->name('cit');
             Route::get('/tax-summary',        [ReportController::class, 'taxSummary'])->name('tax-summary');
         });
+
+        // Activity Log
+        Route::get('/activity', [ActivityLogController::class, 'index'])->name('activity.index');
     });
 
 });
@@ -389,6 +393,7 @@ Route::middleware(['auth', 'superadmin'])
         });
 
         Route::post('/bulk-reminder',        [SuperAdminController::class, 'sendBulkReminder'])->name('bulk-reminder');
+        Route::get('/audit-logs',            [SuperAdminController::class, 'auditLogs'])->name('audit-logs');
     });
 
 // Exit impersonation (accessible while impersonating, outside superadmin middleware)

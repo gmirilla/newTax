@@ -42,6 +42,7 @@
             {!! $navItem('superadmin.companies', 'Companies', '🏢') !!}
             {!! $navItem('superadmin.plans.index', 'Plans', '💳') !!}
             {!! $navItem('superadmin.transactions', 'Transactions', '💰') !!}
+            {!! $navItem('superadmin.audit-logs', 'Audit Logs', '📋') !!}
 
             <div class="pt-4 mt-4 border-t border-gray-700">
                 <p class="px-3 text-xs uppercase tracking-widest text-gray-500 mb-2">Account</p>

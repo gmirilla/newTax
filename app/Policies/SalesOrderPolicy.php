@@ -14,7 +14,7 @@ class SalesOrderPolicy
 
     public function view(User $user, SalesOrder $order): bool
     {
-        return $user->tenant_id === $order->tenant_id;
+        return $user->tenant_id == $order->tenant_id;
     }
 
     public function create(User $user): bool
@@ -24,19 +24,19 @@ class SalesOrderPolicy
 
     public function update(User $user, SalesOrder $order): bool
     {
-        return $user->tenant_id === $order->tenant_id
+        return $user->tenant_id == $order->tenant_id
             && $order->status === SalesOrder::STATUS_DRAFT;
     }
 
     public function confirm(User $user, SalesOrder $order): bool
     {
-        return $user->tenant_id === $order->tenant_id
+        return $user->tenant_id == $order->tenant_id
             && $order->status === SalesOrder::STATUS_DRAFT;
     }
 
     public function cancel(User $user, SalesOrder $order): bool
     {
-        if ($user->tenant_id !== $order->tenant_id) {
+        if ($user->tenant_id != $order->tenant_id) {
             return false;
         }
 

@@ -14,7 +14,7 @@ class BomPolicy
 
     public function view(User $user, Bom $bom): bool
     {
-        return $user->tenant_id === $bom->tenant_id && $user->canAccess('manufacturing');
+        return $user->tenant_id == $bom->tenant_id && $user->canAccess('manufacturing');
     }
 
     public function create(User $user): bool
@@ -24,12 +24,12 @@ class BomPolicy
 
     public function update(User $user, Bom $bom): bool
     {
-        return $user->tenant_id === $bom->tenant_id && $user->isAdmin();
+        return $user->tenant_id == $bom->tenant_id && $user->isAdmin();
     }
 
     public function delete(User $user, Bom $bom): bool
     {
-        return $user->tenant_id === $bom->tenant_id
+        return $user->tenant_id == $bom->tenant_id
             && $user->isAdmin()
             && $bom->productionOrders()->whereIn('status', ['in_production', 'completed'])->doesntExist();
     }

@@ -9,7 +9,7 @@
         <a href="{{ route('superadmin.companies') }}" class="text-sm text-gray-500 hover:text-gray-700">← All Companies</a>
         <div class="flex gap-2">
             {{-- Impersonate --}}
-            <form method="POST" action="{{ route('superadmin.impersonate', $tenant) }}">
+            <form method="POST" action="{{ route('superadmin.companies.impersonate', $tenant) }}">
                 @csrf
                 <button type="submit"
                         onclick="return confirm('Log in as this company\'s admin?')"

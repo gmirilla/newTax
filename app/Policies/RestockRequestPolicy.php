@@ -14,7 +14,7 @@ class RestockRequestPolicy
 
     public function view(User $user, RestockRequest $request): bool
     {
-        return $user->tenant_id === $request->tenant_id && $user->canAccess('inventory');
+        return $user->tenant_id == $request->tenant_id && $user->canAccess('inventory');
     }
 
     public function create(User $user): bool
@@ -24,28 +24,28 @@ class RestockRequestPolicy
 
     public function approve(User $user, RestockRequest $request): bool
     {
-        return $user->tenant_id === $request->tenant_id
+        return $user->tenant_id == $request->tenant_id
             && $user->isAccountant()
             && $request->canBeApproved();
     }
 
     public function reject(User $user, RestockRequest $request): bool
     {
-        return $user->tenant_id === $request->tenant_id
+        return $user->tenant_id == $request->tenant_id
             && $user->isAccountant()
             && $request->canBeApproved();
     }
 
     public function receive(User $user, RestockRequest $request): bool
     {
-        return $user->tenant_id === $request->tenant_id
+        return $user->tenant_id == $request->tenant_id
             && $user->isAccountant()
             && $request->canBeReceived();
     }
 
     public function cancel(User $user, RestockRequest $request): bool
     {
-        if ($user->tenant_id !== $request->tenant_id) {
+        if ($user->tenant_id != $request->tenant_id) {
             return false;
         }
 
