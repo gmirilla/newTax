@@ -231,7 +231,7 @@ class InvoiceService
         $this->bookkeepingService->postJournalEntry($tenant, [
             'transaction_date' => $payment->payment_date->toDateString(),
             'type'             => 'receipt',
-            'description'      => "Payment received: {$invoice->invoice_number} — {$invoice->customer->name}",
+            'description'      => "Payment received: {$invoice->invoice_number}" . ($invoice->customer ? " — {$invoice->customer->name}" : ''),
             'reference'        => 'REC-' . $invoice->invoice_number,
         ], [
             [
