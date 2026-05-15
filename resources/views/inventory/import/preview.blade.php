@@ -34,9 +34,9 @@
     {{-- GL accounting notice --}}
     @if($totalValue > 0)
     <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
-        Items with opening stock will generate a single journal entry on confirm:
-        <span class="font-mono font-medium">Dr Inventory (1200) ₦{{ number_format($totalValue, 2) }} / Cr Owner's Equity (3001) ₦{{ number_format($totalValue, 2) }}</span>.
-        Make sure both accounts exist in your Chart of Accounts.
+        Items with opening stock will post journal entries on confirm (total <span class="font-mono font-medium">₦{{ number_format($totalValue, 2) }}</span>):
+        products → Dr 1200, raw materials → Dr 1201, finished goods → Dr 1202, all crediting Owner's Equity (3001).
+        Ensure the relevant accounts exist in your Chart of Accounts.
     </div>
     @endif
 
@@ -66,6 +66,7 @@
                         <th class="px-3 py-2 font-medium text-gray-600">Name</th>
                         <th class="px-3 py-2 font-medium text-gray-600">SKU</th>
                         <th class="px-3 py-2 font-medium text-gray-600">Category</th>
+                        <th class="px-3 py-2 font-medium text-gray-600">Type</th>
                         <th class="px-3 py-2 font-medium text-gray-600">Unit</th>
                         <th class="px-3 py-2 font-medium text-gray-600 text-right">Selling Price</th>
                         <th class="px-3 py-2 font-medium text-gray-600 text-right">Cost Price</th>
@@ -97,6 +98,20 @@
                                 @else
                                     <span class="text-gray-400">—</span>
                                 @endif
+                            </td>
+                            @php
+                                $typeLabels = [
+                                    'product'       => ['label' => 'Product',       'class' => 'bg-gray-100 text-gray-600'],
+                                    'raw_material'  => ['label' => 'Raw Material',  'class' => 'bg-orange-100 text-orange-700'],
+                                    'finished_good' => ['label' => 'Finished Good', 'class' => 'bg-purple-100 text-purple-700'],
+                                    'semi_finished' => ['label' => 'Semi-finished', 'class' => 'bg-indigo-100 text-indigo-700'],
+                                ];
+                                $typeMeta = $typeLabels[$row['item_type']] ?? $typeLabels['product'];
+                            @endphp
+                            <td class="px-3 py-2">
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium {{ $typeMeta['class'] }}">
+                                    {{ $typeMeta['label'] }}
+                                </span>
                             </td>
                             <td class="px-3 py-2 text-gray-600">{{ $row['unit'] }}</td>
                             <td class="px-3 py-2 text-right text-gray-700">{{ number_format($row['selling_price'], 2) }}</td>
