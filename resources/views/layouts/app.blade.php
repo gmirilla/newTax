@@ -26,9 +26,10 @@
 @php
     // ── Nav variables — computed once, shared by both mobile & desktop partials ──
     $navRole               = $currentUser->role ?? 'staff';
-    $canPayroll            = $currentTenant->planAllows('payroll');
-    $canInventory          = $currentTenant->planAllows('inventory');
-    $canInventoryReports   = $currentTenant->planAllows('inventory_reports');
+    $canPayroll            = $currentTenant->planAllows('payroll')      && $currentUser->canAccess('payroll');
+    $canInventory          = $currentTenant->planAllows('inventory')     && $currentUser->canAccess('inventory');
+    $canInventoryReports   = $currentTenant->planAllows('inventory_reports') && $currentUser->canAccess('reports');
+    $canManufacturing      = $currentTenant->planAllows('manufacturing') && $currentUser->canAccess('manufacturing');
 
     $navAlertCount = $canInventory
         ? \App\Models\InventoryAlert::where('tenant_id', auth()->user()->tenant_id ?? 0)
@@ -43,7 +44,8 @@
     $navInSales     = request()->routeIs('quotes.*', 'invoices.*', 'transactions.*');
     $navInTax       = request()->routeIs('tax.*');
     $navInPayroll   = request()->routeIs('payroll.*');
-    $navInInventory = request()->routeIs('inventory.*') && ! request()->routeIs('inventory.reports.*');
+    $navInInventory      = request()->routeIs('inventory.*') && ! request()->routeIs('inventory.reports.*');
+    $navInManufacturing  = request()->routeIs('manufacturing.*');
     $navInReports   = request()->routeIs('reports.*', 'inventory.reports.*');
     $navInSettings  = request()->routeIs('team.*', 'billing*', 'settings.*');
 @endphp

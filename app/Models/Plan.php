@@ -35,6 +35,7 @@ class Plan extends Model
         'advanced_reports'   => false,
         'inventory'          => false,
         'inventory_reports'  => false,
+        'manufacturing'      => false,
         'api_access'         => false,
     ];
 

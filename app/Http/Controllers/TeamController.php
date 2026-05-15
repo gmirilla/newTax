@@ -20,7 +20,7 @@ class TeamController extends Controller
 
         $invites = UserInvite::where('tenant_id', $tenant->id)
             ->whereNull('accepted_at')
-            ->where('expires_at', '>', now())
+            ->where('expires_at', '>', now()->subDays(7))  // include recently expired for resend
             ->with('inviter')
             ->latest()
             ->get();
@@ -134,7 +134,62 @@ class TeamController extends Controller
         return back()->with('success', 'Invitation cancelled.');
     }
 
-    private function guardTeamMember(User $user, $tenant): void
+    public function resendInvite(Request $request, UserInvite $invite): RedirectResponse
+    {
+        $tenant = $request->user()->tenant;
+
+        if ($invite->tenant_id !== $tenant->id) {
+            abort(403);
+        }
+
+        if (! $tenant->withinLimit('users')) {
+            $limit = $tenant->plan?->limit('users') ?? 1;
+            return back()->with('error', "Your plan allows up to {$limit} team members. Upgrade to add more.");
+        }
+
+        // Refresh token and extend expiry
+        $invite->update([
+            'token'      => \Illuminate\Support\Str::random(64),
+            'expires_at' => now()->addHours(72),
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($invite->email)
+                ->send(new \App\Mail\TeamInvitation($invite, $tenant));
+        } catch (\Throwable) {
+            return back()->with('error', 'Failed to resend invitation email. Please try again.');
+        }
+
+        return back()->with('success', "Invitation resent to {$invite->email}. Link valid for 72 hours.");
+    }
+
+    public function updateModuleAccess(Request $request, User $user): RedirectResponse
+    {
+        $tenant = $request->user()->tenant;
+        $this->guardTeamMember($user, $tenant);
+
+        if ($request->user()->id === $user->id) {
+            return back()->with('error', 'You cannot change your own module access.');
+        }
+
+        if ($user->isAdmin()) {
+            return back()->with('error', 'Admins always have full access — module flags do not apply.');
+        }
+
+        $modules  = array_keys(\App\Models\User::MODULE_LIST);
+        $incoming = $request->input('modules', []);
+
+        $access = [];
+        foreach ($modules as $key) {
+            $access[$key] = in_array($key, (array) $incoming);
+        }
+
+        $user->update(['module_access' => $access]);
+
+        return back()->with('success', "{$user->name}'s module access updated.");
+    }
+
+    private function guardTeamMember(User $user, \App\Models\Tenant $tenant): void
     {
         if ($user->tenant_id !== $tenant->id) {
             abort(403);

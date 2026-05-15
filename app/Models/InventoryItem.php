@@ -16,7 +16,7 @@ class InventoryItem extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'tenant_id', 'category_id', 'name', 'sku', 'description', 'unit',
+        'tenant_id', 'category_id', 'name', 'sku', 'description', 'item_type', 'unit',
         'selling_price', 'cost_price', 'avg_cost',
         'current_stock', 'restock_level', 'is_active', 'created_by',
     ];
@@ -28,6 +28,18 @@ class InventoryItem extends Model
         'current_stock' => 'decimal:3',
         'restock_level' => 'decimal:3',
         'is_active'     => 'boolean',
+    ];
+
+    public const TYPE_PRODUCT       = 'product';
+    public const TYPE_RAW_MATERIAL  = 'raw_material';
+    public const TYPE_FINISHED_GOOD = 'finished_good';
+    public const TYPE_SEMI_FINISHED = 'semi_finished';
+
+    public const ITEM_TYPES = [
+        self::TYPE_PRODUCT       => 'Product',
+        self::TYPE_RAW_MATERIAL  => 'Raw Material',
+        self::TYPE_FINISHED_GOOD => 'Finished Good',
+        self::TYPE_SEMI_FINISHED => 'Semi-finished',
     ];
 
     protected static function booted(): void

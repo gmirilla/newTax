@@ -33,6 +33,20 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-gray-700">Item Type <span class="text-red-500">*</span></label>
+                    <select name="item_type" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
+                        @foreach(App\Models\InventoryItem::ITEM_TYPES as $value => $label)
+                            <option value="{{ $value }}" {{ old('item_type', 'product') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-gray-400">Raw Material and Finished Good types are used in manufacturing BOMs.</p>
+                    @error('item_type')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-gray-700">Category</label>
                     <select name="category_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500 text-sm">
                         <option value="">— No Category —</option>

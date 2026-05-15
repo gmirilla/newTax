@@ -49,7 +49,7 @@
             <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
             <select name="type" class="border border-gray-300 rounded px-3 py-1.5 text-sm">
                 <option value="">All Types</option>
-                @foreach(['restock','sale','adjustment_in','adjustment_out','opening'] as $t)
+                @foreach(['restock','sale','adjustment_in','adjustment_out','opening','production_in','production_out'] as $t)
                 <option value="{{ $t }}" @selected($filters['type'] === $t)>{{ ucfirst(str_replace('_', ' ', $t)) }}</option>
                 @endforeach
             </select>
@@ -79,13 +79,15 @@
                 <tbody class="divide-y divide-gray-100">
                     @forelse($movements as $m)
                     @php
-                        $isIn = in_array($m->type, ['restock', 'adjustment_in', 'opening']);
+                        $isIn = in_array($m->type, ['restock', 'adjustment_in', 'opening', 'production_in']);
                         $typeBadge = match($m->type) {
                             'restock'        => 'bg-green-100 text-green-800',
                             'sale'           => 'bg-blue-100 text-blue-800',
                             'adjustment_in'  => 'bg-teal-100 text-teal-800',
                             'adjustment_out' => 'bg-orange-100 text-orange-800',
                             'opening'        => 'bg-purple-100 text-purple-800',
+                            'production_in'  => 'bg-green-100 text-green-800',
+                            'production_out' => 'bg-red-100 text-red-700',
                             default          => 'bg-gray-100 text-gray-700',
                         };
                     @endphp

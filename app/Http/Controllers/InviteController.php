@@ -43,8 +43,15 @@ class InviteController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
         ]);
 
+        // Re-check plan limit at accept time — plan may have been downgraded after the invite was sent
+        $existingUser = User::where('email', $invite->email)->first();
+        if (! $existingUser && ! $invite->tenant->withinLimit('users')) {
+            return redirect()->route('login')
+                ->with('error', 'This invitation can no longer be accepted — the account has reached its user limit. Ask your admin to upgrade the plan.');
+        }
+
         // If this email already has an account (e.g. previously removed), reactivate it
-        $user = User::where('email', $invite->email)->first();
+        $user = $existingUser;
 
         if ($user) {
             $user->update([

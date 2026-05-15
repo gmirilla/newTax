@@ -9,17 +9,17 @@ class RestockRequestPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->canAccess('inventory');
     }
 
     public function view(User $user, RestockRequest $request): bool
     {
-        return $user->tenant_id === $request->tenant_id;
+        return $user->tenant_id === $request->tenant_id && $user->canAccess('inventory');
     }
 
     public function create(User $user): bool
     {
-        return true; // all roles can request a restock
+        return $user->canAccess('inventory');
     }
 
     public function approve(User $user, RestockRequest $request): bool
@@ -53,8 +53,9 @@ class RestockRequestPolicy
             return $request->canBeCancelled();
         }
 
-        // Staff can only cancel their own pending requests
-        return $request->status === RestockRequest::STATUS_PENDING
+        // Staff with inventory access can cancel their own pending requests
+        return $user->canAccess('inventory')
+            && $request->status === RestockRequest::STATUS_PENDING
             && $request->requested_by === $user->id;
     }
 }

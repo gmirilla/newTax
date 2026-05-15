@@ -9,12 +9,12 @@ class InventoryItemPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true; // all roles can view the catalog
+        return $user->canAccess('inventory');
     }
 
     public function view(User $user, InventoryItem $item): bool
     {
-        return $user->tenant_id === $item->tenant_id;
+        return $user->tenant_id === $item->tenant_id && $user->canAccess('inventory');
     }
 
     public function create(User $user): bool
@@ -34,6 +34,7 @@ class InventoryItemPolicy
 
     public function adjust(User $user, InventoryItem $item): bool
     {
-        return $user->tenant_id === $item->tenant_id && $user->isAccountant();
+        return $user->tenant_id === $item->tenant_id
+            && ($user->isAccountant() || $user->canAccess('inventory'));
     }
 }
