@@ -40,12 +40,12 @@ class InventoryImportController extends Controller
         $this->authorize('create', InventoryItem::class);
 
         $lines = [
-            'name,sku,category,unit,selling_price,cost_price,opening_stock,restock_level,description',
-            '"Widget A","WID-001","Electronics","piece","5000","3200","50","10","A great widget"',
-            '"Blue Pen","PEN-BLU","Stationery","piece","150","80","200","50",""',
-            '"Rice (50kg)","RICE-50","Food & Beverage","bag","35000","28000","20","5",""',
-            '"Motor Oil 5L","OIL-5L","Automotive","litre","8500","6000","30","8",""',
-            '"Plain T-Shirt","TSH-WHT-M","Clothing","piece","4500","2800","0","10","No opening stock example"',
+            'name,sku,category,item_type,unit,selling_price,cost_price,opening_stock,restock_level,description',
+            '"Widget A","WID-001","Electronics","product","piece","5000","3200","50","10","A great widget"',
+            '"Blue Pen","PEN-BLU","Stationery","product","piece","150","80","200","50",""',
+            '"Steel Rod 6m","STL-ROD-6","Raw Materials","raw_material","piece","12000","9500","100","20","Manufacturing input"',
+            '"Bottled Juice 50cl","JCE-50CL","Beverages","finished_good","bottle","850","420","200","50","Manufactured product"',
+            '"Plain T-Shirt","TSH-WHT-M","Clothing","product","piece","4500","2800","0","10","No opening stock example"',
         ];
 
         return response(implode("\n", $lines), 200, [
@@ -202,18 +202,36 @@ class InventoryImportController extends Controller
         $totalValue = (float) $payload['total_value'];
         $imported   = 0;
 
+        // GL account per item type: products/semi-finished → 1200, raw materials → 1201, finished goods → 1202
+        $glCodeByType = [
+            'product'       => '1200',
+            'semi_finished' => '1200',
+            'raw_material'  => '1201',
+            'finished_good' => '1202',
+        ];
+
         try {
-            DB::transaction(function () use ($rows, $tenantId, $totalValue, &$imported) {
-                $needsGl    = $totalValue > 0;
-                $glAccounts = null;
+            DB::transaction(function () use ($rows, $tenantId, $totalValue, $glCodeByType, &$imported) {
+                $needsGl = $totalValue > 0;
+                $glAccounts = collect();
 
                 if ($needsGl) {
+                    // Compute opening value per GL account code
+                    $valueByCode = [];
+                    foreach ($rows as $row) {
+                        if ((float) $row['opening_stock'] > 0) {
+                            $code = $glCodeByType[$row['item_type'] ?? 'product'] ?? '1200';
+                            $valueByCode[$code] = round(($valueByCode[$code] ?? 0) + ($row['opening_stock'] * $row['cost_price']), 2);
+                        }
+                    }
+
+                    $requiredCodes = array_unique(array_merge(array_keys($valueByCode), ['3001']));
                     $glAccounts = Account::where('tenant_id', $tenantId)
                         ->withoutGlobalScope('tenant')
-                        ->whereIn('code', ['1200', '3001'])
+                        ->whereIn('code', $requiredCodes)
                         ->pluck('id', 'code');
 
-                    $missing = array_diff(['1200', '3001'], $glAccounts->keys()->toArray());
+                    $missing = array_diff($requiredCodes, $glAccounts->keys()->toArray());
                     if (! empty($missing)) {
                         throw ValidationException::withMessages([
                             'gl' => 'GL accounts missing from Chart of Accounts: ' . implode(', ', $missing)
@@ -231,6 +249,7 @@ class InventoryImportController extends Controller
                         'name'          => $row['name'],
                         'sku'           => $row['sku'],
                         'description'   => $row['description'] ?: null,
+                        'item_type'     => $row['item_type'],
                         'unit'          => $row['unit'],
                         'selling_price' => $row['selling_price'],
                         'cost_price'    => $row['cost_price'],
@@ -257,8 +276,23 @@ class InventoryImportController extends Controller
                     $imported++;
                 }
 
-                // Single aggregate GL entry for all opening stock in this import
-                if ($needsGl && $glAccounts) {
+                // GL entries: one debit line per inventory sub-account, single equity credit
+                if ($needsGl && $glAccounts->isNotEmpty()) {
+                    $accountLabels = [
+                        '1200' => 'Inventory',
+                        '1201' => 'Raw Materials Inventory',
+                        '1202' => 'Finished Goods Inventory',
+                    ];
+                    $debitLines = [];
+                    foreach ($valueByCode as $code => $amount) {
+                        $debitLines[] = [
+                            'account_id'  => $glAccounts[$code],
+                            'entry_type'  => 'debit',
+                            'amount'      => $amount,
+                            'description' => ($accountLabels[$code] ?? 'Inventory') . " opening stock — {$importRef}",
+                        ];
+                    }
+
                     $this->bookkeeping->postJournalEntry(
                         auth()->user()->tenant,
                         [
@@ -267,20 +301,14 @@ class InventoryImportController extends Controller
                             'type'             => 'opening_balance',
                             'description'      => "Opening inventory import — {$imported} item" . ($imported !== 1 ? 's' : ''),
                         ],
-                        [
-                            [
-                                'account_id'  => $glAccounts['1200'],
-                                'entry_type'  => 'debit',
-                                'amount'      => $totalValue,
-                                'description' => "Opening inventory ({$imported} items) — {$importRef}",
-                            ],
+                        array_merge($debitLines, [
                             [
                                 'account_id'  => $glAccounts['3001'],
                                 'entry_type'  => 'credit',
-                                'amount'      => $totalValue,
+                                'amount'      => round($totalValue, 2),
                                 'description' => "Opening equity offset — {$importRef}",
                             ],
-                        ]
+                        ])
                     );
                 }
             });
@@ -396,6 +424,13 @@ class InventoryImportController extends Controller
             $description = mb_substr($description, 0, 1000);
         }
 
+        // item_type — defaults to 'product' if blank or unrecognised
+        $validItemTypes = ['product', 'raw_material', 'finished_good', 'semi_finished'];
+        $itemType = strtolower(trim($col['item_type'] ?? ''));
+        if (! in_array($itemType, $validItemTypes)) {
+            $itemType = 'product';
+        }
+
         return [
             [
                 'row'            => $rowNum,
@@ -404,6 +439,7 @@ class InventoryImportController extends Controller
                 'category_id'    => $categoryId,
                 'category_name'  => $categoryName,
                 'category_found' => $categoryFound,
+                'item_type'      => $itemType,
                 'unit'           => $unit,
                 'selling_price'  => $sellingPrice,
                 'cost_price'     => $costPrice,

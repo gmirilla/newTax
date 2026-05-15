@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\ProductionOrder;
 
 class RestockRequest extends Model
 {
@@ -23,6 +24,7 @@ class RestockRequest extends Model
         'supplier_name', 'supplier_invoice_no', 'notes',
         'status', 'requested_by', 'approved_by',
         'approved_at', 'received_at', 'rejection_reason', 'invoice_id',
+        'production_order_id',
     ];
 
     protected $casts = [
@@ -65,6 +67,11 @@ class RestockRequest extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
+    }
+
+    public function productionOrder(): BelongsTo
+    {
+        return $this->belongsTo(ProductionOrder::class);
     }
 
     public function stockMovements(): HasMany

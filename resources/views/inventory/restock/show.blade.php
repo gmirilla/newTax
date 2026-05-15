@@ -256,6 +256,42 @@
                 </ol>
             </div>
 
+            {{-- Linked Production Order --}}
+            @if($restockRequest->productionOrder)
+            <div class="bg-purple-50 border border-purple-200 rounded-lg shadow p-5">
+                <h2 class="text-sm font-semibold text-purple-800 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    From Production Order
+                </h2>
+                <a href="{{ route('manufacturing.production.show', $restockRequest->productionOrder) }}"
+                   class="text-sm font-semibold text-purple-700 hover:underline">
+                    {{ $restockRequest->productionOrder->order_number }}
+                </a>
+                @if($restockRequest->productionOrder->finishedItem)
+                <p class="text-xs text-purple-600 mt-1">
+                    Producing: {{ $restockRequest->productionOrder->finishedItem->name }}
+                </p>
+                @endif
+                <p class="text-xs text-purple-600 mt-0.5">
+                    Qty planned: {{ number_format($restockRequest->productionOrder->quantity_planned, 3) }}
+                </p>
+                @php
+                    $prodBadge = match($restockRequest->productionOrder->status) {
+                        'draft'         => 'bg-gray-100 text-gray-600',
+                        'in_production' => 'bg-yellow-100 text-yellow-700',
+                        'completed'     => 'bg-green-100 text-green-700',
+                        'cancelled'     => 'bg-red-100 text-red-600',
+                        default         => 'bg-gray-100 text-gray-600',
+                    };
+                @endphp
+                <span class="mt-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ $prodBadge }}">
+                    {{ ucfirst(str_replace('_', ' ', $restockRequest->productionOrder->status)) }}
+                </span>
+            </div>
+            @endif
+
             {{-- Linked Documents --}}
             @if($restockRequest->invoice)
             <div class="bg-white rounded-lg shadow p-5">

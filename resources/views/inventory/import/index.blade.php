@@ -98,6 +98,7 @@
                         ['name',          'Yes', 'Item name, max 150 characters'],
                         ['sku',           'No',  'Unique identifier. Rows with an SKU already in the system will be skipped.'],
                         ['category',      'No',  'Must exactly match an existing category name (case-insensitive). Unmatched categories are left blank.'],
+                        ['item_type',     'No',  'One of: product, raw_material, finished_good, semi_finished. Defaults to "product". Raw materials and finished goods are used by the Manufacturing module.'],
                         ['unit',          'No',  'Unit of measure (e.g. piece, kg, litre). Defaults to "piece" if blank.'],
                         ['selling_price', 'Yes', 'Number ≥ 0. Use 0 for items not sold directly.'],
                         ['cost_price',    'Yes', 'Purchase cost per unit. Used to calculate opening stock value.'],
@@ -121,10 +122,14 @@
             </table>
         </div>
 
-        <div class="bg-blue-50 border border-blue-100 rounded-md p-3 text-xs text-blue-700">
-            <strong>Accounting note:</strong> Items with opening stock > 0 will post a single journal entry:
-            <span class="font-mono">Dr Inventory (1200) / Cr Owner's Equity (3001)</span>.
-            Ensure both accounts exist in your Chart of Accounts before importing with opening stock.
+        <div class="bg-blue-50 border border-blue-100 rounded-md p-3 text-xs text-blue-700 space-y-1">
+            <p><strong>Accounting note:</strong> Items with opening stock > 0 post a journal entry on import. The debit account depends on item type:</p>
+            <ul class="ml-3 space-y-0.5">
+                <li><span class="font-mono">product / semi_finished</span> → Dr Inventory (1200)</li>
+                <li><span class="font-mono">raw_material</span> → Dr Raw Materials (1201)</li>
+                <li><span class="font-mono">finished_good</span> → Dr Finished Goods (1202)</li>
+            </ul>
+            <p>All types credit <span class="font-mono">Owner's Equity (3001)</span>. Ensure the relevant accounts exist in your Chart of Accounts.</p>
         </div>
     </div>
 

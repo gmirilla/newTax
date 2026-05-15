@@ -329,9 +329,10 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::get('/create',                        [ProductionOrderController::class, 'create'])->name('create');
                 Route::post('/',                             [ProductionOrderController::class, 'store'])->name('store');
                 Route::get('/{productionOrder}',             [ProductionOrderController::class, 'show'])->name('show');
-                Route::post('/{productionOrder}/start',      [ProductionOrderController::class, 'start'])->name('start');
-                Route::post('/{productionOrder}/complete',   [ProductionOrderController::class, 'complete'])->name('complete');
-                Route::post('/{productionOrder}/cancel',     [ProductionOrderController::class, 'cancel'])->name('cancel');
+                Route::post('/{productionOrder}/start',            [ProductionOrderController::class, 'start'])->name('start');
+                Route::post('/{productionOrder}/complete',         [ProductionOrderController::class, 'complete'])->name('complete');
+                Route::post('/{productionOrder}/cancel',           [ProductionOrderController::class, 'cancel'])->name('cancel');
+                Route::post('/{productionOrder}/restock-shortfalls', [ProductionOrderController::class, 'requestRestock'])->name('restock-shortfalls');
             });
         });
 

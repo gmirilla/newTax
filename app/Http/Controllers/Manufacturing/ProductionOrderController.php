@@ -9,6 +9,7 @@ use App\Models\Bom;
 use App\Models\InventoryItem;
 use App\Models\ProductionOrder;
 use App\Models\ProductionOrderLine;
+use App\Models\RestockRequest;
 use App\Models\StockMovement;
 use App\Services\BookkeepingService;
 use Illuminate\Http\RedirectResponse;
@@ -126,7 +127,33 @@ class ProductionOrderController extends Controller
 
         $productionOrder->load(['finishedItem', 'bom', 'creator', 'lines.rawMaterial']);
 
-        return view('manufacturing.production.show', compact('productionOrder'));
+        // Compute shortfalls for active orders so the view can offer restock initiation
+        $shortfalls = collect();
+        $linkedRestocks = collect();
+
+        if (in_array($productionOrder->status, [ProductionOrder::STATUS_DRAFT, ProductionOrder::STATUS_IN_PRODUCTION])) {
+            foreach ($productionOrder->lines as $line) {
+                $inStock = (float) $line->rawMaterial->current_stock;
+                $needed  = (float) $line->quantity_required;
+                if ($needed > $inStock + 0.0001) {
+                    $shortfalls->push([
+                        'item'     => $line->rawMaterial,
+                        'required' => $needed,
+                        'in_stock' => $inStock,
+                        'gap'      => round($needed - $inStock, 3),
+                    ]);
+                }
+            }
+
+            // Load any existing restock requests already linked to this production order
+            $linkedRestocks = RestockRequest::withoutGlobalScope('tenant')
+                ->where('production_order_id', $productionOrder->id)
+                ->whereNotIn('status', [RestockRequest::STATUS_REJECTED, RestockRequest::STATUS_CANCELLED])
+                ->with('item')
+                ->get();
+        }
+
+        return view('manufacturing.production.show', compact('productionOrder', 'shortfalls', 'linkedRestocks'));
     }
 
     // ── Start Production ──────────────────────────────────────────────────────
@@ -341,6 +368,77 @@ class ProductionOrderController extends Controller
             ->with('success', "Production order {$productionOrder->order_number} completed. Finished goods added to stock.");
     }
 
+    // ── Request Restock for Shortfalls ────────────────────────────────────────
+
+    public function requestRestock(ProductionOrder $productionOrder): RedirectResponse
+    {
+        $this->authorize('view', $productionOrder);
+
+        if (! in_array($productionOrder->status, [ProductionOrder::STATUS_DRAFT, ProductionOrder::STATUS_IN_PRODUCTION])) {
+            return back()->with('error', 'Restock requests can only be created for active production orders.');
+        }
+
+        $productionOrder->load('lines.rawMaterial');
+
+        $tenantId  = auth()->user()->tenant_id;
+        $createdBy = auth()->id();
+        $created   = 0;
+        $skipped   = 0;
+
+        // Item IDs that already have a live (non-rejected/cancelled) request tied to this order
+        $alreadyCovered = RestockRequest::withoutGlobalScope('tenant')
+            ->where('production_order_id', $productionOrder->id)
+            ->whereNotIn('status', [RestockRequest::STATUS_REJECTED, RestockRequest::STATUS_CANCELLED])
+            ->pluck('item_id')
+            ->flip();
+
+        DB::transaction(function () use ($productionOrder, $tenantId, $createdBy, $alreadyCovered, &$created, &$skipped) {
+            foreach ($productionOrder->lines as $line) {
+                $inStock = (float) $line->rawMaterial->current_stock;
+                $needed  = (float) $line->quantity_required;
+                $gap     = round($needed - $inStock, 3);
+
+                if ($gap <= 0) {
+                    continue; // sufficient stock — nothing to restock
+                }
+
+                if ($alreadyCovered->has($line->raw_material_item_id)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $unitCost = (float) $line->rawMaterial->avg_cost > 0
+                    ? (float) $line->rawMaterial->avg_cost
+                    : (float) $line->rawMaterial->cost_price;
+
+                RestockRequest::create([
+                    'tenant_id'           => $tenantId,
+                    'item_id'             => $line->raw_material_item_id,
+                    'request_number'      => $this->generateRestockNumber($tenantId),
+                    'quantity_requested'  => $gap,
+                    'unit_cost'           => $unitCost,
+                    'notes'               => "Required for production order {$productionOrder->order_number} (shortfall: {$gap} {$line->rawMaterial->unit})",
+                    'status'              => RestockRequest::STATUS_PENDING,
+                    'requested_by'        => $createdBy,
+                    'production_order_id' => $productionOrder->id,
+                ]);
+
+                $created++;
+            }
+        });
+
+        if ($created === 0 && $skipped === 0) {
+            return back()->with('info', 'No material shortfalls found — all stock levels are sufficient.');
+        }
+
+        $msg = $created . ' restock ' . str($created === 1 ? 'request' : 'requests') . ' created.';
+        if ($skipped > 0) {
+            $msg .= " {$skipped} item" . ($skipped === 1 ? '' : 's') . ' already had pending requests and ' . ($skipped === 1 ? 'was' : 'were') . ' skipped.';
+        }
+
+        return redirect()->route('inventory.restock.index')->with('success', $msg);
+    }
+
     // ── Cancel ────────────────────────────────────────────────────────────────
 
     public function cancel(ProductionOrder $productionOrder): RedirectResponse
@@ -370,6 +468,22 @@ class ProductionOrderController extends Controller
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
+
+    private function generateRestockNumber(int $tenantId): string
+    {
+        $prefix = 'RST-' . now()->format('Ym') . '-';
+
+        $last = RestockRequest::where('tenant_id', $tenantId)
+            ->withoutGlobalScope('tenant')
+            ->where('request_number', 'like', $prefix . '%')
+            ->orderBy('request_number', 'desc')
+            ->lockForUpdate()
+            ->first();
+
+        $next = $last ? ((int) substr($last->request_number, -4)) + 1 : 1;
+
+        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
+    }
 
     private function generateOrderNumber(int $tenantId): string
     {
