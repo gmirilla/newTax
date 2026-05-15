@@ -220,6 +220,10 @@ class InvoiceController extends Controller
     {
         $this->authorize('update', $invoice);
 
+        if (is_null($invoice->customer_id)) {
+            return back()->with('error', 'This is a supplier bill. Record payment from the Restock Request page instead.');
+        }
+
         $request->validate([
             'payment_date'       => 'required|date',
             'amount'             => 'required|numeric|min:0.01|max:' . $invoice->balance_due,

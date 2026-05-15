@@ -27,7 +27,9 @@
       "Bash(php -l app/Http/Controllers/Inventory/SupplierBillController.php)",
       "Bash(php -l app/Models/Invoice.php)",
       "Bash(php -l app/Models/RestockRequest.php)",
-      "Bash(php -l app/Policies/RestockRequestPolicy.php)"
+      "Bash(php -l app/Policies/RestockRequestPolicy.php)",
+      "Bash(php -l app/Services/InvoiceService.php)",
+      "Bash(php -l app/Http/Controllers/InvoiceController.php)"
     ]
   }
 }
