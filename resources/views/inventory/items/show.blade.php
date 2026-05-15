@@ -142,6 +142,8 @@
                             'adjustment_in'  => 'blue',
                             'adjustment_out' => 'orange',
                             'opening'        => 'gray',
+                            'production_in'  => 'green',
+                            'production_out' => 'red',
                         ];
                         $typeLabels = [
                             'sale'           => 'Sale',
@@ -149,8 +151,10 @@
                             'adjustment_in'  => 'Adj In',
                             'adjustment_out' => 'Adj Out',
                             'opening'        => 'Opening',
+                            'production_in'  => 'Prod In',
+                            'production_out' => 'Prod Out',
                         ];
-                        $outTypes = ['sale', 'adjustment_out'];
+                        $outTypes = ['sale', 'adjustment_out', 'production_out'];
                     @endphp
                     @forelse($movements as $mv)
                     <tr class="hover:bg-gray-50">

@@ -25,6 +25,10 @@ class RequiresPlan
             return $this->deny($request, $feature);
         }
 
+        if (!$request->user()->canAccess($feature)) {
+            return $this->deny($request, $feature, 'You do not have access to this module. Contact your account admin.');
+        }
+
         return $next($request);
     }
 

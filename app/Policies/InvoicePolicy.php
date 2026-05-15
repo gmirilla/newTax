@@ -9,7 +9,7 @@ class InvoicePolicy
 {
     public function view(User $user, Invoice $invoice): bool
     {
-        return $user->tenant_id === $invoice->tenant_id;
+        return $user->tenant_id === $invoice->tenant_id && $user->canAccess('invoices');
     }
 
     public function create(User $user): bool

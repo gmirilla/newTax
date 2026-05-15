@@ -68,6 +68,7 @@ class SalesOrderController extends Controller
         $inventoryItems = InventoryItem::where('tenant_id', $tenant->id)
             ->withoutGlobalScope('tenant')
             ->where('is_active', true)
+            ->whereIn('item_type', ['product', 'finished_good', 'semi_finished'])
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'unit', 'selling_price', 'avg_cost', 'current_stock', 'restock_level']);
 
@@ -147,6 +148,7 @@ class SalesOrderController extends Controller
         $inventoryItems = InventoryItem::where('tenant_id', $tenant->id)
             ->withoutGlobalScope('tenant')
             ->where('is_active', true)
+            ->whereIn('item_type', ['product', 'finished_good', 'semi_finished'])
             ->orderBy('name')
             ->get(['id', 'name', 'sku', 'unit', 'selling_price', 'avg_cost', 'current_stock', 'restock_level']);
 

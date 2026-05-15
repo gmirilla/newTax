@@ -9,7 +9,7 @@ class InventoryCategoryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isAccountant();
+        return $user->canAccess('inventory');
     }
 
     public function create(User $user): bool

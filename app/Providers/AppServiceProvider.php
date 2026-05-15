@@ -3,18 +3,22 @@
 namespace App\Providers;
 
 use App\Models\BankAccount;
+use App\Models\Bom;
 use App\Models\InventoryCategory;
 use App\Models\InventoryItem;
 use App\Models\InventoryUnit;
 use App\Models\Invoice;
+use App\Models\ProductionOrder;
 use App\Models\RestockRequest;
 use App\Models\SalesOrder;
 use App\Observers\InventoryItemObserver;
 use App\Policies\BankAccountPolicy;
+use App\Policies\BomPolicy;
 use App\Policies\InventoryCategoryPolicy;
 use App\Policies\InventoryItemPolicy;
 use App\Policies\InventoryUnitPolicy;
 use App\Policies\InvoicePolicy;
+use App\Policies\ProductionOrderPolicy;
 use App\Policies\RestockRequestPolicy;
 use App\Policies\SalesOrderPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -42,7 +46,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Policies
         Gate::policy(BankAccount::class, BankAccountPolicy::class);
+        Gate::policy(Bom::class, BomPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
+        Gate::policy(ProductionOrder::class, ProductionOrderPolicy::class);
         Gate::policy(InventoryCategory::class, InventoryCategoryPolicy::class);
         Gate::policy(InventoryItem::class, InventoryItemPolicy::class);
         Gate::policy(InventoryUnit::class, InventoryUnitPolicy::class);

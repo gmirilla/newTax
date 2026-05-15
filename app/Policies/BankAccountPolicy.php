@@ -9,22 +9,22 @@ class BankAccountPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, ['admin', 'accountant']);
+        return $user->canAccess('bank_accounts');
     }
 
     public function create(User $user): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 
     public function update(User $user, BankAccount $bankAccount): bool
     {
-        return $user->role === 'admin' && $user->tenant_id === $bankAccount->tenant_id;
+        return $user->isAdmin() && $user->tenant_id === $bankAccount->tenant_id;
     }
 
     public function delete(User $user, BankAccount $bankAccount): bool
     {
-        return $user->role === 'admin'
+        return $user->isAdmin()
             && $user->tenant_id === $bankAccount->tenant_id
             && ! $bankAccount->is_default;
     }

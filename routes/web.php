@@ -29,6 +29,8 @@ use App\Http\Controllers\Inventory\InventoryItemController;
 use App\Http\Controllers\Inventory\InventoryReportController;
 use App\Http\Controllers\Inventory\RestockRequestController;
 use App\Http\Controllers\Inventory\SalesOrderController;
+use App\Http\Controllers\Manufacturing\BomController;
+use App\Http\Controllers\Manufacturing\ProductionOrderController;
 use App\Http\Controllers\MarketingController;
 use Illuminate\Support\Facades\Route;
 
@@ -110,7 +112,9 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::patch('/{user}/role',         [TeamController::class, 'updateRole'])->name('role');
             Route::post('/{user}/toggle',        [TeamController::class, 'toggleActive'])->name('toggle');
             Route::delete('/{user}',             [TeamController::class, 'destroy'])->name('destroy');
-            Route::delete('/invites/{invite}',   [TeamController::class, 'cancelInvite'])->name('invite.cancel');
+            Route::delete('/invites/{invite}',      [TeamController::class, 'cancelInvite'])->name('invite.cancel');
+            Route::post('/invites/{invite}/resend', [TeamController::class, 'resendInvite'])->name('invite.resend');
+            Route::post('/{user}/modules',          [TeamController::class, 'updateModuleAccess'])->name('modules');
         });
     });
 
@@ -304,6 +308,29 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::get('/restock-history',        [InventoryReportController::class, 'restockHistory'])->name('restock-history');
                 Route::get('/restock-history/pdf',    [InventoryReportController::class, 'restockHistoryPdf'])->name('restock-history.pdf');
                 Route::get('/restock-history/excel',  [InventoryReportController::class, 'restockHistoryExcel'])->name('restock-history.excel');
+            });
+        });
+
+        // ── Manufacturing ──────────────────────────────────────────────────────────
+        Route::prefix('manufacturing')->name('manufacturing.')->middleware('plan:manufacturing')->group(function () {
+
+            // Bills of Materials
+            Route::prefix('boms')->name('boms.')->group(function () {
+                Route::get('/',          [BomController::class, 'index'])->name('index');
+                Route::post('/',         [BomController::class, 'store'])->name('store');
+                Route::put('/{bom}',     [BomController::class, 'update'])->name('update');
+                Route::delete('/{bom}',  [BomController::class, 'destroy'])->name('destroy');
+            });
+
+            // Production Orders
+            Route::prefix('production')->name('production.')->group(function () {
+                Route::get('/',                              [ProductionOrderController::class, 'index'])->name('index');
+                Route::get('/create',                        [ProductionOrderController::class, 'create'])->name('create');
+                Route::post('/',                             [ProductionOrderController::class, 'store'])->name('store');
+                Route::get('/{productionOrder}',             [ProductionOrderController::class, 'show'])->name('show');
+                Route::post('/{productionOrder}/start',      [ProductionOrderController::class, 'start'])->name('start');
+                Route::post('/{productionOrder}/complete',   [ProductionOrderController::class, 'complete'])->name('complete');
+                Route::post('/{productionOrder}/cancel',     [ProductionOrderController::class, 'cancel'])->name('cancel');
             });
         });
 
