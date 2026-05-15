@@ -43,6 +43,13 @@ class RestockRequestPolicy
             && $request->canBeReceived();
     }
 
+    public function pay(User $user, RestockRequest $request): bool
+    {
+        return $user->tenant_id == $request->tenant_id
+            && $user->isAccountant()
+            && $request->canBePaid();
+    }
+
     public function cancel(User $user, RestockRequest $request): bool
     {
         if ($user->tenant_id != $request->tenant_id) {
