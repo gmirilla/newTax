@@ -30,7 +30,7 @@ class RestockRequestController extends Controller
 
         $query = RestockRequest::where('restock_requests.tenant_id', $tenant->id)
             ->withoutGlobalScope('tenant')
-            ->with(['item', 'requester', 'approver'])
+            ->with(['item', 'requester', 'approver', 'productionOrder'])
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), fn($q) => $q->whereHas('item', function ($q) use ($request) {
                 $q->where('name', 'ilike', '%' . $request->search . '%')
@@ -124,7 +124,7 @@ class RestockRequestController extends Controller
     {
         $this->authorize('view', $restockRequest);
 
-        $restockRequest->load(['item.category', 'requester', 'approver', 'invoice']);
+        $restockRequest->load(['item.category', 'requester', 'approver', 'invoice', 'productionOrder.finishedItem']);
 
         return view('inventory.restock.show', compact('restockRequest'));
     }

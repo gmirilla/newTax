@@ -137,6 +137,101 @@
         </table>
     </div>
 
+    {{-- Shortfall panel (only shown for active orders with insufficient stock) --}}
+    @if($shortfalls->isNotEmpty())
+    <div class="bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
+        <div class="px-5 py-3 border-b border-amber-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <h3 class="text-sm font-semibold text-amber-800">
+                    {{ $shortfalls->count() }} material {{ Str::plural('shortfall', $shortfalls->count()) }} detected
+                </h3>
+            </div>
+
+            @if($linkedRestocks->isNotEmpty())
+            <span class="text-xs text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2.5 py-0.5">
+                {{ $linkedRestocks->count() }} restock {{ Str::plural('request', $linkedRestocks->count()) }} already raised
+            </span>
+            @endif
+        </div>
+
+        <table class="w-full text-sm">
+            <thead class="bg-amber-100/60">
+                <tr>
+                    <th class="px-5 py-2 text-left text-xs font-semibold text-amber-700">Material</th>
+                    <th class="px-5 py-2 text-right text-xs font-semibold text-amber-700">Required</th>
+                    <th class="px-5 py-2 text-right text-xs font-semibold text-amber-700">In Stock</th>
+                    <th class="px-5 py-2 text-right text-xs font-semibold text-amber-700">Shortfall</th>
+                    <th class="px-5 py-2 text-center text-xs font-semibold text-amber-700">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-amber-100">
+                @foreach($shortfalls as $sf)
+                @php
+                    $existingRst = $linkedRestocks->firstWhere('item_id', $sf['item']->id);
+                @endphp
+                <tr>
+                    <td class="px-5 py-2.5 font-medium text-gray-800">
+                        {{ $sf['item']->name }}
+                        @if($sf['item']->sku)
+                            <span class="text-xs text-gray-400 ml-1">{{ $sf['item']->sku }}</span>
+                        @endif
+                    </td>
+                    <td class="px-5 py-2.5 text-right text-gray-700">{{ number_format($sf['required'], 3) }} {{ $sf['item']->unit }}</td>
+                    <td class="px-5 py-2.5 text-right text-red-600 font-semibold">{{ number_format($sf['in_stock'], 3) }}</td>
+                    <td class="px-5 py-2.5 text-right font-bold text-red-700">+{{ number_format($sf['gap'], 3) }}</td>
+                    <td class="px-5 py-2.5 text-center">
+                        @if($existingRst)
+                            <a href="{{ route('inventory.restock.show', $existingRst) }}"
+                               class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200">
+                                {{ $existingRst->request_number }}
+                                <span class="capitalize">· {{ str_replace('_', ' ', $existingRst->status) }}</span>
+                            </a>
+                        @else
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                                No request yet
+                            </span>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        @php
+            $uncovered = $shortfalls->filter(fn($sf) =>
+                $linkedRestocks->where('item_id', $sf['item']->id)->isEmpty()
+            )->count();
+        @endphp
+
+        @if($uncovered > 0)
+        <div class="px-5 py-3 border-t border-amber-200 flex items-center justify-between bg-amber-50">
+            <p class="text-xs text-amber-700">
+                {{ $uncovered }} {{ Str::plural('item', $uncovered) }} without a restock request.
+                Suggested quantities equal the exact shortfall.
+            </p>
+            <form method="POST" action="{{ route('manufacturing.production.restock-shortfalls', $productionOrder) }}">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-md hover:bg-amber-600">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Create Restock {{ Str::plural('Request', $uncovered) }} ({{ $uncovered }})
+                </button>
+            </form>
+        </div>
+        @else
+        <div class="px-5 py-3 border-t border-amber-200 text-xs text-amber-700 bg-amber-50">
+            All shortfall materials have active restock requests. Monitor their progress in
+            <a href="{{ route('inventory.restock.index') }}" class="font-medium underline hover:text-amber-900">Restock Requests</a>.
+        </div>
+        @endif
+    </div>
+    @endif
+
     {{-- Actions --}}
     <div class="flex flex-wrap gap-3">
 

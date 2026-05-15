@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\RestockRequest;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -59,5 +60,10 @@ class ProductionOrder extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(ProductionOrderLine::class);
+    }
+
+    public function restockRequests(): HasMany
+    {
+        return $this->hasMany(RestockRequest::class);
     }
 }
