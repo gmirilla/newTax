@@ -151,6 +151,7 @@
                     'feature_advanced_reports'   => ['label' => 'Advanced Reports',     'desc' => 'General Ledger, Balance Sheet exports'],
                     'feature_inventory'          => ['label' => 'Inventory Module',     'desc' => 'Items, stock movements, sales orders, restock'],
                     'feature_inventory_reports'  => ['label' => 'Inventory Reports',    'desc' => 'Stock valuation, low stock, sales analytics'],
+                    'feature_manufacturing'      => ['label' => 'Manufacturing',        'desc' => 'Bills of Materials and Production Orders'],
                     'feature_api_access'         => ['label' => 'API Access',           'desc' => 'Programmatic access via API keys (future)'],
                 ];
                 $featureKeyMap = [
@@ -159,6 +160,7 @@
                     'feature_advanced_reports'   => 'advanced_reports',
                     'feature_inventory'          => 'inventory',
                     'feature_inventory_reports'  => 'inventory_reports',
+                    'feature_manufacturing'      => 'manufacturing',
                     'feature_api_access'         => 'api_access',
                 ];
             @endphp

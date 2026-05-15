@@ -19,11 +19,11 @@ class InventoryCategoryPolicy
 
     public function update(User $user, InventoryCategory $category): bool
     {
-        return $user->tenant_id === $category->tenant_id && $user->isAccountant();
+        return $user->tenant_id == $category->tenant_id && $user->isAccountant();
     }
 
     public function delete(User $user, InventoryCategory $category): bool
     {
-        return $user->tenant_id === $category->tenant_id && $user->isAdmin();
+        return $user->tenant_id == $category->tenant_id && $user->isAdmin();
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Exports\SubscriptionTransactionExport;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Plan;
 use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
@@ -173,6 +174,79 @@ class SuperAdminController extends Controller
             ->download($filename);
     }
 
+    public function auditLogs(Request $request): View
+    {
+        $query = AuditLog::with(['tenant', 'user'])
+            ->orderByDesc('created_at');
+
+        if ($request->filled('tenant')) {
+            $query->whereHas('tenant', fn($q) =>
+                $q->where('name', 'ilike', '%' . $request->tenant . '%')
+                  ->orWhere('email', 'ilike', '%' . $request->tenant . '%')
+            );
+        }
+
+        if ($request->filled('event')) {
+            $query->where('event', 'like', $request->event . '%');
+        }
+
+        if ($request->filled('tags')) {
+            $query->where('tags', 'like', '%' . $request->tags . '%');
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('scope')) {
+            match($request->scope) {
+                'superadmin' => $query->where('tags', 'like', '%superadmin%'),
+                'tenant'     => $query->where('tags', 'not like', '%superadmin%'),
+                default      => null,
+            };
+        }
+
+        $logs = $query->paginate(50)->withQueryString();
+
+        $eventTypes = AuditLog::selectRaw('event, count(*) as cnt')
+            ->groupBy('event')
+            ->orderByDesc('cnt')
+            ->pluck('cnt', 'event');
+
+        $stats = [
+            'today'      => AuditLog::whereDate('created_at', today())->count(),
+            'superadmin' => AuditLog::where('tags', 'like', '%superadmin%')->whereDate('created_at', today())->count(),
+            'total'      => AuditLog::count(),
+        ];
+
+        return view('superadmin.audit-logs.index', compact('logs', 'eventTypes', 'stats'));
+    }
+
+    private function superaudit(string $event, Tenant $tenant, array $old = [], array $new = []): void
+    {
+        try {
+            AuditLog::create([
+                'tenant_id'      => $tenant->id,
+                'user_id'        => auth()->id(),
+                'event'          => $event,
+                'auditable_type' => Tenant::class,
+                'auditable_id'   => $tenant->id,
+                'old_values'     => $old,
+                'new_values'     => $new,
+                'ip_address'     => request()->ip(),
+                'user_agent'     => request()->userAgent(),
+                'url'            => request()->fullUrl(),
+                'tags'           => 'superadmin',
+            ]);
+        } catch (\Throwable) {
+            // Never fail a request due to audit logging
+        }
+    }
+
     private function buildTransactionQuery(Request $request)
     {
         $query = SubscriptionPayment::query();
@@ -210,9 +284,11 @@ class SuperAdminController extends Controller
 
     public function toggleActive(Tenant $tenant): RedirectResponse
     {
+        $oldStatus = $tenant->is_active;
         $tenant->update(['is_active' => !$tenant->is_active]);
-
         $action = $tenant->is_active ? 'activated' : 'deactivated';
+
+        $this->superaudit('superadmin.company_' . $action, $tenant, ['is_active' => $oldStatus], ['is_active' => $tenant->is_active]);
 
         return back()->with('success', "Company \"{$tenant->name}\" has been {$action}.");
     }
@@ -228,12 +304,20 @@ class SuperAdminController extends Controller
 
         $plan = Plan::findOrFail($data['plan_id']);
 
+        $old = $tenant->only(['plan_id', 'subscription_plan', 'subscription_status', 'subscription_expires_at', 'trial_ends_at']);
+
         $tenant->update([
             'plan_id'                 => $plan->id,
             'subscription_plan'       => $plan->slug,
             'subscription_status'     => $data['subscription_status'],
             'subscription_expires_at' => $data['subscription_expires_at'] ?? null,
             'trial_ends_at'           => $data['trial_ends_at'] ?? null,
+        ]);
+
+        $this->superaudit('superadmin.subscription_updated', $tenant, $old, [
+            'plan'   => $plan->slug,
+            'status' => $data['subscription_status'],
+            'expires' => $data['subscription_expires_at'] ?? null,
         ]);
 
         return back()->with('success', "Subscription updated to {$plan->name}.");
@@ -248,10 +332,17 @@ class SuperAdminController extends Controller
             ? $tenant->trial_ends_at
             : now();
 
+        $oldTrialEnd = $tenant->trial_ends_at;
+
         $tenant->update([
             'trial_ends_at'       => $base->copy()->addDays($days),
             'subscription_status' => 'trialing',
         ]);
+
+        $this->superaudit('superadmin.trial_extended', $tenant,
+            ['trial_ends_at' => $oldTrialEnd?->toDateString()],
+            ['trial_ends_at' => $tenant->trial_ends_at->toDateString(), 'days_added' => $days]
+        );
 
         return back()->with('success', "Trial extended by {$days} days for {$tenant->name}.");
     }
@@ -312,14 +403,19 @@ class SuperAdminController extends Controller
 
     public function impersonate(Tenant $tenant): RedirectResponse
     {
-        // Store superadmin's ID so we can restore later
-        session(['superadmin_id' => auth()->id()]);
+        $superAdminId = auth()->id();
 
         $adminUser = $tenant->users()->where('role', 'admin')->first();
         if (!$adminUser) {
             return back()->with('error', 'No admin user found for this company.');
         }
 
+        $this->superaudit('superadmin.impersonation_started', $tenant, [], [
+            'impersonated_user_id'    => $adminUser->id,
+            'impersonated_user_email' => $adminUser->email,
+        ]);
+
+        session(['superadmin_id' => $superAdminId]);
         auth()->login($adminUser);
 
         return redirect()->route('dashboard')
@@ -331,6 +427,24 @@ class SuperAdminController extends Controller
         $superAdminId = session()->pull('superadmin_id');
         if (!$superAdminId) {
             return redirect()->route('dashboard');
+        }
+
+        // Log exit before switching auth back
+        $currentTenant = auth()->user()?->tenant;
+        if ($currentTenant) {
+            AuditLog::create([
+                'tenant_id'      => $currentTenant->id,
+                'user_id'        => $superAdminId,
+                'event'          => 'superadmin.impersonation_ended',
+                'auditable_type' => Tenant::class,
+                'auditable_id'   => $currentTenant->id,
+                'old_values'     => [],
+                'new_values'     => ['tenant' => $currentTenant->name],
+                'ip_address'     => request()->ip(),
+                'user_agent'     => request()->userAgent(),
+                'url'            => request()->fullUrl(),
+                'tags'           => 'superadmin,impersonation',
+            ]);
         }
 
         auth()->loginUsingId($superAdminId);

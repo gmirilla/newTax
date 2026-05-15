@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Plan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,10 +31,23 @@ class PlanController extends Controller
         $validated = $this->validatePlan($request);
         $validated['limits'] = $this->buildLimits($request);
 
-        Plan::create($validated);
+        $plan = Plan::create($validated);
+
+        AuditLog::create([
+            'tenant_id'      => null,
+            'user_id'        => auth()->id(),
+            'event'          => 'superadmin.plan_created',
+            'auditable_type' => Plan::class,
+            'auditable_id'   => $plan->id,
+            'new_values'     => ['name' => $plan->name, 'slug' => $plan->slug, 'limits' => $plan->limits],
+            'ip_address'     => request()->ip(),
+            'user_agent'     => request()->userAgent(),
+            'url'            => request()->fullUrl(),
+            'tags'           => 'superadmin,plan',
+        ]);
 
         return redirect()->route('superadmin.plans.index')
-            ->with('success', "Plan \"{$validated['name']}\" created.");
+            ->with('success', "Plan \"{$plan->name}\" created.");
     }
 
     public function edit(Plan $plan): View
@@ -46,7 +60,22 @@ class PlanController extends Controller
         $validated = $this->validatePlan($request, $plan);
         $validated['limits'] = $this->buildLimits($request);
 
+        $oldLimits = $plan->limits;
         $plan->update($validated);
+
+        AuditLog::create([
+            'tenant_id'      => null,
+            'user_id'        => auth()->id(),
+            'event'          => 'superadmin.plan_updated',
+            'auditable_type' => Plan::class,
+            'auditable_id'   => $plan->id,
+            'old_values'     => ['limits' => $oldLimits],
+            'new_values'     => ['name' => $plan->name, 'slug' => $plan->slug, 'limits' => $plan->limits],
+            'ip_address'     => request()->ip(),
+            'user_agent'     => request()->userAgent(),
+            'url'            => request()->fullUrl(),
+            'tags'           => 'superadmin,plan',
+        ]);
 
         return redirect()->route('superadmin.plans.index')
             ->with('success', "Plan \"{$plan->name}\" updated.");
@@ -58,10 +87,27 @@ class PlanController extends Controller
             return back()->with('error', "Cannot delete \"{$plan->name}\" — {$plan->tenants_count} tenants are on this plan. Deactivate it instead.");
         }
 
+        $planName = $plan->name;
+        $planId   = $plan->id;
+
+        AuditLog::create([
+            'tenant_id'      => null,
+            'user_id'        => auth()->id(),
+            'event'          => 'superadmin.plan_deleted',
+            'auditable_type' => Plan::class,
+            'auditable_id'   => $planId,
+            'old_values'     => ['name' => $planName, 'slug' => $plan->slug],
+            'new_values'     => [],
+            'ip_address'     => request()->ip(),
+            'user_agent'     => request()->userAgent(),
+            'url'            => request()->fullUrl(),
+            'tags'           => 'superadmin,plan',
+        ]);
+
         $plan->delete();
 
         return redirect()->route('superadmin.plans.index')
-            ->with('success', "Plan \"{$plan->name}\" deleted.");
+            ->with('success', "Plan \"{$planName}\" deleted.");
     }
 
     private function validatePlan(Request $request, ?Plan $plan = null): array
@@ -94,6 +140,7 @@ class PlanController extends Controller
             'advanced_reports'   => $request->boolean('feature_advanced_reports'),
             'inventory'          => $request->boolean('feature_inventory'),
             'inventory_reports'  => $request->boolean('feature_inventory_reports'),
+            'manufacturing'      => $request->boolean('feature_manufacturing'),
             'api_access'         => $request->boolean('feature_api_access'),
         ];
     }

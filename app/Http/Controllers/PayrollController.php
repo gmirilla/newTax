@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\PayrollExport;
 use App\Imports\EmployeesImport;
+use App\Models\AuditLog;
 use App\Models\Employee;
 use App\Models\Payroll;
 use App\Models\PayrollItem;
@@ -136,6 +137,19 @@ class PayrollController extends Controller
             'status'      => 'approved',
             'approved_by' => auth()->id(),
         ]);
+
+        $payroll->loadMissing('creator');
+        AuditLog::record('payroll.approved', $payroll,
+            ['status' => 'draft'],
+            [
+                'reference'      => $payroll->reference ?? "Payroll #{$payroll->id}",
+                'initiator_id'   => $payroll->created_by,
+                'initiator_name' => $payroll->creator?->name ?? 'Unknown',
+                'period'         => $payroll->period_label ?? null,
+                'net_pay'        => $payroll->total_net_pay ?? null,
+            ],
+            'payroll,approval'
+        );
 
         return back()->with('success', 'Payroll approved.');
     }

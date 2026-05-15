@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\TransactionExport;
 use App\Models\Account;
+use App\Models\AuditLog;
 use App\Models\Expense;
 use App\Repositories\TransactionRepository;
 use App\Services\BookkeepingService;
@@ -397,6 +398,19 @@ class TransactionController extends Controller
             ]);
         });
 
+        $expense->loadMissing('creator');
+        AuditLog::record('expense.approved', $expense,
+            ['status' => 'pending'],
+            [
+                'reference'      => $expense->reference,
+                'initiator_id'   => $expense->created_by,
+                'initiator_name' => $expense->creator?->name ?? 'Unknown',
+                'description'    => $expense->description,
+                'amount'         => $expense->amount,
+            ],
+            'expense,approval'
+        );
+
         return back()->with('success', "Expense {$expense->reference} approved and posted to ledger.");
     }
 
@@ -410,10 +424,24 @@ class TransactionController extends Controller
             'rejection_reason' => 'required|string|max:500',
         ]);
 
+        $expense->loadMissing('creator');
         $expense->update([
             'status' => 'rejected',
             'notes'  => trim("REJECTED: {$request->rejection_reason}\n\n" . $expense->notes),
         ]);
+
+        AuditLog::record('expense.rejected', $expense,
+            ['status' => 'pending'],
+            [
+                'reference'        => $expense->reference,
+                'initiator_id'     => $expense->created_by,
+                'initiator_name'   => $expense->creator?->name ?? 'Unknown',
+                'description'      => $expense->description,
+                'amount'           => $expense->amount,
+                'rejection_reason' => $request->rejection_reason,
+            ],
+            'expense,approval'
+        );
 
         return back()->with('success', "Expense {$expense->reference} rejected.");
     }

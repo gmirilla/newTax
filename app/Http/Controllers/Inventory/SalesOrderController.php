@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
+use App\Models\AuditLog;
 use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\InventoryItem;
@@ -226,6 +227,8 @@ class SalesOrderController extends Controller
             return back()->with('error', 'Order cannot be cancelled.');
         }
 
+        $oldStatus = $salesOrder->status;
+
         DB::transaction(function () use ($salesOrder) {
             if ($salesOrder->status === SalesOrder::STATUS_CONFIRMED) {
                 $this->reverseConfirmedOrder($salesOrder);
@@ -233,6 +236,19 @@ class SalesOrderController extends Controller
 
             $salesOrder->update(['status' => SalesOrder::STATUS_CANCELLED]);
         });
+
+        $salesOrder->loadMissing('creator');
+        AuditLog::record('sales_order.cancelled', $salesOrder,
+            ['status' => $oldStatus],
+            [
+                'reference'      => $salesOrder->order_number,
+                'initiator_id'   => $salesOrder->created_by,
+                'initiator_name' => $salesOrder->creator?->name ?? 'Unknown',
+                'customer'       => $salesOrder->customer?->name ?? $salesOrder->customer_name ?? 'Walk-in',
+                'total_amount'   => $salesOrder->total_amount,
+            ],
+            'inventory,approval'
+        );
 
         return redirect()->route('inventory.sales.index')
             ->with('success', "Order {$salesOrder->order_number} cancelled.");
@@ -431,6 +447,19 @@ class SalesOrderController extends Controller
         } catch (ValidationException $e) {
             return back()->withErrors($e->errors())->with('error', $e->getMessage());
         }
+
+        $salesOrder->loadMissing('creator');
+        AuditLog::record('sales_order.confirmed', $salesOrder,
+            ['status' => 'draft'],
+            [
+                'reference'      => $salesOrder->order_number,
+                'initiator_id'   => $salesOrder->created_by,
+                'initiator_name' => $salesOrder->creator?->name ?? 'Unknown',
+                'customer'       => $salesOrder->customer?->name ?? $salesOrder->customer_name ?? 'Walk-in',
+                'total_amount'   => $salesOrder->total_amount,
+            ],
+            'inventory,approval'
+        );
 
         return redirect()->route('inventory.sales.show', $salesOrder)
             ->with('success', "Order {$salesOrder->order_number} confirmed. Invoice generated.");
