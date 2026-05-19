@@ -8,6 +8,10 @@ use App\Models\InventoryCategory;
 use App\Models\InventoryItem;
 use App\Models\InventoryUnit;
 use App\Models\Invoice;
+use App\Models\MaintenanceAsset;
+use App\Models\MaintenanceBreakdown;
+use App\Models\MaintenanceSchedule;
+use App\Models\MaintenanceWorkOrder;
 use App\Models\ProductionOrder;
 use App\Models\RestockRequest;
 use App\Models\SalesOrder;
@@ -18,6 +22,9 @@ use App\Policies\InventoryCategoryPolicy;
 use App\Policies\InventoryItemPolicy;
 use App\Policies\InventoryUnitPolicy;
 use App\Policies\InvoicePolicy;
+use App\Policies\MaintenanceAssetPolicy;
+use App\Policies\MaintenanceBreakdownPolicy;
+use App\Policies\MaintenanceWorkOrderPolicy;
 use App\Policies\ProductionOrderPolicy;
 use App\Policies\RestockRequestPolicy;
 use App\Policies\SalesOrderPolicy;
@@ -54,6 +61,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(InventoryUnit::class, InventoryUnitPolicy::class);
         Gate::policy(SalesOrder::class, SalesOrderPolicy::class);
         Gate::policy(RestockRequest::class, RestockRequestPolicy::class);
+        Gate::policy(MaintenanceAsset::class, MaintenanceAssetPolicy::class);
+        Gate::policy(MaintenanceWorkOrder::class, MaintenanceWorkOrderPolicy::class);
+        Gate::policy(MaintenanceBreakdown::class, MaintenanceBreakdownPolicy::class);
+        Gate::policy(MaintenanceSchedule::class, MaintenanceWorkOrderPolicy::class);
 
         // Force HTTPS in production
         if ($this->app->environment('production')) {

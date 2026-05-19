@@ -30,6 +30,7 @@
     $canInventory          = $currentTenant->planAllows('inventory')     && $currentUser->canAccess('inventory');
     $canInventoryReports   = $currentTenant->planAllows('inventory_reports') && $currentUser->canAccess('reports');
     $canManufacturing      = $currentTenant->planAllows('manufacturing') && $currentUser->canAccess('manufacturing');
+    $canMaintenance        = $currentTenant->planAllows('maintenance')   && $currentUser->canAccess('maintenance');
 
     $navAlertCount = $canInventory
         ? \App\Models\InventoryAlert::where('tenant_id', auth()->user()->tenant_id ?? 0)
@@ -51,6 +52,7 @@
     $navInPayroll   = request()->routeIs('payroll.*');
     $navInInventory      = request()->routeIs('inventory.*') && ! request()->routeIs('inventory.reports.*');
     $navInManufacturing  = request()->routeIs('manufacturing.*');
+    $navInMaintenance    = request()->routeIs('maintenance.*');
     $navInReports   = request()->routeIs('reports.*', 'inventory.reports.*');
     $navInSettings  = request()->routeIs('team.*', 'billing*', 'settings.*');
 @endphp

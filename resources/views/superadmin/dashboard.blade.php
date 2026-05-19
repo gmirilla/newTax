@@ -91,6 +91,30 @@
     </div>
     @endif
 
+    {{-- Enterprise billing alerts --}}
+    @if(($stats['overdue_invoices'] ?? 0) > 0 || ($stats['enterprise_tenants'] ?? 0) > 0)
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        @if(($stats['overdue_invoices'] ?? 0) > 0)
+        <div class="bg-purple-50 border border-purple-300 rounded-lg p-4 flex items-center justify-between">
+            <div>
+                <p class="text-2xl font-bold text-purple-800">{{ $stats['overdue_invoices'] }}</p>
+                <p class="text-sm text-purple-700">Overdue Enterprise Invoice{{ $stats['overdue_invoices'] !== 1 ? 's' : '' }}</p>
+            </div>
+            <a href="{{ route('superadmin.companies') }}"
+               class="px-3 py-1.5 bg-purple-700 text-white text-xs rounded-md hover:bg-purple-800">
+                View Companies
+            </a>
+        </div>
+        @endif
+        @if(($stats['enterprise_tenants'] ?? 0) > 0)
+        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <p class="text-2xl font-bold text-indigo-800">{{ $stats['enterprise_tenants'] }}</p>
+            <p class="text-sm text-indigo-700">Enterprise Customer{{ $stats['enterprise_tenants'] !== 1 ? 's' : '' }}</p>
+        </div>
+        @endif
+    </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Recent Companies --}}
         <div class="bg-white rounded-lg shadow">

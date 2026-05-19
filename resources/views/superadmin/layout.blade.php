@@ -41,6 +41,11 @@
             {!! $navItem('superadmin.dashboard', 'Dashboard', '🏠') !!}
             {!! $navItem('superadmin.companies', 'Companies', '🏢') !!}
             {!! $navItem('superadmin.plans.index', 'Plans', '💳') !!}
+            <a href="{{ route('superadmin.enterprise.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                      {{ request()->routeIs('superadmin.enterprise*') || request()->routeIs('superadmin.enterprises*') ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                <span>🏦</span>Enterprise
+            </a>
             {!! $navItem('superadmin.transactions', 'Transactions', '💰') !!}
             {!! $navItem('superadmin.audit-logs', 'Audit Logs', '📋') !!}
 

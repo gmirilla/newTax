@@ -11,7 +11,10 @@ use App\Http\Controllers\FirsOnboardingController;
 use App\Http\Controllers\InviteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\SuperAdmin\EnterpriseAgreementController;
+use App\Http\Controllers\SuperAdmin\EnterpriseController;
 use App\Http\Controllers\SuperAdmin\PlanController;
+use App\Http\Controllers\SuperAdmin\PlatformInvoiceController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\InvoiceController;
@@ -33,6 +36,11 @@ use App\Http\Controllers\Inventory\SupplierBillController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Manufacturing\BomController;
 use App\Http\Controllers\Manufacturing\ProductionOrderController;
+use App\Http\Controllers\Maintenance\MaintenanceDashboardController;
+use App\Http\Controllers\Maintenance\MaintenanceAssetController;
+use App\Http\Controllers\Maintenance\MaintenanceScheduleController;
+use App\Http\Controllers\Maintenance\MaintenanceWorkOrderController;
+use App\Http\Controllers\Maintenance\MaintenanceBreakdownController;
 use App\Http\Controllers\MarketingController;
 use Illuminate\Support\Facades\Route;
 
@@ -317,6 +325,32 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             });
         });
 
+        // ── Maintenance & Asset Management ────────────────────────────────────────
+        Route::prefix('maintenance')->name('maintenance.')->middleware('plan:maintenance')->group(function () {
+            Route::get('/', MaintenanceDashboardController::class)->name('dashboard');
+
+            // Assets
+            Route::resource('assets', MaintenanceAssetController::class);
+
+            // PM Schedules
+            Route::resource('schedules', MaintenanceScheduleController::class)->except(['show', 'edit', 'update']);
+            Route::post('schedules/{schedule}/toggle', [MaintenanceScheduleController::class, 'toggleActive'])->name('schedules.toggle');
+
+            // Work Orders
+            Route::resource('work-orders', MaintenanceWorkOrderController::class)->except(['edit', 'update', 'destroy']);
+            Route::post('work-orders/{workOrder}/start',    [MaintenanceWorkOrderController::class, 'start'])->name('work-orders.start');
+            Route::post('work-orders/{workOrder}/complete', [MaintenanceWorkOrderController::class, 'complete'])->name('work-orders.complete');
+            Route::post('work-orders/{workOrder}/close',    [MaintenanceWorkOrderController::class, 'close'])->name('work-orders.close');
+            Route::post('work-orders/{workOrder}/parts',    [MaintenanceWorkOrderController::class, 'addPart'])->name('work-orders.parts.add');
+            Route::delete('work-orders/{workOrder}/parts/{part}', [MaintenanceWorkOrderController::class, 'removePart'])->name('work-orders.parts.remove');
+            Route::post('work-orders/{workOrder}/labor',    [MaintenanceWorkOrderController::class, 'logLabor'])->name('work-orders.labor');
+
+            // Breakdowns
+            Route::resource('breakdowns', MaintenanceBreakdownController::class)->except(['edit', 'update']);
+            Route::post('breakdowns/{breakdown}/resolve', [MaintenanceBreakdownController::class, 'resolve'])->name('breakdowns.resolve');
+            Route::post('breakdowns/{breakdown}/close',   [MaintenanceBreakdownController::class, 'close'])->name('breakdowns.close');
+        });
+
         // ── Manufacturing ──────────────────────────────────────────────────────────
         Route::prefix('manufacturing')->name('manufacturing.')->middleware('plan:manufacturing')->group(function () {
 
@@ -396,6 +430,32 @@ Route::middleware(['auth', 'superadmin'])
             Route::post('/extend-trial',      [SuperAdminController::class, 'extendTrial'])->name('extend-trial');
             Route::post('/remind',            [SuperAdminController::class, 'sendReminder'])->name('remind');
             Route::post('/impersonate',       [SuperAdminController::class, 'impersonate'])->name('impersonate');
+        });
+
+        // Enterprise billing overview
+        Route::get('/enterprise', [EnterpriseController::class, 'index'])->name('enterprise.index');
+
+        // Enterprise billing per tenant
+        Route::prefix('enterprises/{tenant}')->name('enterprises.')->group(function () {
+            // Agreements
+            Route::prefix('agreements')->name('agreements.')->group(function () {
+                Route::get('/',               [EnterpriseAgreementController::class, 'index'])->name('index');
+                Route::get('/create',         [EnterpriseAgreementController::class, 'create'])->name('create');
+                Route::post('/',              [EnterpriseAgreementController::class, 'store'])->name('store');
+                Route::get('/{agreement}/edit',[EnterpriseAgreementController::class, 'edit'])->name('edit');
+                Route::put('/{agreement}',    [EnterpriseAgreementController::class, 'update'])->name('update');
+            });
+            // Platform invoices
+            Route::prefix('invoices')->name('invoices.')->group(function () {
+                Route::get('/',              [PlatformInvoiceController::class, 'index'])->name('index');
+                Route::get('/create',        [PlatformInvoiceController::class, 'create'])->name('create');
+                Route::post('/',             [PlatformInvoiceController::class, 'store'])->name('store');
+                Route::get('/{invoice}',     [PlatformInvoiceController::class, 'show'])->name('show');
+                Route::post('/{invoice}/send',     [PlatformInvoiceController::class, 'send'])->name('send');
+                Route::post('/{invoice}/mark-paid',[PlatformInvoiceController::class, 'markPaid'])->name('mark-paid');
+                Route::post('/{invoice}/void',     [PlatformInvoiceController::class, 'void'])->name('void');
+                Route::get('/{invoice}/pdf',       [PlatformInvoiceController::class, 'pdf'])->name('pdf');
+            });
         });
 
         Route::post('/bulk-reminder',        [SuperAdminController::class, 'sendBulkReminder'])->name('bulk-reminder');

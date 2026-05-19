@@ -29,3 +29,8 @@ Schedule::command('subscriptions:downgrade-expired-trials')
     ->dailyAt('00:15')
     ->withoutOverlapping()
     ->description('Downgrade expired trial tenants to the Free plan');
+
+Schedule::command('maintenance:generate-pm-work-orders')
+    ->dailyAt('06:00')
+    ->withoutOverlapping()
+    ->description('Generate PM work orders for due schedules');

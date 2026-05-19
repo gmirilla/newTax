@@ -41,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'expenses'      => 'Expenses',
         'inventory'     => 'Inventory',
         'manufacturing' => 'Manufacturing',
+        'maintenance'   => 'Maintenance',
         'payroll'       => 'Payroll',
         'reports'       => 'Reports',
         'bank_accounts' => 'Bank Accounts',
