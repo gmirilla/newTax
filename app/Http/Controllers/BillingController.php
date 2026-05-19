@@ -21,8 +21,25 @@ class BillingController extends Controller
         $tenant = $request->user()->tenant;
         $tenant->loadMissing('plan');
 
+        // Enterprise tenants have a managed plan — no Paystack self-serve
+        if ($tenant->plan?->is_enterprise) {
+            $agreement = \App\Models\EnterpriseAgreement::where('tenant_id', $tenant->id)
+                ->where('status', \App\Models\EnterpriseAgreement::STATUS_ACTIVE)
+                ->with('plan')
+                ->latest()
+                ->first();
+
+            $platformInvoices = \App\Models\PlatformInvoice::where('tenant_id', $tenant->id)
+                ->orderByDesc('due_date')
+                ->limit(12)
+                ->get();
+
+            return view('billing.enterprise', compact('tenant', 'agreement', 'platformInvoices'));
+        }
+
         $plans = Plan::where('is_active', true)
             ->where('is_public', true)
+            ->where('is_enterprise', false)
             ->orderBy('sort_order')
             ->get();
 
@@ -53,8 +70,15 @@ class BillingController extends Controller
 
     public function checkout(Request $request, Plan $plan): RedirectResponse
     {
-        if (!$plan->is_active || !$plan->is_public || $plan->price_monthly <= 0) {
+        if (!$plan->is_active || !$plan->is_public || $plan->is_enterprise || $plan->price_monthly <= 0) {
             return redirect()->route('billing')->with('error', 'This plan is not available for checkout.');
+        }
+
+        // Enterprise tenants cannot self-serve checkout
+        $tenant = $request->user()->tenant;
+        $tenant->loadMissing('plan');
+        if ($tenant->plan?->is_enterprise) {
+            return redirect()->route('billing')->with('error', 'Your plan is managed by our team. Contact support to make changes.');
         }
 
         $cycle = in_array($request->query('cycle'), ['monthly', 'yearly']) ? $request->query('cycle') : 'monthly';
@@ -217,6 +241,10 @@ class BillingController extends Controller
         $tenant = $request->user()->tenant;
         $tenant->loadMissing('plan');
 
+        if ($tenant->plan?->is_enterprise) {
+            return redirect()->route('billing')->with('error', 'Your plan is managed by our team. Contact support to make changes.');
+        }
+
         $currentPlan = $tenant->plan;
 
         if (!$currentPlan || $plan->price_monthly >= $currentPlan->price_monthly) {
@@ -247,6 +275,10 @@ class BillingController extends Controller
     public function cancel(Request $request): RedirectResponse
     {
         $tenant = $request->user()->tenant;
+
+        if ($tenant->plan?->is_enterprise) {
+            return redirect()->route('billing')->with('error', 'Your plan is managed by our team. Contact support to make changes.');
+        }
 
         if (!$tenant->subscriptionActive() || $tenant->isOnTrial()) {
             return redirect()->route('billing')->with('error', 'No active paid subscription to cancel.');

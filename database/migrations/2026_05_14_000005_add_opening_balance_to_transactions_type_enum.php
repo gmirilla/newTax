@@ -15,6 +15,8 @@ return new class extends Migration
                 'payment','receipt','journal','tax_payment',
                 'payroll','bank_transfer','opening_balance'
             ) NOT NULL");
+        } elseif ($driver === 'sqlite') {
+            // SQLite stores VARCHAR and does not support ADD/DROP CONSTRAINT — no-op
         } else {
             // PostgreSQL — enum() creates a VARCHAR with a CHECK constraint named
             // {table}_{column}_check.  We drop and recreate that constraint.
@@ -42,6 +44,8 @@ return new class extends Migration
                 'payment','receipt','journal','tax_payment',
                 'payroll','bank_transfer'
             ) NOT NULL");
+        } elseif ($driver === 'sqlite') {
+            // SQLite stores VARCHAR and does not support ADD/DROP CONSTRAINT — no-op
         } else {
             DB::statement("ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check");
             DB::statement("ALTER TABLE transactions ADD CONSTRAINT transactions_type_check CHECK (

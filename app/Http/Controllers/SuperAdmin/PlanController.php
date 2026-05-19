@@ -122,6 +122,7 @@ class PlanController extends Controller
             'paystack_plan_code'  => 'nullable|string|max:50',
             'is_active'           => 'boolean',
             'is_public'      => 'boolean',
+            'is_enterprise'  => 'boolean',
             'sort_order'     => 'required|integer|min:0',
         ]);
     }
@@ -141,6 +142,7 @@ class PlanController extends Controller
             'inventory'          => $request->boolean('feature_inventory'),
             'inventory_reports'  => $request->boolean('feature_inventory_reports'),
             'manufacturing'      => $request->boolean('feature_manufacturing'),
+            'maintenance'        => $request->boolean('feature_maintenance'),
             'api_access'         => $request->boolean('feature_api_access'),
         ];
     }

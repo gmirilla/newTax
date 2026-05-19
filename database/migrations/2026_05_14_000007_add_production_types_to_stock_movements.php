@@ -14,7 +14,10 @@ return new class extends Migration
                 'sale','restock','adjustment_in','adjustment_out','opening',
                 'production_in','production_out'
             ) NOT NULL");
+        } elseif ($driver === 'sqlite') {
+            // SQLite stores VARCHAR and does not support ADD/DROP CONSTRAINT — no-op
         } else {
+            // PostgreSQL
             DB::statement("ALTER TABLE stock_movements DROP CONSTRAINT IF EXISTS stock_movements_type_check");
             DB::statement("ALTER TABLE stock_movements ADD CONSTRAINT stock_movements_type_check CHECK (
                 type IN (
@@ -35,7 +38,10 @@ return new class extends Migration
             DB::statement("ALTER TABLE stock_movements MODIFY COLUMN `type` ENUM(
                 'sale','restock','adjustment_in','adjustment_out','opening'
             ) NOT NULL");
+        } elseif ($driver === 'sqlite') {
+            // SQLite stores VARCHAR and does not support ADD/DROP CONSTRAINT — no-op
         } else {
+            // PostgreSQL
             DB::statement("ALTER TABLE stock_movements DROP CONSTRAINT IF EXISTS stock_movements_type_check");
             DB::statement("ALTER TABLE stock_movements ADD CONSTRAINT stock_movements_type_check CHECK (
                 type IN ('sale','restock','adjustment_in','adjustment_out','opening')

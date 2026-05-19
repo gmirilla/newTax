@@ -96,6 +96,13 @@
                            class="rounded border-gray-300 text-indigo-600">
                     <span class="text-gray-700">Show on pricing page</span>
                 </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="hidden" name="is_enterprise" value="0">
+                    <input type="checkbox" name="is_enterprise" value="1"
+                           {{ old('is_enterprise', $plan->is_enterprise ?? false) ? 'checked' : '' }}
+                           class="rounded border-gray-300 text-indigo-600">
+                    <span class="text-gray-700">Enterprise plan <span class="text-gray-400 font-normal">(hides Paystack; manual invoicing only)</span></span>
+                </label>
             </div>
         </div>
     </div>
@@ -152,6 +159,7 @@
                     'feature_inventory'          => ['label' => 'Inventory Module',     'desc' => 'Items, stock movements, sales orders, restock'],
                     'feature_inventory_reports'  => ['label' => 'Inventory Reports',    'desc' => 'Stock valuation, low stock, sales analytics'],
                     'feature_manufacturing'      => ['label' => 'Manufacturing',        'desc' => 'Bills of Materials and Production Orders'],
+                    'feature_maintenance'        => ['label' => 'Maintenance Module',   'desc' => 'Asset register, PM schedules, work orders, breakdowns'],
                     'feature_api_access'         => ['label' => 'API Access',           'desc' => 'Programmatic access via API keys (future)'],
                 ];
                 $featureKeyMap = [
@@ -161,6 +169,7 @@
                     'feature_inventory'          => 'inventory',
                     'feature_inventory_reports'  => 'inventory_reports',
                     'feature_manufacturing'      => 'manufacturing',
+                    'feature_maintenance'        => 'maintenance',
                     'feature_api_access'         => 'api_access',
                 ];
             @endphp

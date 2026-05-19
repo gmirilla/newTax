@@ -55,6 +55,16 @@ class Tenant extends Model
         return $this->hasMany(SubscriptionPayment::class);
     }
 
+    public function enterpriseAgreements(): HasMany
+    {
+        return $this->hasMany(EnterpriseAgreement::class);
+    }
+
+    public function platformInvoices(): HasMany
+    {
+        return $this->hasMany(PlatformInvoice::class);
+    }
+
     public function hasPendingPlanChange(): bool
     {
         return $this->next_plan_id !== null;

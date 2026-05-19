@@ -33,6 +33,18 @@
                     class="px-3 py-1.5 text-xs bg-yellow-500 text-white rounded-md hover:bg-yellow-600">
                 Send Reminder
             </button>
+            {{-- Enterprise Billing --}}
+            @if($tenant->plan?->is_enterprise)
+            <a href="{{ route('superadmin.enterprises.invoices.index', $tenant) }}"
+               class="px-3 py-1.5 text-xs bg-purple-700 text-white rounded-md hover:bg-purple-800">
+                Enterprise Billing
+            </a>
+            @else
+            <a href="{{ route('superadmin.enterprises.agreements.create', $tenant) }}"
+               class="px-3 py-1.5 text-xs border border-purple-300 text-purple-700 rounded-md hover:bg-purple-50">
+                Set Enterprise
+            </a>
+            @endif
         </div>
     </div>
 

@@ -13,6 +13,9 @@
             'firs'             => 'NRS e-Invoicing',
             'advanced_reports' => 'Advanced Reports',
             'api_access'       => 'API Access',
+            'inventory'        => 'Inventory Management',
+            'manufacturing'    => 'Manufacturing',
+            'maintenance'      => 'Maintenance',
         ];
         $featureLabel = $featureLabels[$upgradeFeature] ?? ucfirst($upgradeFeature);
     @endphp
@@ -239,6 +242,9 @@
                             'customers'          => 'customers',
                         ];
                         $featureLines = [
+                            'inventory'        => 'Inventory Management',
+                            'manufacturing'    => 'Manufacturing',
+                            'maintenance'      => 'Maintenance',
                             'payroll'          => 'Payroll & PAYE',
                             'firs'             => 'NRS e-Invoicing',
                             'advanced_reports' => 'Advanced Reports',

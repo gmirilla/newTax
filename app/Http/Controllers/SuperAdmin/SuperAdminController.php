@@ -6,6 +6,7 @@ use App\Exports\SubscriptionTransactionExport;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Plan;
+use App\Models\PlatformInvoice;
 use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
 use App\Models\User;
@@ -50,6 +51,10 @@ class SuperAdminController extends Controller
             'new_this_month'    => Tenant::whereMonth('created_at', now()->month)
                                     ->whereYear('created_at', now()->year)
                                     ->count(),
+            'overdue_invoices'  => PlatformInvoice::whereIn('status', [PlatformInvoice::STATUS_OVERDUE, PlatformInvoice::STATUS_SENT])
+                                    ->where('due_date', '<', now()->toDateString())
+                                    ->count(),
+            'enterprise_tenants'=> Tenant::whereHas('plan', fn($q) => $q->where('is_enterprise', true))->count(),
         ];
 
         $recentCompanies = Tenant::withTrashed()

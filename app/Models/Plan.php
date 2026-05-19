@@ -11,7 +11,7 @@ class Plan extends Model
         'name', 'slug', 'description',
         'price_monthly', 'price_yearly', 'trial_days',
         'paystack_plan_code', 'paystack_plan_code_yearly',
-        'limits', 'is_active', 'is_public', 'sort_order',
+        'limits', 'is_active', 'is_public', 'is_enterprise', 'sort_order',
     ];
 
     protected $casts = [
@@ -22,6 +22,7 @@ class Plan extends Model
         'limits'        => 'array',
         'is_active'     => 'boolean',
         'is_public'     => 'boolean',
+        'is_enterprise' => 'boolean',
     ];
 
     // Default limit structure — used when a key is missing from the stored JSON
@@ -36,6 +37,7 @@ class Plan extends Model
         'inventory'          => false,
         'inventory_reports'  => false,
         'manufacturing'      => false,
+        'maintenance'        => false,
         'api_access'         => false,
     ];
 
