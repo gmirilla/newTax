@@ -182,102 +182,66 @@
         </div>
         @endif
 
+        {{-- Enterprise card --}}
+        <div class="mt-8 max-w-5xl mx-auto">
+            <div class="relative bg-[#0A1A2F] rounded-2xl border border-[#D4AF37]/30 shadow-xl overflow-hidden">
+                <div class="absolute inset-0 dot-pattern opacity-10 pointer-events-none"></div>
+                <div class="relative flex flex-col lg:flex-row items-center gap-8 p-8 lg:p-10">
+
+                    {{-- Left: label + heading + description --}}
+                    <div class="flex-1 text-center lg:text-left">
+                        <span class="inline-block text-[10px] font-700 tracking-widest uppercase text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 px-3 py-1 rounded-full mb-4">
+                            Enterprise
+                        </span>
+                        <h3 class="font-display font-800 text-2xl text-white">Custom pricing for larger businesses</h3>
+                        <p class="mt-2 text-slate-400 text-sm leading-relaxed max-w-lg">
+                            Need more users, custom integrations, a dedicated account manager, or invoiced billing?
+                            We'll build a plan around your exact requirements.
+                        </p>
+                    </div>
+
+                    {{-- Middle: feature highlights --}}
+                    <div class="flex-1">
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            @foreach([
+                                'All platform features included',
+                                'Manufacturing and Maintenance modules',
+                                'Unlimited users & team seats',
+                                'Negotiated monthly or annual rate',
+                                'Invoiced billing — no card required',
+                                'Dedicated account manager',
+                                'Priority SLA support',
+                                'Custom onboarding & training',
+                            ] as $feat)
+                            <li class="flex items-center gap-2 text-sm text-slate-300">
+                                <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                {{ $feat }}
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    {{-- Right: CTA --}}
+                    <div class="flex-shrink-0 text-center">
+                        <p class="text-3xl font-display font-900 text-white mb-1">Custom</p>
+                        <p class="text-slate-400 text-xs mb-5">Tailored to your needs</p>
+                        <a href="{{ route('marketing.contact') }}"
+                           class="btn-gold inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-700 shadow-lg shadow-[#D4AF37]/20 whitespace-nowrap">
+                            Contact Us
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                        </a>
+                        <p class="mt-3 text-[11px] text-slate-500">Usually responds within 1 business day</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
         <p class="text-center text-sm text-slate-500 mt-8">
             All paid plans include a <strong class="text-[#1E293B]">14-day free trial</strong>. No credit card required. Cancel anytime.
         </p>
-    </div>
-</section>
-
-{{-- FEATURE COMPARISON TABLE --}}
-<section class="py-20 lg:py-24 bg-white">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="font-display text-2xl lg:text-3xl font-800 text-[#0A1A2F]">Full feature comparison</h2>
-        </div>
-
-        <div class="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="bg-[#0A1A2F] text-white">
-                        <th class="text-left px-6 py-4 font-600 text-slate-300 w-1/2">Feature</th>
-                        <th class="text-center px-4 py-4 font-700 text-sm">Starter</th>
-                        <th class="text-center px-4 py-4 font-700 text-sm relative">
-                            <span class="text-[#D4AF37]">Business</span>
-                        </th>
-                        <th class="text-center px-4 py-4 font-700 text-sm">Professional</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                    @php
-                    $rows = [
-                        ['Invoicing & Quotes', 'Category'],
-                        ['Invoice generation', '5/month', 'Unlimited', 'Unlimited'],
-                        ['Quote to invoice conversion', false, true, true],
-                        ['Custom branding on invoices', false, true, true],
-                        ['Public payment link', true, true, true],
-                        ['Email invoices directly', true, true, true],
-                        ['Expenses & Vendors', 'Category'],
-                        ['Expense tracking', true, true, true],
-                        ['WHT deduction automation', false, true, true],
-                        ['Receipt attachments', false, true, true],
-                        ['Supplier management', true, true, true],
-                        ['Tax Compliance', 'Category'],
-                        ['VAT return computation', true, true, true],
-                        ['Withholding Tax tracking', false, true, true],
-                        ['Company Income Tax (CIT)', false, true, true],
-                        ['Finance Act-aligned calculations', false, true, true],
-                        ['NRS e-Invoice (Coming Soon)', false, false, true],
-                        ['Payroll', 'Category'],
-                        ['Staff payroll processing', false, true, true],
-                        ['PAYE computation', false, true, true],
-                        ['Payslip generation', false, true, true],
-                        ['Pension deductions', false, true, true],
-                        ['Reports', 'Category'],
-                        ['Income & expense summary', true, true, true],
-                        ['Profit & Loss statement', false, true, true],
-                        ['Balance sheet', false, true, true],
-                        ['VAT & WHT summary', false, true, true],
-                        ['PDF & Excel export', false, true, true],
-                        ['Team & Access', 'Category'],
-                        ['Users', '1', '3', '10'],
-                        ['Role-based permissions', false, true, true],
-                        ['Accountant collaboration', false, true, true],
-                        ['Audit trail', false, true, true],
-                        ['Support', 'Category'],
-                        ['Email support', true, true, true],
-                        ['Priority support', false, true, true],
-                        ['Dedicated account manager', false, false, true],
-                        ['API access', false, false, true],
-                    ];
-                    $rowIdx = 0;
-                    @endphp
-
-                    @foreach($rows as $row)
-                    @if(isset($row[1]) && $row[1] === 'Category')
-                    <tr class="bg-[#F5F7FA]">
-                        <td colspan="4" class="px-6 py-2.5 text-xs font-700 text-[#64748B] uppercase tracking-wider">{{ $row[0] }}</td>
-                    </tr>
-                    @else
-                    @php $rowIdx++; @endphp
-                    <tr class="{{ $rowIdx % 2 === 0 ? 'bg-white' : 'bg-[#F5F7FA]/50' }}">
-                        <td class="px-6 py-3.5 text-sm text-[#475569]">{{ $row[0] }}</td>
-                        @foreach([$row[1], $row[2], $row[3]] as $colIdx => $val)
-                        <td class="px-4 py-3.5 text-center {{ $colIdx === 1 ? 'bg-[#D4AF37]/5' : '' }}">
-                            @if($val === true)
-                            <svg class="w-4.5 h-4.5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                            @elseif($val === false)
-                            <svg class="w-4 h-4 text-slate-200 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
-                            @else
-                            <span class="text-xs font-600 text-[#1E293B]">{{ $val }}</span>
-                            @endif
-                        </td>
-                        @endforeach
-                    </tr>
-                    @endif
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
     </div>
 </section>
 
