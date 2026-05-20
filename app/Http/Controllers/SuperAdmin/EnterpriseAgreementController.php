@@ -76,14 +76,14 @@ class EnterpriseAgreementController extends Controller
 
     public function edit(Tenant $tenant, EnterpriseAgreement $agreement): View
     {
-        abort_unless($agreement->tenant_id === $tenant->id, 404);
+        abort_unless($agreement->tenant_id == $tenant->id, 404);
         $plans = Plan::where('is_active', true)->where('is_enterprise', true)->orderBy('name')->get();
         return view('superadmin.enterprise.agreements.edit', compact('tenant', 'agreement', 'plans'));
     }
 
     public function update(Request $request, Tenant $tenant, EnterpriseAgreement $agreement): RedirectResponse
     {
-        abort_unless($agreement->tenant_id === $tenant->id, 404);
+        abort_unless($agreement->tenant_id == $tenant->id, 404);
 
         $validated = $request->validate([
             'negotiated_price'   => 'required|numeric|min:0',

@@ -83,14 +83,14 @@ class PlatformInvoiceController extends Controller
 
     public function show(Tenant $tenant, PlatformInvoice $invoice): View
     {
-        abort_unless($invoice->tenant_id === $tenant->id, 404);
+        abort_unless($invoice->tenant_id == $tenant->id, 404);
         $invoice->load('agreement.plan', 'tenant');
         return view('superadmin.enterprise.invoices.show', compact('tenant', 'invoice'));
     }
 
     public function send(Tenant $tenant, PlatformInvoice $invoice): RedirectResponse
     {
-        abort_unless($invoice->tenant_id === $tenant->id, 404);
+        abort_unless($invoice->tenant_id == $tenant->id, 404);
         abort_unless($invoice->status === PlatformInvoice::STATUS_DRAFT, 422);
 
         $invoice->update(['status' => PlatformInvoice::STATUS_SENT]);
@@ -103,7 +103,7 @@ class PlatformInvoiceController extends Controller
 
     public function markPaid(Request $request, Tenant $tenant, PlatformInvoice $invoice): RedirectResponse
     {
-        abort_unless($invoice->tenant_id === $tenant->id, 404);
+        abort_unless($invoice->tenant_id == $tenant->id, 404);
         abort_unless(in_array($invoice->status, [PlatformInvoice::STATUS_SENT, PlatformInvoice::STATUS_OVERDUE]), 422);
 
         $validated = $request->validate([
@@ -137,7 +137,7 @@ class PlatformInvoiceController extends Controller
 
     public function void(Tenant $tenant, PlatformInvoice $invoice): RedirectResponse
     {
-        abort_unless($invoice->tenant_id === $tenant->id, 404);
+        abort_unless($invoice->tenant_id == $tenant->id, 404);
         abort_unless($invoice->status !== PlatformInvoice::STATUS_PAID, 422);
 
         $invoice->update(['status' => PlatformInvoice::STATUS_VOID]);
@@ -148,7 +148,7 @@ class PlatformInvoiceController extends Controller
 
     public function pdf(Tenant $tenant, PlatformInvoice $invoice): Response
     {
-        abort_unless($invoice->tenant_id === $tenant->id, 404);
+        abort_unless($invoice->tenant_id == $tenant->id, 404);
         $invoice->load('agreement.plan', 'tenant');
 
         $pdf = Pdf::loadView('superadmin.enterprise.invoices.pdf', compact('invoice', 'tenant'));

@@ -1,6 +1,6 @@
 # AccountTaxNG — Known Gaps & Follow-Through Tracker
 
-Updated: 2026-04-30. Tick items off as each is completed.
+Updated: 2026-05-20. Tick items off as each is completed.
 
 Phase 3 (Trial Flow) completed 2026-04-30.
 
@@ -75,7 +75,104 @@ Everything since commit `251f0fb` (Added Company Logo support) is unstaged. A si
 
 ---
 
-## Feature Enforcement Gaps
+## Proposed Future Features
+
+> Status key: 💡 Proposed · 🔍 Needs design · 🏗 Ready to build · ⏸ Deferred
+
+---
+
+### Multi-Site / Multi-Branch Support 💡
+**What:** A single tenant (company) operates multiple physical locations or branches. Each site has its own inventory, staff, and invoices while sharing one subscription, one chart of accounts, and consolidated financials.
+
+**Design summary (agreed 2026-05-20):**
+- Add `sites` table with `(tenant_id, name, code, address, is_active)`
+- Add nullable `site_id` to: `users`, `inventory_items`, `invoices`, `employees`, `journal_entries` — null = company-wide
+- `SiteScope` as an opt-in scope (not global) activated via `app('currentSite')` — tenant scope remains outermost isolation boundary
+- User access: nullable `site_id` on user; null = sees all sites (admin); non-null = scoped to that site only
+- Plan limits count **across all sites** for the tenant, never per-site
+- Inter-site stock transfers need a dedicated `stock_transfers` model (both `from_site_id` + `to_site_id`) to avoid double-counting costs in consolidated reports
+- GL entries must carry `site_id` to support per-site P&L drill-down
+
+**Implementation order:** sites table → site_id on users + inventory + invoices → SiteScope middleware → consolidated reporting baseline → per-site GL posting
+
+**Risk:** Forgetting `site_id` on a new model creates silent cross-site data leakage. Requires a checklist item in the dev process once adopted.
+
+---
+
+### Enterprise Platform Invoice Emails 🔍
+**What:** When a superadmin marks a platform invoice as "Sent", it should email the invoice PDF to the tenant's admin.
+
+**Current state:** `PlatformInvoiceController::send()` has a `// TODO: dispatch SendPlatformInvoiceEmail job` comment. The mark-sent action works but no email is dispatched.
+
+**Needed:** `SendPlatformInvoiceEmail` queued Mailable (attach PDF via DomPDF), dispatched from `PlatformInvoiceController::send()`. Follow the same pattern as `SendInvoiceEmail`.
+
+---
+
+### API Access (Public API for Tenants) 🔍
+**What:** Tenants on plans with `api_access = true` can generate API keys and access company data programmatically (invoices, customers, transactions).
+
+**Current state:** `api_access` feature flag exists on plans, `routes/api.php` exists but has no `plan:api_access` gate, no API key model or management UI.
+
+**Needed:** `api_keys` table, key generation UI in Settings, `ApiKeyMiddleware` to authenticate bearer tokens, `plan:api_access` applied to `routes/api.php`, rate limiting per key.
+
+---
+
+### Quote Public Links 🔍
+**What:** Customers receive a shareable link to view and accept a quote online (same as `/inv/{token}` for invoices).
+
+**Current state:** Only invoices have `public_token` UUID and `GET /inv/{token}` public route. Quotes have no equivalent.
+
+**Needed:** `public_token` on quotes table (migration), generate on creation, `GET /q/{token}` public route + `PublicQuoteController`, view similar to `public-invoice.blade.php`.
+
+---
+
+### Vendor Quick-Create in Invoice / Quote Forms 🏗
+**What:** When creating an invoice or quote, users can create a new vendor inline without leaving the form.
+
+**Current state:** `POST /vendors/quick` route exists but there is no AJAX call wired in the invoice/quote create forms.
+
+**Needed:** Connect the existing route to an Alpine.js modal on the invoice/quote create forms (same UX as customer quick-create if that exists).
+
+---
+
+### Accountant / Partner Programme 💡
+**What:** Accounting firms managing multiple SME clients get a single login to switch between client companies, a partner discount on billing, and bulk invoice capabilities.
+
+**Design considerations:**
+- `partner_firms` table with own subscription tier
+- Many-to-many between partner firm and tenants (`firm_tenant_access`)
+- Impersonation-style context switch (similar to existing superadmin impersonation)
+- Consolidated billing: firm pays one invoice covering all managed tenants
+
+---
+
+### Advanced Reports Plan Gate 🏗
+**What:** Gate Ledger, Balance Sheet, and Trial Balance behind `plan:advanced_reports` middleware.
+
+**Current state:** `advanced_reports` feature flag exists on plans and `RequiresPlan` middleware is available, but no report routes are gated. Define which reports require it and apply `->middleware('plan:advanced_reports')` in `routes/web.php`.
+
+---
+
+### Bank Reconciliation 💡
+**What:** Match imported bank statement lines against existing transactions. Flag unmatched items. Post auto-reconciliation journal entries.
+
+**Needed:** `bank_statements` table, CSV/OFX import, matching engine, reconciliation UI. Depends on bank accounts already existing (`bank_accounts` table is in place).
+
+---
+
+### Document / Attachment Management 💡
+**What:** Attach supporting documents (receipts, contracts, supplier invoices) to transactions, expenses, and work orders.
+
+**Needed:** `attachments` polymorphic table, S3/local storage driver, upload UI component, viewer in show pages. Would benefit maintenance work orders and expense claims most.
+
+---
+
+### VAT Filing Due Date Accuracy 🏗
+**What:** The top-bar VAT deadline banner uses a hardcoded day-of-month and doesn't account for weekends, public holidays, or whether this month's deadline has already passed.
+
+**Needed:** Replace the static `VatService::VAT_FILING_DAY` calculation with a proper business-day-aware next-deadline helper. Optionally load Nigerian public holidays from a config file.
+
+---
 
 - [ ] **Quote monthly limit** — invoices enforce `withinLimit('invoices_per_month')` in `QuoteController::store()` but quotes are not currently limited. Decide: share the same counter, or add a separate `quotes_per_month` limit key.
 - [ ] **Customer limit** — `Plan` supports a `customers` limit key and `Tenant::withinLimit` can check it, but `CustomerController::store()` has no limit enforcement.
