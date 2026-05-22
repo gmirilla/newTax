@@ -28,8 +28,10 @@ use App\Policies\MaintenanceWorkOrderPolicy;
 use App\Policies\ProductionOrderPolicy;
 use App\Policies\RestockRequestPolicy;
 use App\Policies\SalesOrderPolicy;
+use App\View\Composers\SystemNotificationComposer;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -65,6 +67,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MaintenanceWorkOrder::class, MaintenanceWorkOrderPolicy::class);
         Gate::policy(MaintenanceBreakdown::class, MaintenanceBreakdownPolicy::class);
         Gate::policy(MaintenanceSchedule::class, MaintenanceWorkOrderPolicy::class);
+
+        // View composers
+        View::composer('layouts.app', SystemNotificationComposer::class);
 
         // Force HTTPS in production
         if ($this->app->environment('production')) {

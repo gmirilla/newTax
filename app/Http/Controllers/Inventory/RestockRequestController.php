@@ -35,8 +35,8 @@ class RestockRequestController extends Controller
             ->with(['item', 'requester', 'approver', 'productionOrder'])
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), fn($q) => $q->whereHas('item', function ($q) use ($request) {
-                $q->where('name', 'ilike', '%' . $request->search . '%')
-                  ->orWhere('sku',  'ilike', '%' . $request->search . '%');
+                $q->where('name', db_like(), '%' . $request->search . '%')
+                  ->orWhere('sku',  db_like(), '%' . $request->search . '%');
             }))
             ->when($request->filled('from'), fn($q) => $q->whereDate('created_at', '>=', $request->from))
             ->when($request->filled('to'),   fn($q) => $q->whereDate('created_at', '<=', $request->to));

@@ -79,9 +79,9 @@ class SuperAdminController extends Controller
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'ilike', '%' . $request->search . '%')
-                  ->orWhere('email', 'ilike', '%' . $request->search . '%')
-                  ->orWhere('tin', 'ilike', '%' . $request->search . '%');
+                $q->where('name', db_like(), '%' . $request->search . '%')
+                  ->orWhere('email', db_like(), '%' . $request->search . '%')
+                  ->orWhere('tin', db_like(), '%' . $request->search . '%');
             });
         }
 
@@ -186,8 +186,8 @@ class SuperAdminController extends Controller
 
         if ($request->filled('tenant')) {
             $query->whereHas('tenant', fn($q) =>
-                $q->where('name', 'ilike', '%' . $request->tenant . '%')
-                  ->orWhere('email', 'ilike', '%' . $request->tenant . '%')
+                $q->where('name', db_like(), '%' . $request->tenant . '%')
+                  ->orWhere('email', db_like(), '%' . $request->tenant . '%')
             );
         }
 
@@ -259,8 +259,8 @@ class SuperAdminController extends Controller
         if ($request->filled('search')) {
             $term = $request->search;
             $query->whereHas('tenant', fn($q) =>
-                $q->where('name', 'ilike', "%{$term}%")
-                  ->orWhere('email', 'ilike', "%{$term}%")
+                $q->where('name', db_like(), "%{$term}%")
+                  ->orWhere('email', db_like(), "%{$term}%")
             );
         }
 

@@ -121,12 +121,6 @@
                 <a href="{{ route('register') }}" class="text-[#D4AF37] font-600 hover:underline ml-1">Start free trial</a>
             </p>
 
-            {{-- Demo credentials --}}
-            <div class="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p class="text-xs font-700 text-amber-800 mb-2">Demo Credentials</p>
-                <p class="text-xs text-amber-700">Admin: admin@adetokunboventures.ng / password</p>
-                <p class="text-xs text-amber-700 mt-0.5">Mid-size co: admin@chukwuemekatrading.com / password</p>
-            </div>
         </div>
     </div>
 </div>

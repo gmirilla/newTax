@@ -35,8 +35,10 @@
     .badge-pending  { background: #fef9c3; color: #854d0e; }
     .badge-refunded { background: #ede9fe; color: #5b21b6; }
 
-    .badge-cycle-yearly  { background: #eff6ff; color: #1d4ed8; }
-    .badge-cycle-monthly { background: #f3f4f6; color: #4b5563; }
+    .badge-cycle-yearly    { background: #eff6ff; color: #1d4ed8; }
+    .badge-cycle-annually  { background: #eff6ff; color: #1d4ed8; }
+    .badge-cycle-quarterly { background: #f5f3ff; color: #6d28d9; }
+    .badge-cycle-monthly   { background: #f3f4f6; color: #4b5563; }
 
     tfoot td { padding: 5px 7px; font-size: 8px; font-weight: bold; background: #f0fdf4; border-top: 2px solid #d1fae5; }
 

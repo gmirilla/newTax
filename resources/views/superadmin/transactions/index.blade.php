@@ -145,8 +145,11 @@
                         <td class="px-5 py-3 text-gray-700">{{ $payment->plan?->name ?? '—' }}</td>
                         <td class="px-5 py-3 text-gray-500">{{ $payment->typeLabel() }}</td>
                         <td class="px-5 py-3 text-center">
-                            @if(($payment->billing_cycle ?? 'monthly') === 'yearly')
+                            @php $cycle = $payment->billing_cycle ?? 'monthly'; @endphp
+                            @if(in_array($cycle, ['yearly', 'annually']))
                             <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">Annual</span>
+                            @elseif($cycle === 'quarterly')
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700">Quarterly</span>
                             @else
                             <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Monthly</span>
                             @endif

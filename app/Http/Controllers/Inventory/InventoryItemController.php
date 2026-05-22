@@ -29,9 +29,9 @@ class InventoryItemController extends Controller
             ->with('category')
             ->when($request->filled('search'), function ($q) use ($request) {
                 $q->where(function ($q) use ($request) {
-                    $q->where('name', 'ilike', '%' . $request->search . '%')
-                      ->orWhere('sku', 'ilike', '%' . $request->search . '%')
-                      ->orWhere('description', 'ilike', '%' . $request->search . '%');
+                    $q->where('name', db_like(), '%' . $request->search . '%')
+                      ->orWhere('sku', db_like(), '%' . $request->search . '%')
+                      ->orWhere('description', db_like(), '%' . $request->search . '%');
                 });
             })
             ->when($request->filled('category'), fn($q) => $q->where('category_id', $request->category))

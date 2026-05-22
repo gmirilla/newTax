@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\EnterpriseAgreement;
 use App\Models\PlatformInvoice;
+use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -116,6 +117,25 @@ class PlatformInvoiceController extends Controller
             ...$validated,
             'status'  => PlatformInvoice::STATUS_PAID,
             'paid_at' => $validated['paid_at'],
+        ]);
+
+        // Record in subscription_payments so it appears in the superadmin transaction view
+        $invoice->loadMissing('agreement');
+        SubscriptionPayment::create([
+            'tenant_id'    => $tenant->id,
+            'plan_id'      => $invoice->agreement?->plan_id,
+            'amount'       => $invoice->amount,
+            'currency'     => 'NGN',
+            'type'         => 'enterprise',
+            'billing_cycle'=> $invoice->agreement?->billing_cycle ?? 'monthly',
+            'status'       => 'success',
+            'paid_at'      => $validated['paid_at'],
+            'metadata'     => [
+                'invoice_number'    => $invoice->invoice_number,
+                'payment_method'    => $validated['payment_method'],
+                'payment_reference' => $validated['payment_reference'] ?? null,
+                'platform_invoice_id' => $invoice->id,
+            ],
         ]);
 
         AuditLog::create([

@@ -20,8 +20,8 @@ class SupplierBillController extends Controller
             ->with(['restockRequest.item', 'payments'])
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
             ->when($request->filled('search'), fn($q) => $q->where(function ($q) use ($request) {
-                $q->where('invoice_number', 'ilike', '%' . $request->search . '%')
-                  ->orWhere('notes', 'ilike', '%' . $request->search . '%');
+                $q->where('invoice_number', db_like(), '%' . $request->search . '%')
+                  ->orWhere('notes', db_like(), '%' . $request->search . '%');
             }))
             ->when($request->filled('from'), fn($q) => $q->whereDate('invoice_date', '>=', $request->from))
             ->when($request->filled('to'),   fn($q) => $q->whereDate('invoice_date', '<=', $request->to));
