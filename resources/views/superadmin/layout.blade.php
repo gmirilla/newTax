@@ -47,7 +47,11 @@
                 <span>🏦</span>Enterprise
             </a>
             {!! $navItem('superadmin.transactions', 'Transactions', '💰') !!}
-            {!! $navItem('superadmin.notifications.index', 'Notifications', '🔔') !!}
+            <a href="{{ route('superadmin.notifications.index') }}"
+               class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                      {{ request()->routeIs('superadmin.notifications*') ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                <span>🔔</span>Notifications
+            </a>
             {!! $navItem('superadmin.audit-logs', 'Audit Logs', '📋') !!}
 
             <div class="pt-4 mt-4 border-t border-gray-700">

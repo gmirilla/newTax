@@ -25,10 +25,12 @@ class SystemNotificationController extends Controller
 
     public function create(): View
     {
-        $plans   = Plan::where('is_active', true)->orderBy('sort_order')->get();
-        $tenants = Tenant::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
+        $plans          = Plan::where('is_active', true)->orderBy('sort_order')->get();
+        $tenants        = Tenant::where('is_active', true)->orderBy('name')->get(['id', 'name', 'email']);
+        $preTargetType  = request('target_type', 'all');
+        $preTenantId    = (int) request('tenant_id', 0);
 
-        return view('superadmin.notifications.create', compact('plans', 'tenants'));
+        return view('superadmin.notifications.create', compact('plans', 'tenants', 'preTargetType', 'preTenantId'));
     }
 
     public function store(Request $request): RedirectResponse
