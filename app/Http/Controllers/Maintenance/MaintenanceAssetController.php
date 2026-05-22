@@ -21,9 +21,9 @@ class MaintenanceAssetController extends Controller
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('asset_name', 'ilike', "%{$search}%")
-                  ->orWhere('asset_code', 'ilike', "%{$search}%")
-                  ->orWhere('serial_number', 'ilike', "%{$search}%");
+                $q->where('asset_name', db_like(), "%{$search}%")
+                  ->orWhere('asset_code', db_like(), "%{$search}%")
+                  ->orWhere('serial_number', db_like(), "%{$search}%");
             });
         }
 

@@ -1,6 +1,6 @@
 # AccountTaxNG — Known Gaps & Follow-Through Tracker
 
-Updated: 2026-05-20. Tick items off as each is completed.
+Updated: 2026-05-21. Tick items off as each is completed.
 
 Phase 3 (Trial Flow) completed 2026-04-30.
 
@@ -171,6 +171,59 @@ Everything since commit `251f0fb` (Added Company Logo support) is unstaged. A si
 **What:** The top-bar VAT deadline banner uses a hardcoded day-of-month and doesn't account for weekends, public holidays, or whether this month's deadline has already passed.
 
 **Needed:** Replace the static `VatService::VAT_FILING_DAY` calculation with a proper business-day-aware next-deadline helper. Optionally load Nigerian public holidays from a config file.
+
+---
+
+### Android Mobile App (Flutter) 🔍
+**What:** A native Android (+ iOS) companion app for AccountTaxNG with limited offline capability and background sync. Separate repository — does not modify the existing Laravel project beyond adding an API layer.
+
+**Stack decision (agreed 2026-05-21):**
+- **Flutter** — cross-platform Android + iOS, single codebase
+- **Drift** — type-safe SQLite ORM for local offline storage
+- **Riverpod** — state management
+- **Dio** — HTTP client with interceptors for token refresh and offline request queuing
+- **flutter_workmanager** — background sync when app is backgrounded or network is restored
+- **flutter_secure_storage** — Sanctum token storage
+- **Laravel Sanctum** — mobile token auth on the existing Laravel app (30-day expiry + refresh)
+
+**Offline capability scope:**
+| Feature | Offline | Notes |
+|---|---|---|
+| Create / edit invoices | ✅ | Queued, synced on reconnect |
+| Create / edit expenses | ✅ | Queued |
+| View customers, vendors | ✅ | Cached from last sync |
+| Record payments | ✅ | Queued |
+| View dashboard / reports | ✅ | Cached snapshot |
+| Send invoice email | ❌ | Queued — fires when online |
+| FIRS submission | ❌ | Always requires connection |
+| Subscription / billing | ❌ | Always requires connection |
+| File attachments | ❌ | Deferred to v2 |
+
+**Sync strategy:** Timestamp-based differential sync. Client POSTs `{ last_synced_at, mutations[] }` to `POST /api/v1/sync`; server returns all records modified since `last_synced_at`. Conflict resolution: last-write-wins on `updated_at`; conflicts surfaced in the UI, never silently merged. Invoice sequential numbers (`INV-YYYYMM-NNNN`) are always server-assigned — mobile creates with a temporary UUID local ID, server returns the real number on first sync.
+
+**Laravel additions required (routes/api.php):**
+- `POST /api/v1/auth/login` + `POST /api/v1/auth/logout` + `GET /api/v1/auth/user`
+- CRUD under `auth:sanctum` for invoices, customers, expenses, payments
+- `GET /api/v1/plans/limits` — returns current tenant plan limits for local enforcement
+- `POST /api/v1/sync` — batch mutations in, delta out
+- All routes gated by existing `plan:feature` middleware — no new enforcement logic needed
+
+**Key design constraints:**
+- Tenant resolved from `auth()->user()->tenant_id` on every API request — same as web; global tenant scope applies identically
+- Plan limits checked locally (UX) but enforced server-side on every API write (security)
+- Never let the mobile app generate sequential invoice/quote numbers
+- `device_id` column on syncable records for conflict attribution
+
+**Build order:**
+1. Laravel API layer — Sanctum setup, `/api/v1` auth + CRUD routes, sync endpoint
+2. Flutter project scaffold — auth flow, Drift schema matching server models, Dio + Riverpod wiring
+3. Online-only mode — prove full API round-trip before adding offline complexity
+4. Offline write queue — mutations written to local Drift DB first, flushed to server on reconnect
+5. Differential sync — `last_synced_at` pull on app foreground and workmanager background tick
+6. Conflict UI — surface unresolved conflicts (same record edited on two devices while offline)
+7. v2: file attachments, mandate-based recurring payments
+
+**Secondary gateway note:** Flutterwave is the recommended second payment gateway for the mobile billing flow (parallel to Paystack; same Bearer-token pattern; native Payment Plans for recurring). Monnify deferred — its OAuth2 token refresh and mandate flow add complexity better suited to v2.
 
 ---
 

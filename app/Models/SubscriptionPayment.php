@@ -36,6 +36,7 @@ class SubscriptionPayment extends Model
             'upgrade_proration' => 'Upgrade (pro-rated)' . $cycle,
             'subscription'      => 'Subscription' . $cycle,
             'manual'            => 'Manual',
+            'enterprise'        => 'Enterprise Invoice',
             default             => ucfirst($this->type),
         };
     }

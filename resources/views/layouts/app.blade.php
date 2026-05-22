@@ -279,6 +279,53 @@
                     </span>
                     <span class="hidden sm:block text-sm text-gray-500">₦ NGN</span>
 
+                    {{-- Notification bell --}}
+                    <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button" @click="open = !open"
+                                class="relative inline-flex items-center justify-center h-8 w-8 rounded-full text-gray-500 hover:bg-gray-100 focus:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            @if($unreadNotificationCount > 0)
+                            <span data-notif-badge class="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                                {{ $unreadNotificationCount > 9 ? '9+' : $unreadNotificationCount }}
+                            </span>
+                            @endif
+                        </button>
+
+                        <div x-show="open" x-cloak x-transition
+                             class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <span class="text-sm font-semibold text-gray-800">Notifications</span>
+                                @if($unreadNotificationCount > 0)
+                                <span class="text-xs text-gray-400">{{ $unreadNotificationCount }} unread</span>
+                                @endif
+                            </div>
+                            @if($systemNotifications->isEmpty())
+                            <p class="px-4 py-6 text-center text-sm text-gray-400">You're all caught up!</p>
+                            @else
+                            <ul class="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                                @foreach($systemNotifications as $sn)
+                                @php $dotColor = ['info'=>'bg-blue-500','warning'=>'bg-amber-500','critical'=>'bg-red-500','success'=>'bg-green-500'][$sn->type] ?? 'bg-blue-500'; @endphp
+                                <li class="flex gap-3 px-4 py-3 hover:bg-gray-50" id="sn-{{ $sn->id }}">
+                                    <span class="mt-1.5 h-2 w-2 rounded-full shrink-0 {{ $dotColor }}"></span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 truncate">{{ $sn->title }}</p>
+                                        <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ $sn->message }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ $sn->send_at?->diffForHumans() }}</p>
+                                    </div>
+                                    <button type="button" title="Dismiss"
+                                            onclick="dismissNotification({{ $sn->id }})"
+                                            class="text-gray-300 hover:text-gray-500 shrink-0 mt-0.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </li>
+                                @endforeach
+                            </ul>
+                            @endif
+                        </div>
+                    </div>
+
                     {{-- Top-bar user avatar dropdown --}}
                     <div class="relative" x-data="{ open: false }" @click.outside="open = false">
                         <button type="button" @click="open = !open"
@@ -404,6 +451,25 @@
             @endif
         </div>
 
+        {{-- ── System notification banners ──────────────────────────────────────── --}}
+        @foreach($systemNotifications->where('type', 'critical')->take(1) as $sn)
+        @php
+            $bannerColors = ['info'=>'bg-blue-600','warning'=>'bg-amber-500','critical'=>'bg-red-600','success'=>'bg-green-600'];
+            $bc = $bannerColors[$sn->type] ?? 'bg-blue-600';
+        @endphp
+        <div id="snbanner-{{ $sn->id }}"
+             class="{{ $bc }} text-white px-4 py-2.5 flex items-center justify-between gap-4 text-sm">
+            <div class="flex items-center gap-2 min-w-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                <span class="font-semibold">{{ $sn->title }}:</span>
+                <span class="truncate opacity-90">{{ Str::limit($sn->message, 120) }}</span>
+            </div>
+            <button onclick="dismissNotification({{ $sn->id }})" class="shrink-0 opacity-75 hover:opacity-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        @endforeach
+
         {{-- ── Page content ─────────────────────────────────────────────────────── --}}
         <main class="flex-1 pb-8">
             <div class="px-4 py-4 md:px-6">
@@ -415,6 +481,28 @@
 </div>
 
 @stack('scripts')
+<script>
+function dismissNotification(id) {
+    fetch('/notifications/' + id + '/read', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+        },
+    }).then(() => {
+        ['sn-' + id, 'snbanner-' + id].forEach(function(elId) {
+            var el = document.getElementById(elId);
+            if (el) el.remove();
+        });
+        var badge = document.querySelector('[data-notif-badge]');
+        if (badge) {
+            var count = parseInt(badge.textContent) - 1;
+            if (count <= 0) badge.remove();
+            else badge.textContent = count > 9 ? '9+' : count;
+        }
+    });
+}
+</script>
 </body>
 
 </html>

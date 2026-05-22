@@ -11,11 +11,13 @@ use App\Http\Controllers\FirsOnboardingController;
 use App\Http\Controllers\InviteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\NotificationReadController;
 use App\Http\Controllers\SuperAdmin\EnterpriseAgreementController;
 use App\Http\Controllers\SuperAdmin\EnterpriseController;
 use App\Http\Controllers\SuperAdmin\PlanController;
 use App\Http\Controllers\SuperAdmin\PlatformInvoiceController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
+use App\Http\Controllers\SuperAdmin\SystemNotificationController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\QuoteController;
@@ -95,6 +97,9 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
         Route::get('/billing/callback',          [BillingController::class, 'callback'])->name('billing.callback');
         Route::post('/billing/downgrade/{plan}', [BillingController::class, 'downgrade'])->name('billing.downgrade');
         Route::post('/billing/cancel',           [BillingController::class, 'cancel'])->name('billing.cancel');
+
+        // System notification dismissal
+        Route::post('/notifications/{notification}/read', [NotificationReadController::class, 'store'])->name('notifications.read');
 
         // Company settings
         Route::prefix('settings')->name('settings.')->group(function () {
@@ -431,6 +436,10 @@ Route::middleware(['auth', 'superadmin'])
             Route::post('/remind',            [SuperAdminController::class, 'sendReminder'])->name('remind');
             Route::post('/impersonate',       [SuperAdminController::class, 'impersonate'])->name('impersonate');
         });
+
+        // System notifications
+        Route::resource('notifications', SystemNotificationController::class)
+            ->except(['edit', 'update']);
 
         // Enterprise billing overview
         Route::get('/enterprise', [EnterpriseController::class, 'index'])->name('enterprise.index');

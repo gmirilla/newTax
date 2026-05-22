@@ -17,8 +17,14 @@ class PaystackWebhookController extends Controller
     public function handle(Request $request): JsonResponse
     {
         // ── 1. Verify HMAC-SHA512 signature ──────────────────────────────────
+        $secretKey = config('paystack.secret_key');
+        if (empty($secretKey)) {
+            Log::error('Paystack webhook: PAYSTACK_SECRET_KEY not configured');
+            return response()->json(['error' => 'Webhook not configured'], 500);
+        }
+
         $signature = $request->header('x-paystack-signature', '');
-        $computed  = hash_hmac('sha512', $request->getContent(), config('paystack.secret_key'));
+        $computed  = hash_hmac('sha512', $request->getContent(), $secretKey);
 
         if (!hash_equals($computed, $signature)) {
             Log::warning('Paystack webhook: invalid signature', ['ip' => $request->ip()]);
@@ -38,13 +44,17 @@ class PaystackWebhookController extends Controller
         }
 
         // ── 3. Log the incoming event ─────────────────────────────────────────
-        $log = WebhookEvent::create([
-            'source'     => 'paystack',
-            'event_type' => $eventType,
-            'event_id'   => $eventId ?: null,
-            'payload'    => $payload,
-            'status'     => 'processing',
-        ]);
+        try {
+            $log = WebhookEvent::create([
+                'source'     => 'paystack',
+                'event_type' => $eventType,
+                'event_id'   => $eventId ?: null,
+                'payload'    => $payload,
+                'status'     => 'processing',
+            ]);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+            return response()->json(['status' => 'already_processing']);
+        }
 
         // ── 4. Dispatch to handler ────────────────────────────────────────────
         try {
@@ -169,11 +179,19 @@ class PaystackWebhookController extends Controller
 
     /**
      * Invoice updated — only act when the invoice has been paid (subscription renewal).
+     * Paystack invoice.update nests the actual charge inside data.transaction, so we
+     * remap it into the shape handleChargeSuccess expects before delegating.
      */
     private function handleInvoiceUpdate(array $data): void
     {
         if (($data['status'] ?? '') !== 'success') return;
-        $this->handleChargeSuccess($data);
+
+        // Merge transaction-level fields (reference, amount, currency) with the
+        // invoice envelope so resolveTenant() and recordPayment() find the right keys.
+        $transaction = $data['transaction'] ?? [];
+        $normalized  = array_merge($data, $transaction);
+
+        $this->handleChargeSuccess($normalized);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

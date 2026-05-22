@@ -47,6 +47,7 @@
                 <span>🏦</span>Enterprise
             </a>
             {!! $navItem('superadmin.transactions', 'Transactions', '💰') !!}
+            {!! $navItem('superadmin.notifications.index', 'Notifications', '🔔') !!}
             {!! $navItem('superadmin.audit-logs', 'Audit Logs', '📋') !!}
 
             <div class="pt-4 mt-4 border-t border-gray-700">

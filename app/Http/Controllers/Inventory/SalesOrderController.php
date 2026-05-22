@@ -42,8 +42,8 @@ class SalesOrderController extends Controller
             ->when($request->filled('from'), fn($q) => $q->whereDate('sale_date', '>=', $request->from))
             ->when($request->filled('to'),   fn($q) => $q->whereDate('sale_date', '<=', $request->to))
             ->when($request->filled('search'), fn($q) => $q->where(function ($q) use ($request) {
-                $q->where('order_number', 'ilike', '%'.$request->search.'%')
-                  ->orWhere('customer_name', 'ilike', '%'.$request->search.'%');
+                $q->where('order_number', db_like(), '%'.$request->search.'%')
+                  ->orWhere('customer_name', db_like(), '%'.$request->search.'%');
             }));
 
         $orders = $query->orderByDesc('created_at')->paginate(25)->withQueryString();

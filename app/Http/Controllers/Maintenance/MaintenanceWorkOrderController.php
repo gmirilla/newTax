@@ -23,8 +23,8 @@ class MaintenanceWorkOrderController extends Controller
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('work_order_number', 'ilike', "%{$search}%")
-                  ->orWhere('title', 'ilike', "%{$search}%");
+                $q->where('work_order_number', db_like(), "%{$search}%")
+                  ->orWhere('title', db_like(), "%{$search}%");
             });
         }
 
