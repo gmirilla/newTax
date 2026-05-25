@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use App\Models\SubscriptionPayment;
 
 class Tenant extends Model
@@ -21,6 +22,8 @@ class Tenant extends Model
         'is_professional_firm',
         'plan_id', 'next_plan_id', 'subscription_status', 'billing_cycle', 'trial_ends_at',
         'paystack_customer_id', 'paystack_subscription_code',
+        'referral_code', 'referred_by_code', 'referral_credit_ngn',
+        'acquisition_source', 'utm_source', 'utm_medium', 'utm_campaign',
     ];
 
     protected $casts = [
@@ -28,8 +31,9 @@ class Tenant extends Model
         'vat_registered'         => 'boolean',
         'is_active'              => 'boolean',
         'is_professional_firm'   => 'boolean',
-        'subscription_expires_at'=> 'datetime',
-        'trial_ends_at'          => 'datetime',
+        'subscription_expires_at' => 'datetime',
+        'trial_ends_at'           => 'datetime',
+        'referral_credit_ngn'     => 'decimal:2',
     ];
 
     // Nigerian tax thresholds — 2026 (Finance Act 2025)
@@ -58,6 +62,34 @@ class Tenant extends Model
     public function enterpriseAgreements(): HasMany
     {
         return $this->hasMany(EnterpriseAgreement::class);
+    }
+
+    public function referralsMade(): HasMany
+    {
+        return $this->hasMany(Referral::class, 'referrer_tenant_id');
+    }
+
+    public function referralCreditLedger(): HasMany
+    {
+        return $this->hasMany(ReferralCreditLedger::class);
+    }
+
+    public function generateReferralCode(): string
+    {
+        do {
+            $code = strtoupper(Str::random(8));
+        } while (static::where('referral_code', $code)->exists());
+
+        $this->update(['referral_code' => $code]);
+
+        return $code;
+    }
+
+    public function referralLink(): string
+    {
+        $code = $this->referral_code ?? $this->generateReferralCode();
+
+        return route('register') . '?ref=' . $code;
     }
 
     public function platformInvoices(): HasMany

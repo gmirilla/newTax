@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Plan;
+use App\Models\Referral;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -21,21 +22,34 @@ class TenancyService
     public function registerTenant(array $tenantData, array $adminData): array
     {
         return DB::transaction(function () use ($tenantData, $adminData) {
+            $referralCode = $tenantData['referred_by_code'] ?? null;
+
+            // Validate referral code exists before using it
+            $referrerTenant = $referralCode
+                ? Tenant::where('referral_code', $referralCode)->first()
+                : null;
+
             $tenant = Tenant::create([
-                'name'            => $tenantData['name'],
-                'slug'            => Str::slug($tenantData['name']) . '-' . Str::random(4),
-                'email'           => $tenantData['email'],
-                'phone'           => $tenantData['phone'] ?? null,
-                'address'         => $tenantData['address'] ?? null,
-                'city'            => $tenantData['city'] ?? null,
-                'state'           => $tenantData['state'] ?? null,
-                'tin'             => $tenantData['tin'] ?? null,
-                'rc_number'       => $tenantData['rc_number'] ?? null,
-                'business_type'   => $tenantData['business_type'] ?? 'limited_liability',
-                'annual_turnover' => $tenantData['annual_turnover'] ?? 0,
-                'currency'        => 'NGN',
-                'subscription_plan' => 'free',
-                'subscription_status' => 'active',
+                'name'               => $tenantData['name'],
+                'slug'               => Str::slug($tenantData['name']) . '-' . Str::random(4),
+                'email'              => $tenantData['email'],
+                'phone'              => $tenantData['phone'] ?? null,
+                'address'            => $tenantData['address'] ?? null,
+                'city'               => $tenantData['city'] ?? null,
+                'state'              => $tenantData['state'] ?? null,
+                'tin'                => $tenantData['tin'] ?? null,
+                'rc_number'          => $tenantData['rc_number'] ?? null,
+                'business_type'      => $tenantData['business_type'] ?? 'limited_liability',
+                'annual_turnover'    => $tenantData['annual_turnover'] ?? 0,
+                'currency'           => 'NGN',
+                'subscription_plan'  => 'free',
+                'subscription_status'=> 'active',
+                'referral_code'      => strtoupper(Str::random(8)),
+                'referred_by_code'   => $referrerTenant ? $referralCode : null,
+                'acquisition_source' => $tenantData['acquisition_source'] ?? null,
+                'utm_source'         => $tenantData['utm_source'] ?? null,
+                'utm_medium'         => $tenantData['utm_medium'] ?? null,
+                'utm_campaign'       => $tenantData['utm_campaign'] ?? null,
             ]);
 
             // Determine tax category based on turnover
@@ -54,6 +68,16 @@ class TenancyService
                     null,
                     now()->addDays($trialPlan->trial_days)
                 );
+            }
+
+            // Create referral record if a valid referrer was found
+            if ($referrerTenant) {
+                Referral::create([
+                    'referrer_tenant_id' => $referrerTenant->id,
+                    'referee_tenant_id'  => $tenant->id,
+                    'status'             => Referral::STATUS_PENDING,
+                    'reward_ngn'         => Referral::REWARD_NGN,
+                ]);
             }
 
             // Create admin user
