@@ -3,7 +3,7 @@
 @section('page-title', 'New Notification')
 
 @section('content')
-<div class="max-w-2xl mx-auto space-y-6" x-data="notifForm()">
+<div class="max-w-2xl mx-auto space-y-6" x-data="notifForm('{{ old('target_type', $preTargetType) }}')">
 
     <div>
         <h1 class="text-xl font-bold text-gray-900">New Notification</h1>
@@ -54,9 +54,9 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Target <span class="text-red-500">*</span></label>
             <select name="target_type" x-model="targetType" class="rounded-lg border-gray-300 shadow-sm text-sm w-full">
-                <option value="all">All tenants</option>
-                <option value="plan">By plan</option>
-                <option value="specific">Specific tenants</option>
+                <option value="all"      {{ old('target_type', $preTargetType) === 'all'      ? 'selected' : '' }}>All tenants</option>
+                <option value="plan"     {{ old('target_type', $preTargetType) === 'plan'     ? 'selected' : '' }}>By plan</option>
+                <option value="specific" {{ old('target_type', $preTargetType) === 'specific' ? 'selected' : '' }}>Specific tenants</option>
             </select>
         </div>
 
@@ -82,7 +82,7 @@
                 @foreach($tenants as $tenant)
                 <label class="flex items-center gap-2 text-sm cursor-pointer px-3 py-2 hover:bg-gray-50">
                     <input type="checkbox" name="target_ids[]" value="{{ $tenant->id }}"
-                           {{ in_array($tenant->id, old('target_ids', [])) ? 'checked' : '' }}
+                           {{ (in_array($tenant->id, old('target_ids', [])) || $tenant->id === $preTenantId) ? 'checked' : '' }}
                            class="rounded border-gray-300 text-indigo-600">
                     <span class="font-medium text-gray-800">{{ $tenant->name }}</span>
                     <span class="text-gray-400 text-xs">{{ $tenant->email }}</span>
@@ -115,8 +115,8 @@
 </div>
 
 <script>
-function notifForm() {
-    return { targetType: '{{ old('target_type', 'all') }}' };
+function notifForm(initial) {
+    return { targetType: initial || 'all' };
 }
 </script>
 @endsection

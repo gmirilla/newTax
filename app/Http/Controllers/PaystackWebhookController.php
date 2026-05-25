@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
 use App\Models\WebhookEvent;
+use App\Services\ReferralService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -125,7 +126,11 @@ class PaystackWebhookController extends Controller
             $tenant->update(['paystack_customer_id' => $code]);
         }
 
-        $this->recordPayment($tenant, $plan, $data, 'subscription');
+        $payment = $this->recordPayment($tenant, $plan, $data, 'subscription');
+
+        if ($payment) {
+            app(ReferralService::class)->qualifyFirstPayment($tenant, $payment);
+        }
     }
 
     /**
@@ -196,14 +201,14 @@ class PaystackWebhookController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function recordPayment(Tenant $tenant, Plan $plan, array $data, string $type): void
+    private function recordPayment(Tenant $tenant, Plan $plan, array $data, string $type): ?SubscriptionPayment
     {
         $ref = $data['reference'] ?? null;
 
         // Skip if this reference was already logged (callback may have recorded it first)
-        if ($ref && SubscriptionPayment::where('paystack_reference', $ref)->exists()) return;
+        if ($ref && SubscriptionPayment::where('paystack_reference', $ref)->exists()) return null;
 
-        $tenant->subscriptionPayments()->create([
+        return $tenant->subscriptionPayments()->create([
             'plan_id'            => $plan->id,
             'paystack_reference' => $ref,
             'amount'             => ($data['amount'] ?? 0) / 100,

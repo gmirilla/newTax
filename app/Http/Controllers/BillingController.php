@@ -6,6 +6,7 @@ use App\Mail\SubscriptionActivated;
 use App\Mail\SubscriptionCancelled;
 use App\Models\Plan;
 use App\Services\PaystackService;
+use App\Services\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -14,7 +15,10 @@ use Illuminate\View\View;
 
 class BillingController extends Controller
 {
-    public function __construct(private readonly PaystackService $paystackService) {}
+    public function __construct(
+        private readonly PaystackService  $paystackService,
+        private readonly ReferralService  $referralService,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -122,6 +126,34 @@ class BillingController extends Controller
             $amount = $plan->priceForCycle($cycle);
         }
 
+        // Apply referral credit before charging Paystack
+        ['amount' => $amount, 'credit_applied' => $creditApplied] =
+            $this->referralService->applyCredit($tenant, $amount);
+
+        // If credit covers the full amount, skip Paystack entirely
+        if ($amount <= 0) {
+            $tenant->assignPlan($plan, 'active',
+                ($tenant->subscription_expires_at?->isFuture() ? $tenant->subscription_expires_at : now())
+                    ->copy()->addDays($cycle === 'yearly' ? 365 : 31)
+            );
+
+            $payment = $tenant->subscriptionPayments()->create([
+                'plan_id'  => $plan->id,
+                'amount'   => 0,
+                'currency' => 'NGN',
+                'type'     => 'subscription',
+                'status'   => 'success',
+                'billing_cycle' => $cycle,
+                'paid_at'  => now(),
+                'metadata' => ['credit_applied' => $creditApplied, 'fully_covered' => true],
+            ]);
+
+            $this->referralService->linkPaymentToDebit($tenant, $payment);
+
+            return redirect()->route('billing')
+                ->with('success', "Plan activated using ₦" . number_format($creditApplied, 2) . " referral credit.");
+        }
+
         $payload = [
             'email'        => $tenant->email,
             'amount'       => (int) ($amount * 100), // NGN → kobo
@@ -129,12 +161,13 @@ class BillingController extends Controller
             'callback_url' => route('billing.callback'),
             'channels'     => ['card', 'bank', 'ussd', 'bank_transfer'],
             'metadata'     => [
-                'tenant_id'     => $tenant->id,
-                'plan_id'       => $plan->id,
-                'plan_name'     => $plan->name,
-                'billing_cycle' => $cycle,
-                'is_upgrade'    => $isUpgrade,
-                'keep_expiry'   => $isUpgrade ? $tenant->subscription_expires_at?->toISOString() : null,
+                'tenant_id'      => $tenant->id,
+                'plan_id'        => $plan->id,
+                'plan_name'      => $plan->name,
+                'billing_cycle'  => $cycle,
+                'is_upgrade'     => $isUpgrade,
+                'keep_expiry'    => $isUpgrade ? $tenant->subscription_expires_at?->toISOString() : null,
+                'credit_applied' => $creditApplied,
             ],
         ];
 
@@ -212,7 +245,8 @@ class BillingController extends Controller
         $tenant->update($updates);
 
         // Log the payment locally
-        $tenant->subscriptionPayments()->create([
+        $creditApplied = (float) ($data['metadata']['credit_applied'] ?? 0);
+        $payment = $tenant->subscriptionPayments()->create([
             'plan_id'            => $plan->id,
             'paystack_reference' => $reference,
             'amount'             => ($data['amount'] ?? 0) / 100,
@@ -221,7 +255,12 @@ class BillingController extends Controller
             'billing_cycle'      => $billingCycle,
             'status'             => 'success',
             'paid_at'            => now(),
+            'metadata'           => $creditApplied > 0 ? ['credit_applied' => $creditApplied] : null,
         ]);
+
+        if ($creditApplied > 0) {
+            $this->referralService->linkPaymentToDebit($tenant, $payment);
+        }
 
         try {
             Mail::to($tenant->email)->send(new SubscriptionActivated($tenant, $plan, $isUpgrade ? 'upgrade_proration' : 'subscription'));

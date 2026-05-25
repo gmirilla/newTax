@@ -54,7 +54,7 @@
     $navInManufacturing  = request()->routeIs('manufacturing.*');
     $navInMaintenance    = request()->routeIs('maintenance.*');
     $navInReports   = request()->routeIs('reports.*', 'inventory.reports.*');
-    $navInSettings  = request()->routeIs('team.*', 'billing*', 'settings.*');
+    $navInSettings  = request()->routeIs('team.*', 'billing*', 'settings.*', 'referrals.*');
 @endphp
 
 <div class="min-h-full" x-data="{ sidebarOpen: false }">

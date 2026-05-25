@@ -175,6 +175,29 @@
                         </div>
                     </div>
 
+                    <span class="section-label">How did you find us?</span>
+
+                    <div>
+                        <label class="block text-sm font-600 text-[#1E293B] mb-1.5">How did you hear about us?</label>
+                        <select name="acquisition_source" class="input-field">
+                            <option value="">— Select —</option>
+                            <option value="google_search"  {{ old('acquisition_source') === 'google_search'  ? 'selected' : '' }}>Google Search</option>
+                            <option value="social_media"   {{ old('acquisition_source') === 'social_media'   ? 'selected' : '' }}>Social Media</option>
+                            <option value="referral"       {{ old('acquisition_source') === 'referral'       ? 'selected' : '' }}>Friend / Colleague Referral</option>
+                            <option value="word_of_mouth"  {{ old('acquisition_source') === 'word_of_mouth'  ? 'selected' : '' }}>Word of Mouth</option>
+                            <option value="blog"           {{ old('acquisition_source') === 'blog'           ? 'selected' : '' }}>Blog / Article</option>
+                            <option value="event"          {{ old('acquisition_source') === 'event'          ? 'selected' : '' }}>Event / Conference</option>
+                            <option value="other"          {{ old('acquisition_source') === 'other'          ? 'selected' : '' }}>Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-600 text-[#1E293B] mb-1.5">Referral Code <span class="text-[#94A3B8] font-normal">(optional)</span></label>
+                        <input type="text" name="referral_code" value="{{ old('referral_code', $prefillRef ?? '') }}"
+                               placeholder="e.g. ABC12345" maxlength="12" class="input-field" autocomplete="off">
+                        <p class="text-xs text-[#94A3B8] mt-1">Enter a code shared by an existing AccountTaxNG user to link your account.</p>
+                    </div>
+
                     <div class="pt-2">
                         <button type="submit" class="btn-gold w-full py-3.5 rounded-xl text-sm flex items-center justify-center gap-2">
                             Create Free Account

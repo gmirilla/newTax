@@ -12,11 +12,13 @@ use App\Http\Controllers\InviteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\NotificationReadController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\SuperAdmin\EnterpriseAgreementController;
 use App\Http\Controllers\SuperAdmin\EnterpriseController;
 use App\Http\Controllers\SuperAdmin\PlanController;
 use App\Http\Controllers\SuperAdmin\PlatformInvoiceController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
+use App\Http\Controllers\SuperAdmin\ReferralReportController;
 use App\Http\Controllers\SuperAdmin\SystemNotificationController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\InvoiceController;
@@ -100,6 +102,9 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
 
         // System notification dismissal
         Route::post('/notifications/{notification}/read', [NotificationReadController::class, 'store'])->name('notifications.read');
+
+        // Referral dashboard
+        Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals.index');
 
         // Company settings
         Route::prefix('settings')->name('settings.')->group(function () {
@@ -305,6 +310,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::put('/{salesOrder}',                 [SalesOrderController::class, 'update'])->name('update');
                 Route::post('/{salesOrder}/confirm',        [SalesOrderController::class, 'confirm'])->name('confirm');
                 Route::post('/{salesOrder}/cancel',         [SalesOrderController::class, 'cancel'])->name('cancel');
+                Route::get('/{salesOrder}/invoice/pdf',     [SalesOrderController::class, 'invoicePdf'])->name('invoice.pdf');
             });
 
             // Inventory Reports
@@ -440,6 +446,9 @@ Route::middleware(['auth', 'superadmin'])
         // System notifications
         Route::resource('notifications', SystemNotificationController::class)
             ->except(['edit', 'update']);
+
+        // Referral report
+        Route::get('/referrals', [ReferralReportController::class, 'index'])->name('referrals.index');
 
         // Enterprise billing overview
         Route::get('/enterprise', [EnterpriseController::class, 'index'])->name('enterprise.index');

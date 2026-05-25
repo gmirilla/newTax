@@ -169,12 +169,12 @@
         </div>
         <div class="party-to">
             <div class="party-label">Bill To</div>
-            <div class="party-name">{{ $invoice->customer->name }}</div>
+            <div class="party-name">{{ $invoice->customer?->name ?? 'Walk-in Customer' }}</div>
             <div class="party-detail">
-                @if($invoice->customer->address){{ $invoice->customer->address }}<br>@endif
-                @if($invoice->customer->city){{ $invoice->customer->city }}, {{ $invoice->customer->state }}<br>@endif
-                @if($invoice->customer->email){{ $invoice->customer->email }}<br>@endif
-                @if($invoice->customer->tin)TIN: {{ $invoice->customer->tin }}@endif
+                @if($invoice->customer?->address){{ $invoice->customer->address }}<br>@endif
+                @if($invoice->customer?->city){{ $invoice->customer->city }}, {{ $invoice->customer->state }}<br>@endif
+                @if($invoice->customer?->email){{ $invoice->customer->email }}<br>@endif
+                @if($invoice->customer?->tin)TIN: {{ $invoice->customer->tin }}@endif
             </div>
         </div>
     </div>

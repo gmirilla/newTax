@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Account;
 use App\Models\AuditLog;
 use App\Models\BankAccount;
@@ -583,5 +584,19 @@ class SalesOrderController extends Controller
         $next = $last ? ((int) substr($last->order_number, -4)) + 1 : 1;
 
         return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function invoicePdf(SalesOrder $salesOrder)
+    {
+        $this->authorize('view', $salesOrder);
+
+        abort_unless($salesOrder->status === 'confirmed' && $salesOrder->invoice_id, 404);
+
+        $invoice = $salesOrder->invoice()->with(['customer', 'items', 'tenant'])->firstOrFail();
+
+        $pdf = Pdf::loadView('invoices.pdf', compact('invoice'))
+            ->setPaper('a4', 'portrait');
+
+        return $pdf->download("Invoice-{$invoice->invoice_number}.pdf");
     }
 }

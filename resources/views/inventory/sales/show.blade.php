@@ -76,6 +76,13 @@
                 @endcan
             @endif
 
+            @if($salesOrder->status === 'confirmed' && $salesOrder->invoice_id)
+            <a href="{{ route('inventory.sales.invoice.pdf', $salesOrder) }}"
+               class="inline-flex items-center px-3 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-900">
+                Download Invoice PDF
+            </a>
+            @endif
+
             @can('cancel', $salesOrder)
                 @if(in_array($salesOrder->status, ['draft', 'confirmed']))
                 <form method="POST" action="{{ route('inventory.sales.cancel', $salesOrder) }}">
@@ -242,11 +249,17 @@
                 @if($salesOrder->invoice)
                 <div>
                     <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Invoice</p>
-                    <a href="{{ route('invoices.show', $salesOrder->invoice) }}"
-                       class="text-sm font-medium text-green-700 hover:underline">
-                        {{ $salesOrder->invoice->invoice_number }}
-                    </a>
-                    <span class="ml-2 text-xs text-gray-400">{{ ucfirst($salesOrder->invoice->status) }}</span>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('invoices.show', $salesOrder->invoice) }}"
+                           class="text-sm font-medium text-green-700 hover:underline">
+                            {{ $salesOrder->invoice->invoice_number }}
+                        </a>
+                        <span class="text-xs text-gray-400">{{ ucfirst($salesOrder->invoice->status) }}</span>
+                        <a href="{{ route('inventory.sales.invoice.pdf', $salesOrder) }}"
+                           class="text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline">
+                            Download PDF
+                        </a>
+                    </div>
                 </div>
                 @endif
 
