@@ -47,6 +47,18 @@ return [
             'report' => false,
         ],
 
+        // Namecheap shared hosting used as off-site backup destination via SFTP.
+        // Credentials live in .env — see BACKUP_SFTP_* variables.
+        'namecheap_sftp' => [
+            'driver'   => 'sftp',
+            'host'     => env('BACKUP_SFTP_HOST'),
+            'username' => env('BACKUP_SFTP_USERNAME'),
+            'password' => env('BACKUP_SFTP_PASSWORD'),
+            'port'     => env('BACKUP_SFTP_PORT', 22),
+            'root'     => env('BACKUP_SFTP_ROOT', '/home/user/backups'),
+            'timeout'  => 30,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

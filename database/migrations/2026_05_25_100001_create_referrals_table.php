@@ -23,8 +23,10 @@ return new class extends Migration
             $table->index(['referrer_tenant_id', 'status']);
         });
 
-        // Self-referral guard: referrer and referee must be different tenants
-        DB::statement('ALTER TABLE referrals ADD CONSTRAINT chk_no_self_referral CHECK (referrer_tenant_id != referee_tenant_id)');
+        // Self-referral guard — PostgreSQL only (SQLite does not support ADD CONSTRAINT)
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE referrals ADD CONSTRAINT chk_no_self_referral CHECK (referrer_tenant_id != referee_tenant_id)');
+        }
     }
 
     public function down(): void

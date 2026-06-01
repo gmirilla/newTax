@@ -374,6 +374,28 @@
                         Restock History
                         @unless($canInventoryReports)<svg class="ml-auto w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>@endunless
                     </a>
+                    {{-- Advanced reports --}}
+                    <div class="pl-2 border-l border-gray-200 ml-2 mt-1 space-y-0.5">
+                        <p class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold px-2 pt-1 pb-0.5">Advanced</p>
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.slow-moving') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                           class="{{ $sub }} text-[11px] {{ $canInventoryReports ? (request()->routeIs('inventory.reports.slow-moving*') ? $on : $off) : $dim }}">
+                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                            Slow Moving
+                            @unless($canInventoryReports)<svg class="ml-auto w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>@endunless
+                        </a>
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.fast-moving') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                           class="{{ $sub }} text-[11px] {{ $canInventoryReports ? (request()->routeIs('inventory.reports.fast-moving*') ? $on : $off) : $dim }}">
+                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                            Fast Moving
+                            @unless($canInventoryReports)<svg class="ml-auto w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>@endunless
+                        </a>
+                        <a href="{{ $canInventoryReports ? route('inventory.reports.reorder-analysis') : route('billing').'?upgrade_feature=inventory_reports' }}"
+                           class="{{ $sub }} text-[11px] {{ $canInventoryReports ? (request()->routeIs('inventory.reports.reorder-analysis*') ? $on : $off) : $dim }}">
+                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                            Reorder Analysis
+                            @unless($canInventoryReports)<svg class="ml-auto w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>@endunless
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

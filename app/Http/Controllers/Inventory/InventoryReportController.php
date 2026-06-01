@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Exports\Inventory\FastMovingExport;
 use App\Exports\Inventory\LowStockExport;
+use App\Exports\Inventory\ReorderAnalysisExport;
 use App\Exports\Inventory\RestockHistoryExport;
 use App\Exports\Inventory\SalesByItemExport;
 use App\Exports\Inventory\SalesByPeriodExport;
+use App\Exports\Inventory\SlowMovingExport;
 use App\Exports\Inventory\StockMovementsExport;
 use App\Exports\Inventory\StockValuationExport;
 use App\Http\Controllers\Controller;
@@ -404,5 +407,254 @@ class InventoryReportController extends Controller
             ->get();
 
         return [$tenant, $requests, $filters];
+    }
+
+    // ── Slow-Moving Inventory ─────────────────────────────────────────────────
+
+    public function slowMoving(Request $request): View
+    {
+        [$tenant, $items, $filters] = $this->slowMovingData($request);
+        return view('inventory.reports.slow-moving', compact('items', 'filters', 'tenant'));
+    }
+
+    public function slowMovingPdf(Request $request)
+    {
+        [$tenant, $items, $filters] = $this->slowMovingData($request);
+        $pdf = Pdf::loadView('inventory.reports.pdf.slow-moving', compact('items', 'filters', 'tenant'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('Slow_Moving_Inventory_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    public function slowMovingExcel(Request $request)
+    {
+        [$tenant, $items, $filters] = $this->slowMovingData($request);
+        return Excel::download(
+            new SlowMovingExport($items, $filters, $tenant),
+            'Slow_Moving_Inventory_' . now()->format('Y-m-d') . '.xlsx'
+        );
+    }
+
+    private function slowMovingData(Request $request): array
+    {
+        $tenant = $request->user()->tenant;
+
+        $days = (int) $request->input('days', 90);
+        $days = in_array($days, [30, 60, 90, 180, 365]) ? $days : 90;
+        $from = now()->subDays($days)->startOfDay();
+        $to   = now()->endOfDay();
+
+        $filters = ['days' => $days, 'from' => $from->toDateString(), 'to' => $to->toDateString()];
+
+        $items = $this->buildMovingReport($tenant, $from, $to, 'asc');
+
+        return [$tenant, $items, $filters];
+    }
+
+    // ── Fast-Moving Inventory ─────────────────────────────────────────────────
+
+    public function fastMoving(Request $request): View
+    {
+        [$tenant, $items, $filters] = $this->fastMovingData($request);
+        return view('inventory.reports.fast-moving', compact('items', 'filters', 'tenant'));
+    }
+
+    public function fastMovingPdf(Request $request)
+    {
+        [$tenant, $items, $filters] = $this->fastMovingData($request);
+        $pdf = Pdf::loadView('inventory.reports.pdf.fast-moving', compact('items', 'filters', 'tenant'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('Fast_Moving_Inventory_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    public function fastMovingExcel(Request $request)
+    {
+        [$tenant, $items, $filters] = $this->fastMovingData($request);
+        return Excel::download(
+            new FastMovingExport($items, $filters, $tenant),
+            'Fast_Moving_Inventory_' . now()->format('Y-m-d') . '.xlsx'
+        );
+    }
+
+    private function fastMovingData(Request $request): array
+    {
+        $tenant = $request->user()->tenant;
+
+        $days = (int) $request->input('days', 90);
+        $days = in_array($days, [30, 60, 90, 180, 365]) ? $days : 90;
+        $from = now()->subDays($days)->startOfDay();
+        $to   = now()->endOfDay();
+
+        $filters = ['days' => $days, 'from' => $from->toDateString(), 'to' => $to->toDateString()];
+
+        // Fast-moving: only items with at least one sale, sorted DESC
+        $items = $this->buildMovingReport($tenant, $from, $to, 'desc')
+            ->filter(fn($item) => $item->units_sold > 0)
+            ->values();
+
+        return [$tenant, $items, $filters];
+    }
+
+    /**
+     * Shared data builder for slow/fast-moving reports.
+     * Returns a collection of InventoryItem objects enriched with:
+     *   units_sold, transaction_count, revenue, avg_daily_usage, days_since_last_sale, velocity_label
+     */
+    private function buildMovingReport($tenant, Carbon $from, Carbon $to, string $direction)
+    {
+        $daySpan = max(1, $from->diffInDays($to));
+
+        // Aggregate sales in the period per item
+        $salesData = SaleOrderItem::select(
+                'sale_order_items.item_id',
+                DB::raw('SUM(sale_order_items.quantity) AS units_sold'),
+                DB::raw('COUNT(DISTINCT sale_order_items.sale_order_id) AS transaction_count'),
+                DB::raw('SUM(sale_order_items.total) AS revenue'),
+            )
+            ->join('sales_orders', 'sales_orders.id', '=', 'sale_order_items.sale_order_id')
+            ->where('sales_orders.tenant_id', $tenant->id)
+            ->where('sales_orders.status', SalesOrder::STATUS_CONFIRMED)
+            ->whereBetween('sales_orders.sale_date', [$from->toDateString(), $to->toDateString()])
+            ->whereNotNull('sale_order_items.item_id')
+            ->groupBy('sale_order_items.item_id')
+            ->get()
+            ->keyBy('item_id');
+
+        // Last sale date per item (across all time, not just the window)
+        $lastSales = StockMovement::where('tenant_id', $tenant->id)
+            ->where('type', 'sale')
+            ->select('item_id', DB::raw('MAX(created_at) AS last_sale_at'))
+            ->groupBy('item_id')
+            ->pluck('last_sale_at', 'item_id');
+
+        $items = InventoryItem::withoutGlobalScope('tenant')
+            ->where('inventory_items.tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->with('category')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($item) use ($salesData, $lastSales, $daySpan) {
+                $sale = $salesData->get($item->id);
+
+                $item->units_sold        = (float) ($sale->units_sold ?? 0);
+                $item->transaction_count = (int)   ($sale->transaction_count ?? 0);
+                $item->revenue           = (float) ($sale->revenue ?? 0);
+                $item->avg_daily_usage   = round($item->units_sold / $daySpan, 4);
+
+                $lastSaleAt              = $lastSales->get($item->id);
+                $item->last_sale_at      = $lastSaleAt ? Carbon::parse($lastSaleAt) : null;
+                $item->days_since_last_sale = $item->last_sale_at
+                    ? (int) $item->last_sale_at->diffInDays(now())
+                    : null;
+
+                $item->velocity_label = match (true) {
+                    $item->units_sold == 0                  => 'Dead Stock',
+                    $item->avg_daily_usage < 0.1            => 'Slow',
+                    $item->avg_daily_usage < 1.0            => 'Moderate',
+                    default                                 => 'Fast',
+                };
+
+                return $item;
+            })
+            ->sortBy(fn($i) => $i->units_sold, descending: $direction === 'desc')
+            ->values();
+
+        return $items;
+    }
+
+    // ── Reorder Analysis ──────────────────────────────────────────────────────
+
+    public function reorderAnalysis(Request $request): View
+    {
+        [$tenant, $items, $filters] = $this->reorderAnalysisData($request);
+        return view('inventory.reports.reorder-analysis', compact('items', 'filters', 'tenant'));
+    }
+
+    public function reorderAnalysisPdf(Request $request)
+    {
+        [$tenant, $items, $filters] = $this->reorderAnalysisData($request);
+        $pdf = Pdf::loadView('inventory.reports.pdf.reorder-analysis', compact('items', 'filters', 'tenant'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('Reorder_Analysis_' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    public function reorderAnalysisExcel(Request $request)
+    {
+        [$tenant, $items, $filters] = $this->reorderAnalysisData($request);
+        return Excel::download(
+            new ReorderAnalysisExport($items, $filters, $tenant),
+            'Reorder_Analysis_' . now()->format('Y-m-d') . '.xlsx'
+        );
+    }
+
+    private function reorderAnalysisData(Request $request): array
+    {
+        $tenant = $request->user()->tenant;
+
+        $days = (int) $request->input('days', 90);
+        $days = in_array($days, [30, 60, 90, 180]) ? $days : 90;
+        $from = now()->subDays($days)->startOfDay();
+        $to   = now()->endOfDay();
+
+        $filters = ['days' => $days];
+
+        $daySpan = max(1, $days);
+
+        // Avg daily usage per item
+        $salesData = SaleOrderItem::select(
+                'sale_order_items.item_id',
+                DB::raw('SUM(sale_order_items.quantity) AS units_sold'),
+            )
+            ->join('sales_orders', 'sales_orders.id', '=', 'sale_order_items.sale_order_id')
+            ->where('sales_orders.tenant_id', $tenant->id)
+            ->where('sales_orders.status', SalesOrder::STATUS_CONFIRMED)
+            ->whereBetween('sales_orders.sale_date', [$from->toDateString(), $to->toDateString()])
+            ->whereNotNull('sale_order_items.item_id')
+            ->groupBy('sale_order_items.item_id')
+            ->pluck('units_sold', 'item_id');
+
+        // Typical restock quantity from history
+        $avgRestock = RestockRequest::where('restock_requests.tenant_id', $tenant->id)
+            ->withoutGlobalScope('tenant')
+            ->where('status', 'received')
+            ->select('item_id', DB::raw('AVG(quantity_requested) AS avg_qty'))
+            ->groupBy('item_id')
+            ->pluck('avg_qty', 'item_id');
+
+        $items = InventoryItem::withoutGlobalScope('tenant')
+            ->where('inventory_items.tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->with('category')
+            ->get()
+            ->map(function ($item) use ($salesData, $avgRestock, $daySpan) {
+                $unitsSold           = (float) ($salesData->get($item->id) ?? 0);
+                $item->avg_daily_usage = round($unitsSold / $daySpan, 4);
+                $item->current_stock   = (float) $item->current_stock;
+
+                // Days of stock remaining
+                $item->days_of_stock = $item->avg_daily_usage > 0
+                    ? round($item->current_stock / $item->avg_daily_usage)
+                    : null;
+
+                // Suggested reorder: 30 days of demand (proxy for lead-time buffer)
+                $histQty = (float) ($avgRestock->get($item->id) ?? 0);
+                $item->suggested_reorder_qty = max(
+                    round($item->avg_daily_usage * 30, 2),
+                    $histQty
+                );
+
+                $item->reorder_status = match (true) {
+                    $item->current_stock <= 0                               => 'Out of Stock',
+                    $item->days_of_stock !== null && $item->days_of_stock <= 7  => 'Reorder Now',
+                    $item->days_of_stock !== null && $item->days_of_stock <= 30 => 'Reorder Soon',
+                    $item->avg_daily_usage == 0                             => 'No Movement',
+                    default                                                  => 'Sufficient',
+                };
+
+                return $item;
+            })
+            ->sortBy(fn($i) => $i->days_of_stock ?? PHP_INT_MAX)
+            ->values();
+
+        return [$tenant, $items, $filters];
     }
 }
