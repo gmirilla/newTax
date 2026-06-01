@@ -12,13 +12,13 @@
         .header-left { display: table-cell; vertical-align: top; width: 55%; }
         .header-right { display: table-cell; vertical-align: top; text-align: right; }
 
-        .company-name { font-size: 20px; font-weight: bold; color: #008751; margin-bottom: 4px; }
+        .company-name { font-size: 20px; font-weight: bold; color: {{ $accent }}; margin-bottom: 4px; }
         .company-detail { font-size: 10px; color: #666; line-height: 1.6; }
-        .tin-badge { display: inline-block; background: #f0fdf4; border: 1px solid #008751; color: #008751;
+        .tin-badge { display: inline-block; background: #f3f4f6; border: 1px solid {{ $accent }}; color: {{ $accent }};
                      padding: 3px 8px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-top: 4px; }
 
-        .doc-title { font-size: 24px; font-weight: bold; color: #b45309; letter-spacing: 1px; }
-        .doc-subtitle { font-size: 11px; color: #92400e; margin-top: 2px; }
+        .doc-title { font-size: 24px; font-weight: bold; color: {{ $accent }}; letter-spacing: 1px; }
+        .doc-subtitle { font-size: 11px; color: {{ $accent }}; margin-top: 2px; }
         .invoice-meta { margin-top: 10px; }
         .invoice-meta td { padding: 2px 0; }
         .invoice-meta .label { color: #666; width: 90px; font-size: 10px; }
@@ -43,7 +43,7 @@
         .party-name { font-size: 13px; font-weight: bold; color: #111; margin-bottom: 3px; }
         .party-detail { font-size: 10px; color: #555; line-height: 1.7; }
 
-        .divider       { border: none; border-top: 2px solid #008751; margin: 15px 0; }
+        .divider       { border: none; border-top: 2px solid {{ $accent }}; margin: 15px 0; }
         .divider-light { border: none; border-top: 1px solid #e5e7eb; margin: 10px 0; }
 
         /* Proforma watermark stripe */
@@ -52,18 +52,18 @@
                            font-weight: bold; letter-spacing: 0.5px; }
 
         .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .items-table thead tr { background: #92400e; color: #fff; }
+        .items-table thead tr { background: {{ $accent }}; color: {{ $accentText }}; }
         .items-table thead th { padding: 8px 10px; text-align: left; font-size: 10px;
                                  font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
         .items-table thead th.text-right { text-align: right; }
         .items-table tbody tr { border-bottom: 1px solid #f0f0f0; }
-        .items-table tbody tr:nth-child(even) { background: #fffbeb; }
+        .items-table tbody tr:nth-child(even) { background: #f9fafb; }
         .items-table tbody td { padding: 8px 10px; font-size: 11px; }
         .items-table tbody td.text-right { text-align: right; }
 
         .totals-table { width: 280px; margin-left: auto; margin-bottom: 20px; }
         .totals-table td { padding: 5px 10px; font-size: 11px; }
-        .totals-table .total-row { background: #92400e; color: #fff; font-weight: bold; font-size: 13px; }
+        .totals-table .total-row { background: {{ $accent }}; color: {{ $accentText }}; font-weight: bold; font-size: 13px; }
         .totals-table .label { color: #666; }
         .totals-table .amount { text-align: right; }
 
@@ -74,7 +74,7 @@
 
         .footer { border-top: 1px solid #e5e7eb; padding-top: 12px; text-align: center;
                   font-size: 9px; color: #888; }
-        .vat-note { font-size: 9px; color: #008751; font-weight: bold; }
+        .vat-note { font-size: 9px; color: {{ $accent }}; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -202,7 +202,7 @@
         @if($quote->vat_applicable)
         <tr>
             <td class="label">VAT (7.5%):</td>
-            <td class="amount" style="color:#008751; font-weight:bold;">+ ₦{{ number_format($quote->vat_amount, 2) }}</td>
+            <td class="amount" style="color:{{ $accent }}; font-weight:bold;">+ ₦{{ number_format($quote->vat_amount, 2) }}</td>
         </tr>
         @endif
         @if($quote->discount_amount > 0)
@@ -244,7 +244,7 @@
     <hr class="divider-light">
     <div class="footer">
         <p>
-            <span style="color:#008751; font-weight:bold;">{{ $quote->tenant->name }}</span> |
+            <span style="color:{{ $accent }}; font-weight:bold;">{{ $quote->tenant->name }}</span> |
             This proforma invoice is indicative only and is not a demand for payment. |
             Valid until: {{ $quote->expiry_date->format('d M Y') }}
         </p>
