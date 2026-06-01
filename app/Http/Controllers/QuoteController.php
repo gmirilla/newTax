@@ -362,7 +362,10 @@ class QuoteController extends Controller
     {
         $quote->load(['customer', 'items', 'tenant']);
 
-        $pdf = Pdf::loadView('quotes.pdf', compact('quote'))
+        $accent     = $quote->tenant->accentColor();
+        $accentText = $quote->tenant->accentTextColor();
+
+        $pdf = Pdf::loadView('quotes.pdf', compact('quote', 'accent', 'accentText'))
             ->setPaper('a4', 'portrait');
 
         return $pdf->download("ProformaInvoice-{$quote->quote_number}.pdf");

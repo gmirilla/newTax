@@ -24,6 +24,7 @@ class Tenant extends Model
         'paystack_customer_id', 'paystack_subscription_code',
         'referral_code', 'referred_by_code', 'referral_credit_ngn',
         'acquisition_source', 'utm_source', 'utm_medium', 'utm_campaign',
+        'invoice_accent_color',
     ];
 
     protected $casts = [
@@ -90,6 +91,22 @@ class Tenant extends Model
         $code = $this->referral_code ?? $this->generateReferralCode();
 
         return route('register') . '?ref=' . $code;
+    }
+
+    public function accentColor(): string
+    {
+        return $this->invoice_accent_color ?? '#008751';
+    }
+
+    public function accentTextColor(): string
+    {
+        $hex = ltrim($this->accentColor(), '#');
+        $r   = hexdec(substr($hex, 0, 2));
+        $g   = hexdec(substr($hex, 2, 2));
+        $b   = hexdec(substr($hex, 4, 2));
+        $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+
+        return $luminance > 0.5 ? '#111827' : '#ffffff';
     }
 
     public function platformInvoices(): HasMany

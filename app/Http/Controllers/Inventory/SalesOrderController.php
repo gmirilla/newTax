@@ -594,7 +594,10 @@ class SalesOrderController extends Controller
 
         $invoice = $salesOrder->invoice()->with(['customer', 'items', 'tenant'])->firstOrFail();
 
-        $pdf = Pdf::loadView('invoices.pdf', compact('invoice'))
+        $accent     = $invoice->tenant->accentColor();
+        $accentText = $invoice->tenant->accentTextColor();
+
+        $pdf = Pdf::loadView('invoices.pdf', compact('invoice', 'accent', 'accentText'))
             ->setPaper('a4', 'portrait');
 
         return $pdf->download("Invoice-{$invoice->invoice_number}.pdf");

@@ -193,5 +193,119 @@
         </form>
     </div>
 
+    {{-- ─── Invoice Appearance ──────────────────────────────────────────────────── --}}
+    <div class="bg-white rounded-lg shadow p-6" x-data="colorPicker('{{ $tenant->accentColor() }}')">
+        <div class="mb-5">
+            <h2 class="text-base font-semibold">Invoice &amp; Quote Appearance</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Choose an accent colour that appears on PDF invoice and quote headers, table rows, and dividers.</p>
+        </div>
+
+        <form method="POST" action="{{ route('settings.company.update') }}" class="space-y-5">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="invoice_accent_color" x-bind:value="selected">
+
+            {{-- Preset swatches --}}
+            <div>
+                <p class="text-sm font-medium text-gray-700 mb-3">Preset themes</p>
+                <div class="flex flex-wrap gap-3">
+                    @php
+                    $presets = [
+                        ['#008751', 'Naija Green'],
+                        ['#1e3a5f', 'Navy'],
+                        ['#5b21b6', 'Purple'],
+                        ['#881337', 'Burgundy'],
+                        ['#0f766e', 'Teal'],
+                        ['#9a3412', 'Burnt Orange'],
+                        ['#334155', 'Slate'],
+                        ['#1d4ed8', 'Royal Blue'],
+                    ];
+                    @endphp
+                    @foreach($presets as [$hex, $label])
+                    <button type="button"
+                            @click="select('{{ $hex }}')"
+                            title="{{ $label }}"
+                            class="w-9 h-9 rounded-full border-2 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2"
+                            :class="selected === '{{ $hex }}' ? 'border-gray-900 scale-110 shadow-md' : 'border-transparent hover:border-gray-400'"
+                            style="background-color: {{ $hex }}">
+                    </button>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Custom hex --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Custom colour</label>
+                <div class="flex items-center gap-3">
+                    <input type="color" x-model="selected" @input="selected = $event.target.value"
+                           class="h-10 w-14 cursor-pointer rounded border border-gray-300 p-0.5 bg-white">
+                    <input type="text" x-model="selected" @input="onHexInput($event.target.value)"
+                           maxlength="7" placeholder="#008751"
+                           class="w-28 rounded-md border-gray-300 shadow-sm text-sm font-mono focus:ring-green-500 focus:border-green-500">
+                    <span class="text-xs text-gray-400">e.g. #1e3a5f</span>
+                </div>
+                @error('invoice_accent_color')
+                <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Live preview --}}
+            <div>
+                <p class="text-sm font-medium text-gray-700 mb-2">Preview</p>
+                <div class="border border-gray-200 rounded-lg overflow-hidden max-w-sm shadow-sm">
+                    <div class="px-4 py-3 flex items-center justify-between"
+                         :style="'background-color:' + selected + '; color:' + textColor">
+                        <span class="text-xs font-bold uppercase tracking-wide">Description</span>
+                        <span class="text-xs font-bold uppercase tracking-wide">Amount (₦)</span>
+                    </div>
+                    <div class="divide-y divide-gray-100">
+                        <div class="flex justify-between px-4 py-2 text-xs text-gray-700 bg-white">
+                            <span>Consulting Services — Q1</span><span>150,000.00</span>
+                        </div>
+                        <div class="flex justify-between px-4 py-2 text-xs text-gray-700 bg-gray-50">
+                            <span>Annual Software Licence</span><span>75,000.00</span>
+                        </div>
+                        <div class="flex justify-between px-4 py-2 text-xs font-bold"
+                             :style="'background-color:' + selected + '; color:' + textColor">
+                            <span>TOTAL DUE</span><span>225,000.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <button type="button" @click="reset()" class="text-sm text-gray-500 hover:underline">
+                    Reset to Naija Green
+                </button>
+                <button type="submit"
+                        class="px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                    Save Appearance
+                </button>
+            </div>
+        </form>
+    </div>
+
 </div>
+
+<script>
+function colorPicker(initial) {
+    return {
+        selected: initial || '#008751',
+        get textColor() {
+            const hex = this.selected.replace('#', '');
+            if (hex.length !== 6) return '#ffffff';
+            const r = parseInt(hex.slice(0,2), 16);
+            const g = parseInt(hex.slice(2,4), 16);
+            const b = parseInt(hex.slice(4,6), 16);
+            const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+            return lum > 0.5 ? '#111827' : '#ffffff';
+        },
+        select(hex) { this.selected = hex; },
+        reset()     { this.selected = '#008751'; },
+        onHexInput(val) {
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) this.selected = val;
+        },
+    };
+}
+</script>
 @endsection

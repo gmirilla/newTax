@@ -15,12 +15,12 @@
         .header-left { display: table-cell; vertical-align: top; width: 55%; }
         .header-right { display: table-cell; vertical-align: top; text-align: right; }
 
-        .company-name { font-size: 20px; font-weight: bold; color: #008751; margin-bottom: 4px; }
+        .company-name { font-size: 20px; font-weight: bold; color: {{ $accent }}; margin-bottom: 4px; }
         .company-detail { font-size: 10px; color: #666; line-height: 1.6; }
-        .tin-badge { display: inline-block; background: #f0fdf4; border: 1px solid #008751; color: #008751;
+        .tin-badge { display: inline-block; background: #f3f4f6; border: 1px solid {{ $accent }}; color: {{ $accent }};
                      padding: 3px 8px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-top: 4px; }
 
-        .invoice-title { font-size: 28px; font-weight: bold; color: #008751; }
+        .invoice-title { font-size: 28px; font-weight: bold; color: {{ $accent }}; }
         .invoice-meta { margin-top: 8px; }
         .invoice-meta td { padding: 2px 0; }
         .invoice-meta .label { color: #666; width: 90px; font-size: 10px; }
@@ -44,12 +44,12 @@
         .party-detail { font-size: 10px; color: #555; line-height: 1.7; }
 
         /* Divider */
-        .divider { border: none; border-top: 2px solid #008751; margin: 15px 0; }
+        .divider { border: none; border-top: 2px solid {{ $accent }}; margin: 15px 0; }
         .divider-light { border: none; border-top: 1px solid #e5e7eb; margin: 10px 0; }
 
         /* Items table */
         .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .items-table thead tr { background: #008751; color: #fff; }
+        .items-table thead tr { background: {{ $accent }}; color: {{ $accentText }}; }
         .items-table thead th { padding: 8px 10px; text-align: left; font-size: 10px;
                                  font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
         .items-table thead th.text-right { text-align: right; }
@@ -63,10 +63,10 @@
         /* Totals */
         .totals-table { width: 280px; margin-left: auto; margin-bottom: 20px; }
         .totals-table td { padding: 5px 10px; font-size: 11px; }
-        .totals-table .total-row { background: #008751; color: #fff; font-weight: bold; font-size: 13px; }
+        .totals-table .total-row { background: {{ $accent }}; color: {{ $accentText }}; font-weight: bold; font-size: 13px; }
         .totals-table .label { color: #666; }
         .totals-table .amount { text-align: right; }
-        .vat-note { font-size: 9px; color: #008751; font-weight: bold; }
+        .vat-note { font-size: 9px; color: {{ $accent }}; font-weight: bold; }
 
         /* Tax Box */
         .tax-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px;
@@ -85,7 +85,7 @@
         /* Footer */
         .footer { border-top: 1px solid #e5e7eb; padding-top: 12px; text-align: center;
                   font-size: 9px; color: #888; }
-        .footer-green { color: #008751; font-weight: bold; }
+        .footer-accent { color: {{ $accent }}; font-weight: bold; }
 
         /* WHT notice */
         .wht-notice { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 4px;
@@ -251,7 +251,7 @@
         @if($invoice->vat_applicable)
         <tr>
             <td class="label">VAT (7.5%):</td>
-            <td class="amount" style="color:#008751; font-weight:bold;">+ ₦{{ number_format($invoice->vat_amount, 2) }}</td>
+            <td class="amount" style="color:{{ $accent }}; font-weight:bold;">+ ₦{{ number_format($invoice->vat_amount, 2) }}</td>
         </tr>
         @endif
         @if($invoice->discount_amount > 0)
@@ -303,7 +303,7 @@
     <hr class="divider-light">
     <div class="footer">
         <p>
-            <span class="footer-green">{{ $invoice->tenant->name }}</span> |
+            <span class="footer-accent">{{ $invoice->tenant->name }}</span> |
             This invoice is valid and complies with Nigerian tax regulations (FIRS). |
             @if($invoice->tenant->tin) TIN: {{ $invoice->tenant->tin }} | @endif
             Generated: {{ now()->format('d M Y, H:i') }}
