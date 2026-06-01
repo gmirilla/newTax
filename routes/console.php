@@ -34,3 +34,22 @@ Schedule::command('maintenance:generate-pm-work-orders')
     ->dailyAt('06:00')
     ->withoutOverlapping()
     ->description('Generate PM work orders for due schedules');
+
+// ─── Backups ──────────────────────────────────────────────────────────────────
+// Staggered: run → clean → monitor, 30 minutes apart to avoid overlap.
+// backup:run uses pg_dump which must be available on the server PATH.
+
+Schedule::command('backup:run --only-db')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->description('Daily database backup to local disk and Namecheap SFTP');
+
+Schedule::command('backup:clean')
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->description('Prune old backups according to retention policy');
+
+Schedule::command('backup:monitor')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->description('Check backup health and alert on failure');

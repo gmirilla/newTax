@@ -17,6 +17,8 @@ use App\Http\Controllers\SuperAdmin\EnterpriseAgreementController;
 use App\Http\Controllers\SuperAdmin\EnterpriseController;
 use App\Http\Controllers\SuperAdmin\PlanController;
 use App\Http\Controllers\SuperAdmin\PlatformInvoiceController;
+use App\Http\Controllers\SuperAdmin\BackupController;
+use App\Http\Controllers\SuperAdmin\DatabaseExportController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\SuperAdmin\ReferralReportController;
 use App\Http\Controllers\SuperAdmin\SystemNotificationController;
@@ -333,6 +335,16 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::get('/restock-history',        [InventoryReportController::class, 'restockHistory'])->name('restock-history');
                 Route::get('/restock-history/pdf',    [InventoryReportController::class, 'restockHistoryPdf'])->name('restock-history.pdf');
                 Route::get('/restock-history/excel',  [InventoryReportController::class, 'restockHistoryExcel'])->name('restock-history.excel');
+                // Advanced reports
+                Route::get('/slow-moving',            [InventoryReportController::class, 'slowMoving'])->name('slow-moving');
+                Route::get('/slow-moving/pdf',        [InventoryReportController::class, 'slowMovingPdf'])->name('slow-moving.pdf');
+                Route::get('/slow-moving/excel',      [InventoryReportController::class, 'slowMovingExcel'])->name('slow-moving.excel');
+                Route::get('/fast-moving',            [InventoryReportController::class, 'fastMoving'])->name('fast-moving');
+                Route::get('/fast-moving/pdf',        [InventoryReportController::class, 'fastMovingPdf'])->name('fast-moving.pdf');
+                Route::get('/fast-moving/excel',      [InventoryReportController::class, 'fastMovingExcel'])->name('fast-moving.excel');
+                Route::get('/reorder-analysis',       [InventoryReportController::class, 'reorderAnalysis'])->name('reorder-analysis');
+                Route::get('/reorder-analysis/pdf',   [InventoryReportController::class, 'reorderAnalysisPdf'])->name('reorder-analysis.pdf');
+                Route::get('/reorder-analysis/excel', [InventoryReportController::class, 'reorderAnalysisExcel'])->name('reorder-analysis.excel');
             });
         });
 
@@ -478,6 +490,14 @@ Route::middleware(['auth', 'superadmin'])
 
         Route::post('/bulk-reminder',        [SuperAdminController::class, 'sendBulkReminder'])->name('bulk-reminder');
         Route::get('/audit-logs',            [SuperAdminController::class, 'auditLogs'])->name('audit-logs');
+
+        // Database export / migration tool
+        Route::get('/database/export',  [DatabaseExportController::class, 'index'])->name('database.export');
+        Route::post('/database/export', [DatabaseExportController::class, 'export'])->name('database.export.download');
+
+        // Backup dashboard
+        Route::get('/backups',      [BackupController::class, 'index'])->name('backups.index');
+        Route::post('/backups/run', [BackupController::class, 'runNow'])->name('backups.run');
     });
 
 // Exit impersonation (accessible while impersonating, outside superadmin middleware)
