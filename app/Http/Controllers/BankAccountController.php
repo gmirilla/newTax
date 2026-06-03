@@ -54,17 +54,32 @@ class BankAccountController extends Controller
             // Auto-allocate the next free GL code in 1004–1099
             $code = BankAccount::nextGlCode($tenantId);
 
+            $openingBalance = (float) ($validated['opening_balance'] ?? 0);
+
             $glAccount = Account::withoutGlobalScope('tenant')->create([
                 'tenant_id'       => $tenantId,
                 'code'            => $code,
                 'name'            => $validated['name'],
                 'type'            => 'asset',
                 'sub_type'        => 'bank',
-                'opening_balance' => $validated['opening_balance'] ?? 0,
-                'current_balance' => $validated['opening_balance'] ?? 0,
+                'opening_balance' => $openingBalance,
+                'current_balance' => $openingBalance,
                 'is_system'       => false,
                 'is_active'       => true,
             ]);
+
+            // Mirror the opening balance into Owner's Equity (3001) so the
+            // balance sheet remains in balance: Debit bank asset, Credit equity.
+            if ($openingBalance > 0) {
+                Account::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $tenantId)
+                    ->where('code', '3001')
+                    ->update([
+                        'opening_balance' => DB::raw("opening_balance + {$openingBalance}"),
+                        'current_balance' => DB::raw("current_balance + {$openingBalance}"),
+                        'updated_at'      => now(),
+                    ]);
+            }
 
             $isFirstAccount = ! BankAccount::withoutGlobalScope('tenant')
                 ->where('tenant_id', $tenantId)
@@ -79,7 +94,7 @@ class BankAccountController extends Controller
                 'account_type'    => $validated['account_type'],
                 'currency'        => 'NGN',
                 'gl_account_id'   => $glAccount->id,
-                'opening_balance' => $validated['opening_balance'] ?? 0,
+                'opening_balance' => $openingBalance,
                 'is_default'      => $isFirstAccount,
                 'is_active'       => true,
                 'sort_order'      => 0,
@@ -129,16 +144,32 @@ class BankAccountController extends Controller
     {
         $this->authorize('delete', $bankAccount);
 
+        $tenantId = auth()->user()->tenant_id;
+
         // Prevent deletion if it has been used in any journal entry via its GL account
         $hasEntries = $bankAccount->glAccount?->journalEntries()->exists();
         if ($hasEntries) {
             return back()->with('error', 'This bank account has transaction history and cannot be deleted. Deactivate it instead.');
         }
 
-        DB::transaction(function () use ($bankAccount) {
-            $glAccount = $bankAccount->glAccount;
+        DB::transaction(function () use ($bankAccount, $tenantId) {
+            $glAccount      = $bankAccount->glAccount;
+            $openingBalance = (float) ($glAccount?->opening_balance ?? 0);
+
             $bankAccount->delete();
             $glAccount?->delete();
+
+            // Reverse the equity credit that was posted when the account was created.
+            if ($openingBalance > 0) {
+                Account::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $tenantId)
+                    ->where('code', '3001')
+                    ->update([
+                        'opening_balance' => DB::raw("opening_balance - {$openingBalance}"),
+                        'current_balance' => DB::raw("current_balance - {$openingBalance}"),
+                        'updated_at'      => now(),
+                    ]);
+            }
         });
 
         return back()->with('success', 'Bank account removed.');
