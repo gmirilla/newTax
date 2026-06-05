@@ -31,6 +31,33 @@
     </div>
     @endif
 
+    {{-- Expired trial / lapsed subscription banner --}}
+    @if($tenant->trialExpired())
+    <div class="bg-red-50 border border-red-300 rounded-lg px-5 py-4 flex items-start gap-3">
+        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+            <p class="font-semibold text-red-800">Your free trial has ended</p>
+            <p class="text-sm text-red-700 mt-0.5">
+                Choose a plan below to continue using NaijaBooks. Your data is safe and will be restored immediately after payment.
+            </p>
+        </div>
+    </div>
+    @elseif(!$tenant->subscriptionActive() && !$tenant->isOnTrial() && ($tenant->plan?->price_monthly ?? 0) > 0)
+    <div class="bg-red-50 border border-red-300 rounded-lg px-5 py-4 flex items-start gap-3">
+        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+            <p class="font-semibold text-red-800">Your subscription has expired</p>
+            <p class="text-sm text-red-700 mt-0.5">
+                Renew your plan below to restore full access. Your data is intact.
+            </p>
+        </div>
+    </div>
+    @endif
+
     {{-- Pending plan change notice --}}
     @if($tenant->hasPendingPlanChange())
     <div class="bg-blue-50 border border-blue-200 rounded-lg px-5 py-4 flex items-start gap-3">
@@ -88,6 +115,10 @@
             <p class="text-sm text-blue-600">
                 Trial ends {{ $tenant->trial_ends_at->diffForHumans() }}
                 ({{ $tenant->trial_ends_at->format('d M Y') }})
+            </p>
+            @elseif($tenant->trialExpired())
+            <p class="text-sm text-red-600 font-semibold">
+                Trial ended {{ $tenant->trial_ends_at->format('d M Y') }}
             </p>
             @elseif($tenant->subscription_expires_at)
             @php $expired = $tenant->subscription_expires_at->isPast(); @endphp
@@ -193,6 +224,11 @@
                     && !$tenant->isOnTrial()
                     && $currentPrice > 0
                     && $tenant->subscription_status !== 'cancelled';
+                // True for any paid plan when the tenant has no active subscription (expired trial or lapsed).
+                // Must be checked before $isCurrent to give the user a way to pay.
+                $needsActivation = !$tenant->subscriptionActive()
+                    && $plan->price_monthly > 0
+                    && !$isEnterprise;
             @endphp
             <div class="p-6 {{ $isCurrent ? 'bg-green-50' : '' }} flex flex-col">
 
@@ -277,7 +313,14 @@
                 </ul>
 
                 {{-- CTA --}}
-                @if($isCurrent)
+                @if($needsActivation)
+                    {{-- Trial expired or subscription lapsed — let the user pay for any paid plan --}}
+                    <a :href="'{{ route('billing.checkout', $plan) }}?cycle=' + cycle"
+                       class="w-full block text-center py-2 text-sm font-medium rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors">
+                        {{ $isCurrent ? 'Subscribe to ' . $plan->name . ' →' : 'Choose ' . $plan->name . ' →' }}
+                    </a>
+
+                @elseif($isCurrent)
                     <button disabled
                             class="w-full py-2 text-sm font-medium rounded-md bg-green-100 text-green-700 cursor-default">
                         Current Plan
