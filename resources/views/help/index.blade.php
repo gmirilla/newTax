@@ -18,7 +18,7 @@
             'settings'   => ['label' => 'Settings',         'color' => 'gray'],
         ];
 
-        $grouped = collect($topics)->groupBy(fn($t) => $t['category']);
+        $grouped = collect($topics)->groupBy(fn($t) => $t['category'], preserveKeys: true);
 
         $icons = [
             'rocket'      => '<path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.82m5.84-2.56a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.63 3.28a14.96 14.96 0 01.16 4.25M12 12a3 3 0 11-6 0 3 3 0 016 0z"/>',
