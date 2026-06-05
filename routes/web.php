@@ -12,6 +12,7 @@ use App\Http\Controllers\InviteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\NotificationReadController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\SuperAdmin\EnterpriseAgreementController;
 use App\Http\Controllers\SuperAdmin\EnterpriseController;
@@ -90,6 +91,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
     // ── Staff portal (staff role) ─────────────────────────────────────────────
     Route::prefix('staff')->name('staff.')->group(function () {
         Route::get('/dashboard', [StaffController::class, 'dashboard'])->name('dashboard');
+    });
+
+    // ── Help center (all roles) ───────────────────────────────────────────────
+    Route::prefix('help')->name('help.')->group(function () {
+        Route::get('/',         [HelpController::class, 'index'])->name('index');
+        Route::get('/{topic}',  [HelpController::class, 'show'])->name('show');
     });
 
     // ── Admin-only ────────────────────────────────────────────────────────────

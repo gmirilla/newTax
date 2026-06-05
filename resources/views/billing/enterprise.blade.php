@@ -15,6 +15,10 @@
                     Your subscription is managed directly by our team.
                     Contact <a href="mailto:billing@accounttaxng.com" class="underline text-white">billing@accounttaxng.com</a> for any changes.
                 </p>
+                <p class="text-indigo-300 text-sm mt-1">
+                    Self-hosting and custom module(s) development available.
+                </p>
+                
             </div>
             <div class="bg-indigo-600 bg-opacity-50 rounded-lg px-4 py-3 text-right">
                 <p class="text-indigo-200 text-xs uppercase tracking-wider">Status</p>
