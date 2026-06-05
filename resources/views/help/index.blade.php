@@ -79,7 +79,7 @@
         </svg>
         <div>
             <p class="text-sm font-semibold text-green-800">Need more help?</p>
-            <p class="text-xs text-green-700 mt-0.5">Contact your account manager or send an email to <span class="font-medium">support@naijabooks.ng</span></p>
+            <p class="text-xs text-green-700 mt-0.5">Contact your account manager or send an email to <span class="font-medium">support@accounttaxng.com</span></p>
         </div>
     </div>
 
