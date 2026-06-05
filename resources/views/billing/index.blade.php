@@ -305,7 +305,7 @@
                         {{ $label }}
                     </li>
                     @endforeach
-                    @if($plan->trial_days > 0)
+                    @if($plan->trial_days > 0 && !$tenant->trial_ends_at)
                     <li class="flex items-center gap-2 text-blue-600 text-xs mt-1">
                         <span>🎁</span> {{ $plan->trial_days }}-day free trial
                     </li>
