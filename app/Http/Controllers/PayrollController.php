@@ -347,6 +347,7 @@ class PayrollController extends Controller
 
     public function editEmployee(Employee $employee): View
     {
+       // dd($employee);
         $this->ensureSameTenant($employee);
         return view('payroll.employee-form', compact('employee'));
     }
@@ -393,7 +394,7 @@ class PayrollController extends Controller
     /** Abort if the employee belongs to a different tenant. */
     private function ensureSameTenant(Employee $employee): void
     {
-        if ($employee->tenant_id !== auth()->user()->tenant_id) {
+        if ($employee->tenant_id != auth()->user()->tenant_id) {
             abort(403);
         }
     }
