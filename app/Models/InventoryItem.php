@@ -81,6 +81,20 @@ class InventoryItem extends Model
         return $this->hasMany(InventoryAlert::class, 'item_id');
     }
 
+    /** Per-location stock computed live from movements. */
+    public function stockAtLocation(int $locationId): float
+    {
+        return (float) $this->movements()
+            ->where('location_id', $locationId)
+            ->selectRaw("
+                COALESCE(SUM(CASE
+                    WHEN type IN ('restock','opening','adjustment_in','transfer_in','production_in') THEN quantity
+                    ELSE -quantity
+                END), 0) AS balance
+            ")
+            ->value('balance');
+    }
+
     public function isBelowRestockLevel(): bool
     {
         return (float) $this->current_stock <= (float) $this->restock_level

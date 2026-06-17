@@ -16,6 +16,7 @@ use App\Models\StockMovement;
 use App\Models\Transaction;
 use App\Services\BookkeepingService;
 use App\Services\InvoiceService;
+use App\Traits\ResolvesLocation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,8 @@ use Illuminate\View\View;
 
 class SalesOrderController extends Controller
 {
+    use ResolvesLocation;
+
     public function __construct(
         private readonly BookkeepingService $bookkeeping,
         private readonly InvoiceService     $invoiceService,
@@ -93,10 +96,13 @@ class SalesOrderController extends Controller
         $validated = $this->validateOrderForm($request);
         $tenant    = auth()->user()->tenant;
 
-        $order = null;
-        DB::transaction(function () use ($validated, $tenant, &$order) {
+        $order    = null;
+        $location = $this->activeLocation();
+
+        DB::transaction(function () use ($validated, $tenant, $location, &$order) {
             $order = SalesOrder::create([
                 'tenant_id'         => $tenant->id,
+                'location_id'       => $location->id,
                 'order_number'      => $this->generateOrderNumber($tenant->id),
                 'customer_id'       => $validated['customer_id'] ?? null,
                 'customer_name'     => $validated['customer_name'] ?? null,
@@ -262,14 +268,20 @@ class SalesOrderController extends Controller
         try {
             DB::transaction(function () use ($salesOrder) {
                 $salesOrder->load('items.item');
-                $tenant = $salesOrder->tenant;
+                $tenant     = $salesOrder->tenant;
+                $locationId = $salesOrder->location_id;
 
-                // 1. Validate stock availability
+                // 1. Validate stock availability at the order's location
                 foreach ($salesOrder->items as $line) {
-                    if ((float) $line->item->current_stock < (float) $line->quantity) {
+                    $available = $locationId
+                        ? $line->item->stockAtLocation($locationId)
+                        : (float) $line->item->current_stock;
+
+                    if ($available < (float) $line->quantity) {
+                        $locationName = $salesOrder->location?->name ?? 'this location';
                         throw ValidationException::withMessages([
-                            'stock' => "Insufficient stock for \"{$line->item->name}\": "
-                                . number_format($line->item->current_stock, 3) . " {$line->item->unit} available, "
+                            'stock' => "Insufficient stock for \"{$line->item->name}\" at {$locationName}: "
+                                . number_format($available, 3) . " {$line->item->unit} available, "
                                 . number_format($line->quantity, 3) . ' requested.',
                         ]);
                     }
@@ -286,6 +298,7 @@ class SalesOrderController extends Controller
                     StockMovement::create([
                         'tenant_id'       => $salesOrder->tenant_id,
                         'item_id'         => $line->item_id,
+                        'location_id'     => $locationId,
                         'type'            => 'sale',
                         'quantity'        => $line->quantity,
                         'unit_cost'       => $avgCost,
@@ -483,6 +496,7 @@ class SalesOrderController extends Controller
             StockMovement::create([
                 'tenant_id'       => $salesOrder->tenant_id,
                 'item_id'         => $line->item_id,
+                'location_id'     => $salesOrder->location_id,
                 'type'            => 'adjustment_in',
                 'quantity'        => $qtyReturned,
                 'unit_cost'       => $costAtSale,
