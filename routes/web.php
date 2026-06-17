@@ -37,8 +37,10 @@ use App\Http\Controllers\Inventory\InventoryImportController;
 use App\Http\Controllers\Inventory\InventoryUnitController;
 use App\Http\Controllers\Inventory\InventoryItemController;
 use App\Http\Controllers\Inventory\InventoryReportController;
+use App\Http\Controllers\Inventory\LocationController;
 use App\Http\Controllers\Inventory\RestockRequestController;
 use App\Http\Controllers\Inventory\SalesOrderController;
+use App\Http\Controllers\Inventory\StockTransferController;
 use App\Http\Controllers\Inventory\SupplierBillController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Manufacturing\BomController;
@@ -304,6 +306,22 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::post('/{restockRequest}/receive',     [RestockRequestController::class, 'receive'])->name('receive');
                 Route::post('/{restockRequest}/pay',         [RestockRequestController::class, 'pay'])->name('pay');
                 Route::post('/{restockRequest}/cancel',      [RestockRequestController::class, 'cancel'])->name('cancel');
+            });
+
+            // Locations (CRUD + session switcher)
+            Route::prefix('locations')->name('locations.')->group(function () {
+                Route::get('/',                          [LocationController::class, 'index'])->name('index');
+                Route::post('/',                         [LocationController::class, 'store'])->name('store');
+                Route::put('/{location}',                [LocationController::class, 'update'])->name('update');
+                Route::delete('/{location}',             [LocationController::class, 'destroy'])->name('destroy');
+                Route::post('/switch',                   [LocationController::class, 'switchLocation'])->name('switch');
+            });
+
+            // Stock Transfers
+            Route::prefix('transfers')->name('transfers.')->group(function () {
+                Route::get('/',       [StockTransferController::class, 'index'])->name('index');
+                Route::get('/create', [StockTransferController::class, 'create'])->name('create');
+                Route::post('/',      [StockTransferController::class, 'store'])->name('store');
             });
 
             // Supplier Bills

@@ -20,6 +20,7 @@ use App\Policies\BankAccountPolicy;
 use App\Policies\BomPolicy;
 use App\Policies\InventoryCategoryPolicy;
 use App\Policies\InventoryItemPolicy;
+use App\Policies\InventoryLocationPolicy;
 use App\Policies\InventoryUnitPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\MaintenanceAssetPolicy;
@@ -60,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ProductionOrder::class, ProductionOrderPolicy::class);
         Gate::policy(InventoryCategory::class, InventoryCategoryPolicy::class);
         Gate::policy(InventoryItem::class, InventoryItemPolicy::class);
+        Gate::policy(\App\Models\InventoryLocation::class, InventoryLocationPolicy::class);
         Gate::policy(InventoryUnit::class, InventoryUnitPolicy::class);
         Gate::policy(SalesOrder::class, SalesOrderPolicy::class);
         Gate::policy(RestockRequest::class, RestockRequestPolicy::class);

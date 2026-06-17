@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\InventoryLocation;
+use App\Models\ProductionOrder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\ProductionOrder;
 
 class RestockRequest extends Model
 {
@@ -19,7 +20,7 @@ class RestockRequest extends Model
     const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'tenant_id', 'item_id', 'request_number',
+        'tenant_id', 'location_id', 'item_id', 'request_number',
         'quantity_requested', 'quantity_received', 'unit_cost',
         'supplier_name', 'supplier_invoice_no', 'notes',
         'status', 'requested_by', 'approved_by',
@@ -47,6 +48,11 @@ class RestockRequest extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(InventoryLocation::class, 'location_id');
     }
 
     public function item(): BelongsTo

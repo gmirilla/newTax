@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\InventoryLocation;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -17,7 +18,7 @@ class SalesOrder extends Model
     const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'tenant_id', 'order_number', 'customer_id', 'customer_name',
+        'tenant_id', 'location_id', 'order_number', 'customer_id', 'customer_name',
         'sale_date', 'subtotal', 'vat_amount', 'discount_amount', 'total_amount',
         'payment_method', 'payment_reference', 'bank_account_id', 'status', 'notes',
         'invoice_id', 'transaction_id', 'created_by',
@@ -43,6 +44,11 @@ class SalesOrder extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(InventoryLocation::class, 'location_id');
     }
 
     public function customer(): BelongsTo

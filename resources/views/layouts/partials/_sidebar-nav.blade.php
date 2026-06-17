@@ -201,8 +201,19 @@
                     <span class="ml-auto inline-flex items-center justify-center min-w-[1.15rem] h-[1.15rem] px-1 rounded-full text-[10px] font-bold bg-red-500 text-white">{{ ($navOutstandingBills ?? 0) > 99 ? '99+' : $navOutstandingBills }}</span>
                 @endif
             </a>
-            {{-- Catalogue management sub-group --}}
+            {{-- Transfers --}}
+            <a href="{{ $canInventory ? route('inventory.transfers.index') : route('billing').'?upgrade_feature=inventory' }}"
+               class="{{ $sub }} {{ $canInventory ? (request()->routeIs('inventory.transfers.*') ? $on : $off) : $dim }}">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                Stock Transfers
+            </a>
+            {{-- Catalogue + location settings sub-group --}}
             <div class="pt-1 mt-1 border-t border-green-700/50 space-y-0.5">
+                <a href="{{ $canInventory ? route('inventory.locations.index') : route('billing').'?upgrade_feature=inventory' }}"
+                   class="{{ $sub }} text-[12px] {{ $canInventory ? (request()->routeIs('inventory.locations.*') ? $on : $off) : $dim }}">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Locations
+                </a>
                 <a href="{{ $canInventory ? route('inventory.categories.index') : route('billing').'?upgrade_feature=inventory' }}"
                    class="{{ $sub }} text-[12px] {{ $canInventory ? (request()->routeIs('inventory.categories.*') ? $on : $off) : $dim }}">
                     <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>

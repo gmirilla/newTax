@@ -10,6 +10,7 @@ use App\Models\InventoryItem;
 use App\Models\InventoryUnit;
 use App\Models\StockMovement;
 use App\Services\BookkeepingService;
+use App\Traits\ResolvesLocation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ use Illuminate\View\View;
 
 class InventoryItemController extends Controller
 {
+    use ResolvesLocation;
+
     public function __construct(private readonly BookkeepingService $bookkeeping) {}
 
     public function index(Request $request): View
@@ -118,9 +121,10 @@ class InventoryItemController extends Controller
         $openingStock  = (float) ($validated['opening_stock'] ?? 0);
         $costPrice     = (float) $validated['cost_price'];
 
-        $tenant = auth()->user()->tenant;
+        $tenant   = auth()->user()->tenant;
+        $location = $this->activeLocation();
 
-        DB::transaction(function () use ($validated, $tenantId, $openingStock, $costPrice, $tenant) {
+        DB::transaction(function () use ($validated, $tenantId, $openingStock, $costPrice, $tenant, $location) {
             $item = InventoryItem::create([
                 'tenant_id'     => $tenantId,
                 'category_id'   => $validated['category_id'] ?? null,
@@ -142,6 +146,7 @@ class InventoryItemController extends Controller
                 StockMovement::create([
                     'tenant_id'       => $tenantId,
                     'item_id'         => $item->id,
+                    'location_id'     => $location->id,
                     'type'            => 'opening',
                     'quantity'        => $openingStock,
                     'unit_cost'       => $costPrice,
@@ -272,7 +277,9 @@ class InventoryItemController extends Controller
             'notes'    => ['nullable', 'string', 'max:500'],
         ]);
 
-        DB::transaction(function () use ($validated, $inventoryItem) {
+        $location = $this->activeLocation();
+
+        DB::transaction(function () use ($validated, $inventoryItem, $location) {
             $isIn      = $validated['type'] === 'adjustment_in';
             $direction = $isIn ? 1 : -1;
             $qty       = (float) $validated['quantity'];
@@ -288,6 +295,7 @@ class InventoryItemController extends Controller
             StockMovement::create([
                 'tenant_id'       => $inventoryItem->tenant_id,
                 'item_id'         => $inventoryItem->id,
+                'location_id'     => $location->id,
                 'type'            => $validated['type'],
                 'quantity'        => $qty,
                 'unit_cost'       => $avgCost,

@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Notifications\RestockRequestedNotification;
 use App\Notifications\RestockStatusNotification;
 use App\Services\BookkeepingService;
+use App\Traits\ResolvesLocation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,8 @@ use Illuminate\View\View;
 
 class RestockRequestController extends Controller
 {
+    use ResolvesLocation;
+
     public function __construct(private readonly BookkeepingService $bookkeeping) {}
 
     // ── Index ─────────────────────────────────────────────────────────────────
@@ -86,11 +89,13 @@ class RestockRequestController extends Controller
             'notes'             => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $tenant = auth()->user()->tenant;
+        $tenant   = auth()->user()->tenant;
+        $location = $this->activeLocation();
 
-        $restockRequest = DB::transaction(function () use ($validated, $tenant) {
+        $restockRequest = DB::transaction(function () use ($validated, $tenant, $location) {
             $rr = RestockRequest::create([
                 'tenant_id'          => $tenant->id,
+                'location_id'        => $location->id,
                 'item_id'            => $validated['item_id'],
                 'request_number'     => $this->generateRequestNumber($tenant->id),
                 'quantity_requested' => $validated['quantity_requested'],
@@ -229,6 +234,7 @@ class RestockRequestController extends Controller
             StockMovement::create([
                 'tenant_id'       => $restockRequest->tenant_id,
                 'item_id'         => $item->id,
+                'location_id'     => $restockRequest->location_id,
                 'type'            => 'restock',
                 'quantity'        => $qtyIn,
                 'unit_cost'       => $unitCost,
