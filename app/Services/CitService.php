@@ -115,13 +115,21 @@ class CitService
     {
         $data = $this->compute($tenant, $taxYear);
 
-        return CitRecord::updateOrCreate(
-            ['tenant_id' => $tenant->id, 'tax_year' => $taxYear],
-            array_merge($data, [
-                'tenant_id' => $tenant->id,
-                'status'    => $data['is_exempt'] ? 'exempt' : 'pending',
-            ])
-        );
+        $record = CitRecord::firstOrNew([
+            'tenant_id' => $tenant->id,
+            'tax_year'  => $taxYear,
+        ]);
+
+        // Always refresh computed financial figures
+        $record->fill(array_merge($data, ['tenant_id' => $tenant->id]));
+
+        // Only initialise status for new records; never overwrite filed/paid
+        if (! $record->exists) {
+            $record->status = $data['is_exempt'] ? 'exempt' : 'pending';
+        }
+
+        $record->save();
+        return $record;
     }
 
     /**

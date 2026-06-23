@@ -216,8 +216,8 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::prefix('vat')->name('vat.')->group(function () {
                 Route::get('/',                    [TaxController::class, 'vatIndex'])->name('index');
                 Route::get('/compute',             [TaxController::class, 'vatCompute'])->name('compute');
-                Route::post('/{return}/filed',     [TaxController::class, 'vatFiled'])->name('filed');
-                Route::post('/{return}/paid',      [TaxController::class, 'vatPaid'])->name('paid');
+                Route::post('/{vatReturn}/filed',     [TaxController::class, 'vatFiled'])->name('filed');
+                Route::post('/{vatReturn}/paid',      [TaxController::class, 'vatPaid'])->name('paid');
             });
             Route::prefix('wht')->name('wht.')->group(function () {
                 Route::get('/',                    [TaxController::class, 'whtIndex'])->name('index');

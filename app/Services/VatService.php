@@ -99,13 +99,22 @@ class VatService
     {
         $data = $this->computeMonthlyReturn($tenant, $year, $month);
 
-        return VatReturn::updateOrCreate(
-            ['tenant_id' => $tenant->id, 'tax_year' => $year, 'tax_month' => $month],
-            array_merge($data, [
-                'tenant_id' => $tenant->id,
-                'status'    => $data['is_nil_return'] ? 'nil_return' : 'pending',
-            ])
-        );
+        $vatReturn = VatReturn::firstOrNew([
+            'tenant_id' => $tenant->id,
+            'tax_year'  => $year,
+            'tax_month' => $month,
+        ]);
+
+        // Always refresh computed financial figures
+        $vatReturn->fill(array_merge($data, ['tenant_id' => $tenant->id]));
+
+        // Only initialise status on new records; never overwrite filed/paid
+        if (! $vatReturn->exists) {
+            $vatReturn->status = $data['is_nil_return'] ? 'nil_return' : 'pending';
+        }
+
+        $vatReturn->save();
+        return $vatReturn;
     }
 
     /**
