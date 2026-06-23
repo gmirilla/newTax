@@ -115,7 +115,7 @@
             <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">NRS Reference Number</label>
-                    <input type="text" name="firs_reference"
+                    <input type="text" name="filing_reference"
                            value="{{ $vatReturn->filing_reference }}"
                            placeholder="e.g. VAT/2024/001"
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
