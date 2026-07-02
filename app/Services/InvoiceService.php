@@ -232,7 +232,7 @@ class InvoiceService
             'transaction_date' => $payment->payment_date->toDateString(),
             'type'             => 'receipt',
             'description'      => "Payment received: {$invoice->invoice_number}" . ($invoice->customer ? " — {$invoice->customer->name}" : ''),
-            'reference'        => 'REC-' . $invoice->invoice_number,
+            'reference'        => 'REC-' . $invoice->invoice_number . '-' . $payment->id,
         ], [
             [
                 'account_id'  => $bankAccountId,
