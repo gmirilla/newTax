@@ -101,6 +101,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
         Route::get('/{topic}',  [HelpController::class, 'show'])->name('show');
     });
 
+    // ── Upsell banner dismiss (all roles) ─────────────────────────────────────
+    Route::post('/upsell/dismiss', function () {
+        session(['upsell_dismissed_at' => today()->toDateString()]);
+        return response()->noContent();
+    })->name('upsell.dismiss');
+
     // ── Admin-only ────────────────────────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {
 

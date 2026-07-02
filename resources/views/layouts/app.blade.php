@@ -428,6 +428,14 @@
             @endif
         @endif
 
+        {{-- ── Free-tier upsell banner (once per day, dismissable) ─────────────── --}}
+        @if(isset($currentTenant)
+            && $currentTenant->subscriptionActive()
+            && $currentTenant->plan?->slug === 'free'
+            && session('upsell_dismissed_at') !== today()->toDateString())
+            @include('layouts.partials._upsell-banner')
+        @endif
+
         {{-- ── Flash messages ──────────────────────────────────────────────────── --}}
         <div class="px-4 pt-4 md:px-6">
             @if(session('success'))

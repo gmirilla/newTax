@@ -61,7 +61,6 @@ class TaxController extends Controller
             'filing_reference' => 'required|string|max:100',
             'filed_date'       => 'required|date',
         ]);
-
         $vatReturn->update([
             'status'            => 'filed',
             'filed_date'        => $request->filed_date,
