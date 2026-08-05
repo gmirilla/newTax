@@ -129,6 +129,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::patch('/company',      [CompanySettingsController::class, 'update'])->name('company.update');
             Route::post('/company/logo',  [CompanySettingsController::class, 'uploadLogo'])->name('company.logo.upload');
             Route::delete('/company/logo',[CompanySettingsController::class, 'deleteLogo'])->name('company.logo.delete');
+            Route::patch('/company/show-name-with-logo', [CompanySettingsController::class, 'toggleShowNameWithLogo'])->name('company.show-name-with-logo');
 
             Route::get('/firs',             [FirsOnboardingController::class, 'showForm'])->name('firs')->middleware('plan:firs');
             Route::post('/firs',            [FirsOnboardingController::class, 'store'])->name('firs.store')->middleware('plan:firs');

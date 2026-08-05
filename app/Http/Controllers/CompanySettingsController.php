@@ -38,7 +38,8 @@ class CompanySettingsController extends Controller
             'vat_registered'       => 'boolean',
             'vat_number'           => 'nullable|string|max:30',
             'is_professional_firm' => 'boolean',
-            'invoice_accent_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'invoice_accent_color'  => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'show_name_with_logo'   => 'boolean',
         ]);
 
         $tenant->update($validated);
@@ -68,6 +69,18 @@ class CompanySettingsController extends Controller
         $tenant->update(['logo' => $path]);
 
         return back()->with('success', 'Company logo updated successfully.');
+    }
+
+    public function toggleShowNameWithLogo(Request $request): RedirectResponse
+    {
+        $this->requireAdmin($request);
+
+        $tenant = $request->user()->tenant;
+        $tenant->update([
+            'show_name_with_logo' => $request->boolean('show_name_with_logo'),
+        ]);
+
+        return back()->with('success', 'Setting updated.');
     }
 
     public function deleteLogo(Request $request): RedirectResponse

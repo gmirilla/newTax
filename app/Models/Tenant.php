@@ -24,7 +24,7 @@ class Tenant extends Model
         'paystack_customer_id', 'paystack_subscription_code',
         'referral_code', 'referred_by_code', 'referral_credit_ngn',
         'acquisition_source', 'utm_source', 'utm_medium', 'utm_campaign',
-        'invoice_accent_color',
+        'invoice_accent_color', 'show_name_with_logo',
     ];
 
     protected $casts = [
@@ -32,6 +32,7 @@ class Tenant extends Model
         'vat_registered'         => 'boolean',
         'is_active'              => 'boolean',
         'is_professional_firm'   => 'boolean',
+        'show_name_with_logo'    => 'boolean',
         'subscription_expires_at' => 'datetime',
         'trial_ends_at'           => 'datetime',
         'referral_credit_ngn'     => 'decimal:2',
