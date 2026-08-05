@@ -244,6 +244,27 @@ class InvoiceController extends Controller
         return back()->with('success', 'Payment recorded and journal entry posted.');
     }
 
+    public function printThermalReceipt(Invoice $invoice, \App\Models\InvoicePayment $payment): \Illuminate\View\View
+    {
+        $this->authorize('view', $invoice);
+
+        abort_if($payment->invoice_id !== $invoice->id, 404);
+
+        $invoice->load(['customer', 'items', 'tenant', 'payments']);
+
+        // Balance remaining after this specific payment (ordered by id)
+        $paidUpToThis = $invoice->payments
+            ->where('id', '<=', $payment->id)
+            ->sum('amount');
+        $balanceAfterPayment = max(0, (float) $invoice->total_amount - (float) $paidUpToThis);
+
+        $receiptNumber = 'REC-' . $invoice->invoice_number . '-' . $payment->id;
+
+        return view('invoices.receipt-thermal', compact(
+            'invoice', 'payment', 'receiptNumber', 'balanceAfterPayment'
+        ));
+    }
+
     public function downloadPdf(Invoice $invoice)
     {
         $this->authorize('view', $invoice);

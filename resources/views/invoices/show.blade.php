@@ -294,29 +294,109 @@
 
     {{-- Payment History --}}
     @if($invoice->payments->count() > 0)
+    @php
+        $methodColors = [
+            'bank_transfer' => 'bg-blue-100 text-blue-700',
+            'cash'          => 'bg-green-100 text-green-700',
+            'cheque'        => 'bg-purple-100 text-purple-700',
+            'pos'           => 'bg-indigo-100 text-indigo-700',
+            'online'        => 'bg-teal-100 text-teal-700',
+        ];
+        $totalPaid   = $invoice->payments->sum('amount');
+        $paidPercent = $invoice->total_amount > 0
+            ? min(100, round(($totalPaid / $invoice->total_amount) * 100))
+            : 0;
+        $runningBalance = (float) $invoice->total_amount;
+    @endphp
     <div class="bg-white rounded-lg shadow">
+        {{-- Header with progress bar --}}
         <div class="px-6 py-4 border-b">
-            <h3 class="text-sm font-semibold">Payment History</h3>
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold">Payment History</h3>
+                <span class="text-xs text-gray-500">{{ $paidPercent }}% paid</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-1.5">
+                <div class="h-1.5 rounded-full {{ $paidPercent >= 100 ? 'bg-green-500' : 'bg-blue-500' }}"
+                     style="width: {{ $paidPercent }}%"></div>
+            </div>
         </div>
+
         <table class="min-w-full text-sm">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-2 text-left text-xs font-medium text-gray-500">Date</th>
-                    <th class="px-6 py-2 text-left text-xs font-medium text-gray-500">Reference</th>
-                    <th class="px-6 py-2 text-left text-xs font-medium text-gray-500">Method</th>
-                    <th class="px-6 py-2 text-right text-xs font-medium text-gray-500">Amount</th>
+                    <th class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">#</th>
+                    <th class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Date</th>
+                    <th class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Method</th>
+                    <th class="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Reference</th>
+                    <th class="px-6 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</th>
+                    <th class="px-6 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Balance After</th>
+                    <th class="px-6 py-2"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-                @foreach($invoice->payments as $payment)
-                <tr>
-                    <td class="px-6 py-2">{{ $payment->payment_date->format('d M Y') }}</td>
-                    <td class="px-6 py-2 font-mono text-xs">{{ $payment->reference }}</td>
-                    <td class="px-6 py-2">{{ ucfirst(str_replace('_', ' ', $payment->method)) }}</td>
-                    <td class="px-6 py-2 text-right text-green-700 font-medium">₦{{ number_format($payment->amount, 2) }}</td>
+                @foreach($invoice->payments->sortBy('payment_date') as $i => $payment)
+                @php
+                    $runningBalance -= (float) $payment->amount;
+                @endphp
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 text-gray-400 text-xs">{{ $i + 1 }}</td>
+                    <td class="px-6 py-3 text-gray-700 whitespace-nowrap">{{ $payment->payment_date->format('d M Y') }}</td>
+                    <td class="px-6 py-3">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                            {{ $methodColors[$payment->method] ?? 'bg-gray-100 text-gray-600' }}">
+                            {{ ucfirst(str_replace('_', ' ', $payment->method)) }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-3">
+                        @if($payment->reference)
+                            <span class="font-mono text-xs text-gray-600">{{ $payment->reference }}</span>
+                        @else
+                            <span class="text-gray-300 text-xs">—</span>
+                        @endif
+                        @if($payment->notes)
+                            <p class="text-xs text-gray-400 mt-0.5 italic">{{ $payment->notes }}</p>
+                        @endif
+                    </td>
+                    <td class="px-6 py-3 text-right font-medium text-green-700 whitespace-nowrap">
+                        ₦{{ number_format($payment->amount, 2) }}
+                    </td>
+                    <td class="px-6 py-3 text-right whitespace-nowrap
+                        {{ $runningBalance <= 0 ? 'text-green-600 font-semibold' : 'text-orange-600' }}">
+                        {{ $runningBalance <= 0 ? 'Cleared' : '₦' . number_format($runningBalance, 2) }}
+                    </td>
+                    <td class="px-6 py-3 text-right">
+                        <a href="{{ route('invoices.payment.receipt', [$invoice, $payment]) }}"
+                           target="_blank"
+                           title="Print thermal receipt"
+                           class="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                            </svg>
+                            Receipt
+                        </a>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
+            <tfoot class="bg-gray-50 border-t-2 border-gray-200">
+                <tr>
+                    <td colspan="5" class="px-6 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                        Total Received
+                    </td>
+                    <td class="px-6 py-3 text-right font-bold text-green-700 whitespace-nowrap">
+                        ₦{{ number_format($totalPaid, 2) }}
+                    </td>
+                    <td class="px-6 py-3 text-right font-bold whitespace-nowrap
+                        {{ $invoice->balance_due <= 0 ? 'text-green-600' : 'text-orange-600' }}">
+                        @if($invoice->balance_due <= 0)
+                            Fully Paid
+                        @else
+                            ₦{{ number_format($invoice->balance_due, 2) }} due
+                        @endif
+                    </td>
+                </tr>
+            </tfoot>
         </table>
     </div>
     @endif
