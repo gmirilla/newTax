@@ -114,16 +114,17 @@
             </h2>
             <p class="mt-4 text-[#64748B] leading-relaxed">
                 Nigerian tax compliance is complex. AccountTaxNG handles every layer — VAT, WHT, CIT, and PAYE — so you're always prepared for filing deadlines.
+                <a href="{{ route('marketing.tax-rules') }}" class="text-[#0A1A2F] font-600 hover:underline">See the current tax framework →</a>
             </p>
         </div>
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             @php $taxFeatures = [
-                ['VAT Returns (VAT Act)','7.5% auto-applied on invoices and purchases. Pre-populated VAT returns ready for review and NRS submission at end of each tax period.','bg-amber-50 text-amber-700','7.5%'],
-                ['Withholding Tax (WHT)','Track WHT deducted on every qualifying supplier payment. Auto-generate WHT credit notes receivable for use against CIT liability.','bg-blue-50 text-blue-700','5–15%'],
-                ['Company Income Tax (CIT)','Finance Act-aligned CIT computation for SMEs and large companies. Applies correct tax bands, deducts allowable expenses, applies WHT credits.','bg-purple-50 text-purple-700','20–30%'],
+                ['VAT Returns','7.5% auto-applied on invoices and purchases. Pre-populated VAT returns ready for review and NRS submission at end of each tax period.','bg-amber-50 text-amber-700','7.5%'],
+                ['Withholding Tax (WHT)','Track WHT deducted on every qualifying supplier payment. Auto-generate WHT credit notes receivable for use against CIT liability.','bg-blue-50 text-blue-700','5–10%'],
+                ['Company Income Tax (CIT)','CIT computation aligned with current tax law for SMEs and large companies. Applies correct tax bands, deducts allowable expenses, applies WHT credits.','bg-purple-50 text-purple-700','0–30%'],
                 ['Minimum Tax','Automated minimum tax calculation for businesses with small or nil profits — ensuring compliance even in difficult years.','bg-slate-100 text-slate-700','0.5%'],
-                ['PAYE Computation','Monthly PAYE for all staff computed per current Finance Act income bands. Totals ready for State IRS remittance with audit trail.','bg-green-50 text-green-700','7–24%'],
+                ['PAYE Computation','Monthly PAYE for all staff computed per current income tax bands. Totals ready for State IRS remittance with audit trail.','bg-green-50 text-green-700','0–25%'],
                 ['NRS e-Invoice (Coming Soon)','NRS National Revenue Service e-Invoice integration. Every invoice generated in AccountTaxNG will be submitted directly to NRS upon issuance.','bg-rose-50 text-rose-600','Soon'],
             ]; @endphp
 
@@ -222,12 +223,12 @@
                     Payroll that computes PAYE automatically
                 </h2>
                 <p class="mt-4 text-slate-300 leading-relaxed">
-                    Managing payroll in Nigeria means navigating the Finance Act income tax bands, pension deductions, and State IRS filings. AccountTaxNG automates every step.
+                    Managing payroll in Nigeria means navigating progressive income tax bands, pension deductions, and State IRS filings. AccountTaxNG automates every step.
                 </p>
                 <div class="mt-8 grid sm:grid-cols-2 gap-4">
                     @foreach([
                         ['Staff salary management','Set gross salary, allowances, and deduction rules per employee'],
-                        ['Finance Act PAYE bands','Correct tax rates applied per current income bands automatically'],
+                        ['Current PAYE bands','Correct tax rates applied per current income bands automatically'],
                         ['Pension (PFA) deductions','8% employee + 10% employer pension auto-computed'],
                         ['Monthly payslip generation','Professional PDF payslips for every staff member'],
                         ['NHF contributions','National Housing Fund deductions tracked and reported'],
@@ -267,7 +268,7 @@
                     <div class="flex justify-between font-600 text-slate-600 border-b border-slate-50 pb-1.5 mb-2 mt-4 pt-2">
                         <span>DEDUCTIONS</span><span></span>
                     </div>
-                    @foreach([['PAYE (Finance Act)','₦62,500'],['Pension (8%)','₦32,000'],['NHF (2.5%)','₦10,000']] as [$d,$a])
+                    @foreach([['PAYE','₦62,500'],['Pension (8%)','₦32,000'],['NHF (2.5%)','₦10,000']] as [$d,$a])
                     <div class="flex justify-between text-slate-700"><span>{{ $d }}</span><span class="font-600 text-red-600">-{{ $a }}</span></div>
                     @endforeach
                     <div class="flex justify-between text-lg font-900 text-[#0A1A2F] pt-3 border-t-2 border-[#D4AF37] mt-3">

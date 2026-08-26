@@ -26,7 +26,7 @@
                 <div x-data="{ aboutOpen: false }" class="relative"
                      @mouseenter="aboutOpen = true" @mouseleave="aboutOpen = false">
                     <button type="button"
-                            class="flex items-center gap-1 text-sm font-medium text-slate-900 hover:text-white transition-colors {{ request()->routeIs(['marketing.about', 'marketing.faq']) ? 'text-white' : '' }}"
+                            class="flex items-center gap-1 text-sm font-medium text-slate-900 hover:text-white transition-colors {{ request()->routeIs(['marketing.about', 'marketing.faq', 'marketing.tax-rules']) ? 'text-white' : '' }}"
                             :class="aboutOpen ? 'text-white' : ''">
                         About
                         <svg class="w-3.5 h-3.5 transition-transform duration-150" :class="aboutOpen ? 'rotate-180' : ''"
@@ -47,6 +47,10 @@
                             <a href="{{ route('marketing.faq') }}"
                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
                                 FAQ
+                            </a>
+                            <a href="{{ route('marketing.tax-rules') }}"
+                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                                Tax Rules
                             </a>
                         </div>
                     </div>
@@ -162,6 +166,7 @@
             <a href="{{ route('marketing.pricing') }}"  class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Pricing</a>
             <a href="{{ route('marketing.about') }}"    class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">About</a>
             <a href="{{ route('marketing.faq') }}"      class="block pl-8 pr-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">— FAQ</a>
+            <a href="{{ route('marketing.tax-rules') }}" class="block pl-8 pr-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">— Tax Rules</a>
             <a href="https://forum.accounttaxng.com" target="_blank" class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Forum</a>
             <a href="{{ route('marketing.contact') }}"  class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Contact</a>
 

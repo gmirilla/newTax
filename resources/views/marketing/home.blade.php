@@ -30,7 +30,7 @@
                 </h1>
 
                 <p class="mt-6 text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
-                    The platform that combines bookkeeping, VAT automation, payroll PAYE, and NRS compliance in one place — built specifically for Nigerian businesses.
+                    The platform that combines Accounting, Sales, VAT automation, payroll PAYE, and NRS compliance in one place — built specifically for Nigerian businesses.
                 </p>
 
                 <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
@@ -68,7 +68,7 @@
                     </div>
                     <div class="flex items-center gap-1.5 text-xs text-slate-400">
                         <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        Finance Act Aligned
+                        Current Tax Law Aligned
                     </div>
                     <div class="flex items-center gap-1.5 text-xs text-slate-400">
                         <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -92,7 +92,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-slate-800">VAT Return Filed</p>
-                        <p class="text-[10px] text-slate-500">Automatically submitted to FIRS</p>
+                        <p class="text-[10px] text-slate-500">Automatically Calculated</p>
                     </div>
                 </div>
             </div>
@@ -120,10 +120,10 @@
             $features = [
                 ['icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z','title'=>'Invoicing & Quotes','desc'=>'Generate professional invoices and quotes in seconds. Auto-apply VAT, track payment status, and email directly to clients.','badge'=>'Core'],
                 ['icon'=>'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z','title'=>'Expense Tracking','desc'=>'Log business expenses, categorise by type, attach receipts, and track WHT deductions automatically.','badge'=>'Core'],
-                ['icon'=>'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M9 14h.01M12 14h.01M15 14h.01M4 3h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z','title'=>'VAT Automation','desc'=>'Auto-calculate VAT from every invoice and expense. Generate FIRS-ready VAT returns with one click.','badge'=>'Tax'],
+                ['icon'=>'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M9 14h.01M12 14h.01M15 14h.01M4 3h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z','title'=>'VAT Automation','desc'=>'Auto-calculate VAT from every invoice and expense. Generate NRS-ready VAT returns with one click.','badge'=>'Tax'],
                 ['icon'=>'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z','title'=>'Payroll & PAYE','desc'=>'Manage staff salaries, auto-calculate PAYE deductions, generate payslips, and track pension contributions.','badge'=>'HR'],
                 ['icon'=>'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z','title'=>'Financial Reports','desc'=>'Profit & Loss, Balance Sheet, Cash Flow, and VAT Summary reports. Download as PDF or Excel instantly.','badge'=>'Reports'],
-                ['icon'=>'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z','title'=>'Company Income Tax','desc'=>'Finance Act-aligned CIT computation. Track WHT credits, manage tax schedules, and stay audit-ready.','badge'=>'Tax'],
+                ['icon'=>'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z','title'=>'Company Income Tax','desc'=>'CIT computed under Nigeria\'s current tax law. Track WHT credits, manage tax schedules, and stay audit-ready.','badge'=>'Tax'],
             ];
             @endphp
 
@@ -172,16 +172,17 @@
                     Never miss a tax deadline again.
                 </h2>
                 <p class="mt-5 text-slate-300 leading-relaxed">
-                    AccountTaxNG is built around Nigeria's tax framework. Every transaction is automatically classified to generate FIRS-ready returns — so compliance becomes a by-product of doing business, not a quarterly panic.
+                    AccountTaxNG is built around Nigeria's current tax framework and applicable NRS requirements. Every transaction is automatically classified to generate NRS-ready returns — so compliance becomes a by-product of doing business, not a quarterly panic.
+                    <a href="{{ route('marketing.tax-rules') }}" class="text-[#D4AF37] hover:underline">See the full framework →</a>
                 </p>
 
                 <div class="mt-8 space-y-4">
                     @foreach([
                         ['VAT Returns', 'Auto-calculated from invoices and purchases. Download or submit directly.'],
                         ['Withholding Tax (WHT)', 'Track WHT deducted on supplier payments. Generate credit notes automatically.'],
-                        ['Company Income Tax (CIT)', 'Finance Act-aligned CIT computation with WHT credits applied.'],
+                        ['Company Income Tax (CIT)', 'Computed under current tax law, with WHT credits applied automatically.'],
                         ['PAYE Remittances', 'Payroll PAYE totals ready for monthly State IRS remittance.']
-    
+
                     ] as [$title, $desc])
                     <div class="flex gap-4">
                         <div class="flex-shrink-0 w-5 h-5 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center mt-0.5">
@@ -199,10 +200,10 @@
             {{-- Compliance cards --}}
             <div class="grid grid-cols-2 gap-4">
                 @foreach([
-                    ['VAT','7.5%','Finance Act 2023','₦372,225 due 21 Apr','amber','Computed'],
+                    ['VAT','7.5%','Standard Rate','₦372,225 due 21 Apr','amber','Computed'],
                     ['WHT','10%','Supplier Payments','₦48,500 credited','blue','Tracked'],
-                    ['CIT','30%','Annual Profit Tax','₦0 payable (WHT offset)','green','Optimised'],
-                    ['PAYE','Auto','Per Finance Act','₦156,800 remitted','purple','Filed'],
+                    ['CIT','30%','Annual Profit Tax','₦0 payable (WHT offset)','green','Computed'],
+                    ['PAYE','Auto','Progressive Bands','₦156,800 remitted','purple','Filed'],
                 ] as [$tax,$rate,$label,$status,$color,$badge])
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 transition-colors">
                     <div class="flex items-center justify-between mb-3">
@@ -387,7 +388,7 @@ function startMarketingTour() {
         { src: base + '05-tax-dashboard.png', title: 'Tax Compliance Dashboard', body: 'VAT, WHT, and CIT organised in one place, with due dates and current Nigerian tax rates.' },
         { src: base + '06-vat-computation.png', title: 'Compute your VAT return', body: 'One click computes output VAT, input VAT, and what\'s payable — ready to file.' },
         { src: base + '07-expenses.png', title: 'Expenses & WHT', body: 'Record an expense and the correct WHT rate is deducted automatically based on the vendor.' },
-        { src: base + '08-payroll-employees.png', title: 'Payroll & PAYE', body: 'Manage your team and run payroll with PAYE computed per current Finance Act bands.' },
+        { src: base + '08-payroll-employees.png', title: 'Payroll & PAYE', body: 'Manage your team and run payroll with PAYE computed per current income tax bands.' },
         { src: base + '09-reports.png', title: 'Financial Reports', body: 'P&L, Balance Sheet, Trial Balance, and tax reports — generated instantly, exportable to PDF or Excel.' },
         { src: base + '10-profit-loss.png', title: 'Profit & Loss Statement', body: 'Real profit, calculated automatically from your invoices, expenses, and payroll.' },
     ];
