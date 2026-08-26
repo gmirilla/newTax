@@ -99,7 +99,12 @@
     <div class="header">
         <div class="header-left">
             @if($invoice->tenant->logo)
-                <img src="{{ public_path('storage/' . $invoice->tenant->logo) }}" height="50" alt="Logo">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <img src="{{ public_path('storage/' . $invoice->tenant->logo) }}" height="50" alt="Logo">
+                    @if($invoice->tenant->show_name_with_logo)
+                        <div class="company-name">{{ $invoice->tenant->name }}</div>
+                    @endif
+                </div>
             @else
                 <div class="company-name">{{ $invoice->tenant->name }}</div>
             @endif

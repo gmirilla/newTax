@@ -130,6 +130,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::patch('/company',      [CompanySettingsController::class, 'update'])->name('company.update');
             Route::post('/company/logo',  [CompanySettingsController::class, 'uploadLogo'])->name('company.logo.upload');
             Route::delete('/company/logo',[CompanySettingsController::class, 'deleteLogo'])->name('company.logo.delete');
+            Route::patch('/company/show-name-with-logo', [CompanySettingsController::class, 'toggleShowNameWithLogo'])->name('company.show-name-with-logo');
 
             Route::get('/firs',             [FirsOnboardingController::class, 'showForm'])->name('firs')->middleware('plan:firs');
             Route::post('/firs',            [FirsOnboardingController::class, 'store'])->name('firs.store')->middleware('plan:firs');
@@ -194,6 +195,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::delete('/{invoice}',   [InvoiceController::class, 'destroy'])->name('destroy');
             Route::post('/{invoice}/payment',    [InvoiceController::class, 'recordPayment'])->name('payment');
             Route::get('/{invoice}/pdf',         [InvoiceController::class, 'downloadPdf'])->name('pdf');
+            Route::get('/{invoice}/payments/{payment}/receipt', [InvoiceController::class, 'printThermalReceipt'])->name('payment.receipt');
             Route::post('/{invoice}/send',       [InvoiceController::class, 'sendEmail'])->name('send');
             Route::post('/{invoice}/void',       [InvoiceController::class, 'void'])->name('void');
             Route::post('/{invoice}/submit-firs',[InvoiceController::class, 'submitToFirs'])->name('submit-firs')->middleware('plan:firs');

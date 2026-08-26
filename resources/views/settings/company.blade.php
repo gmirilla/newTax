@@ -77,6 +77,29 @@
                 @endif
             </div>
         </div>
+
+        {{-- Show name with logo toggle --}}
+        @if($tenant->logo)
+        <div class="border-t pt-4 mt-4">
+            <form method="POST" action="{{ route('settings.company.show-name-with-logo') }}">
+                @csrf
+                @method('PATCH')
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="hidden" name="show_name_with_logo" value="0">
+                    <input type="checkbox" name="show_name_with_logo" value="1"
+                           {{ $tenant->show_name_with_logo ? 'checked' : '' }}
+                           onchange="this.form.submit()"
+                           class="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                    <span>
+                        <span class="text-sm font-medium text-gray-700">Show company name alongside logo on PDFs</span>
+                        <span class="block text-xs text-gray-400 mt-0.5">
+                            Useful when your logo does not include your company name.
+                        </span>
+                    </span>
+                </label>
+            </form>
+        </div>
+        @endif
     </div>
 
     <div class="bg-white rounded-lg shadow p-6 space-y-5">
