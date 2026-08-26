@@ -43,6 +43,11 @@ class MarketingController extends Controller
         return view('marketing.faq');
     }
 
+    public function taxRules()
+    {
+        return view('marketing.tax-rules');
+    }
+
     public function contact()
     {
         return view('marketing.contact');

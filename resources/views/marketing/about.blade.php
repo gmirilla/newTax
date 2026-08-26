@@ -45,9 +45,9 @@
             {{-- Values grid --}}
             <div class="grid grid-cols-2 gap-5">
                 @foreach([
-                    ['Compliance First','Every calculation, every report, every form — aligned with NRS regulations and the latest Finance Act.','M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z'],
+                    ['Compliance First','Every calculation, every report, every form — aligned with Nigeria\'s current tax framework and applicable NRS requirements.','M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z'],
                     ['Radical Simplicity','Complex tax law, simple interface. We take the hard work out of compliance so you can focus on your business.','M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18'],
-                    ['Built for Nigeria','We don\'t adapt foreign tools for Nigeria. We build Nigerian-first — with Naira, FIRS, State IRS, NHF, and PFAs at the core.','M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3'],
+                    ['Built for Nigeria','We don\'t adapt foreign tools for Nigeria. We build Nigerian-first — with Naira, NRS, State IRS, NHF, and PFAs at the core.','M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3'],
                     ['Community Driven','Our users shape our roadmap. Feature requests from the community are triaged and voted on — the best ideas ship next.','M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z'],
                 ] as [$title, $desc, $icon])
                 <div class="bg-[#F5F7FA] rounded-2xl p-5 border border-slate-100">
@@ -76,7 +76,7 @@
                     ['🇳🇬', 'Nigerian Company', 'Registered in Nigeria, built by Nigerians, for Nigeria'],
                     ['🏗️', 'SME-Focused', 'Purpose-built for the Nigerian SME market'],
                     ['🔒', 'NDPR Compliant', 'Full compliance with Nigerian data protection laws'],
-                    ['⚡', 'Continuously Updated', 'Finance Act changes reflected automatically in the platform'],
+                    ['⚡', 'Continuously Updated', 'Tax law changes reflected automatically in the platform'],
                 ] as [$emoji, $title, $desc])
                 <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
                     <div class="text-3xl mb-3">{{ $emoji }}</div>
@@ -95,7 +95,7 @@
                     Bytestream Technologies was founded with a singular vision: to build business software that actually works for Nigerian companies — not software built for the US or UK market and awkwardly adapted for local use.
                 </p>
                 <p class="mt-4 text-[#64748B] leading-relaxed">
-                    Nigerian SMEs face unique challenges. The tax framework is complex and evolving. The Finance Act changes regularly. NRS is digitising. Currency volatility affects planning. And most SME owners are not accountants.
+                    Nigerian SMEs face unique challenges. The tax framework is complex and evolving — 2025's reform replaced decades of amendments with the Nigeria Tax Act, the Nigeria Tax Administration Act, and the NRS (Establishment) Act. NRS is digitising. Currency volatility affects planning. And most SME owners are not accountants.
                 </p>
                 <p class="mt-4 text-[#64748B] leading-relaxed">
                     AccountTaxNG is our answer. A platform that respects the intelligence of the Nigerian business owner, speaks their language, uses Naira natively, and stays current with NRS regulations without requiring the user to be a tax expert.
@@ -109,7 +109,7 @@
                         <div>
                             <p class="text-sm font-600 text-white mb-1">Our commitment to you</p>
                             <p class="text-xs text-slate-400 leading-relaxed">
-                                We update AccountTaxNG within 30 days of any Finance Act change. If NRS modifies a VAT rate, WHT schedule, or CIT band, your calculations update automatically — no action needed from you.
+                                We update AccountTaxNG within 30 days of any change to Nigeria's tax law. If the NRS modifies a VAT rate, WHT schedule, or CIT band, your calculations update automatically — no action needed from you. See our <a href="{{ route('marketing.tax-rules') }}" class="text-[#D4AF37] hover:underline">Tax Rules page</a> for the current framework.
                             </p>
                         </div>
                     </div>

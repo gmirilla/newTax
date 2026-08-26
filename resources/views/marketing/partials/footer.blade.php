@@ -16,7 +16,7 @@
                     </span>
                 </a>
                 <p class="text-sm leading-relaxed text-slate-400 max-w-xs">
-                    Accounting and tax compliance software built for Nigerian SMEs. Finance Act-aligned, FIRS-ready, cloud-based.
+                    Accounting and tax compliance software built for Nigerian SMEs. Aligned with current tax law, NRS-ready, cloud-based.
                 </p>
                 <p class="text-xs text-slate-500 mt-3">
                     A product of <span class="text-slate-300">Bytestream Technologies</span>
@@ -43,6 +43,7 @@
                     <li><a href="{{ route('marketing.features') }}"               class="hover:text-white transition-colors">Features</a></li>
                     <li><a href="{{ route('marketing.pricing') }}"                class="hover:text-white transition-colors">Pricing</a></li>
                     <li><a href="{{ route('marketing.features') }}#tax"           class="hover:text-white transition-colors">Tax Automation</a></li>
+                    <li><a href="{{ route('marketing.tax-rules') }}"              class="hover:text-white transition-colors">Tax Rules</a></li>
                     <li><a href="{{ route('marketing.features') }}#payroll"       class="hover:text-white transition-colors">Payroll</a></li>
                     <li><a href="{{ route('marketing.features') }}#invoicing"     class="hover:text-white transition-colors">Invoicing</a></li>
                     <li><a href="{{ route('marketing.features') }}#reports"       class="hover:text-white transition-colors">Reports</a></li>
@@ -91,7 +92,7 @@
                 </div>
                 <div>
                     <p class="text-[11px] font-semibold text-white">Designed for NRS compliance</p>
-                    <p class="text-[10px] text-slate-500">Finance Act Aligned</p>
+                    <a href="{{ route('marketing.tax-rules') }}" class="text-[10px] text-slate-500 hover:text-[#D4AF37] transition-colors">Current Tax Law Aligned</a>
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
