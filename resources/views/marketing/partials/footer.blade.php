@@ -100,7 +100,7 @@
                     <svg class="w-4 h-4 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918"/></svg>
                 </div>
                 <div>
-                    <p class="text-[11px] font-semibold text-white">Nigerian Data Residency</p>
+                    <p class="text-[11px] font-semibold text-white">Data hosted in secure cloud infrastructure</p>
                     <p class="text-[10px] text-slate-500">NDPR Compliant</p>
                 </div>
             </div>

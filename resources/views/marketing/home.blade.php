@@ -30,7 +30,7 @@
                 </h1>
 
                 <p class="mt-6 text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
-                    The platform that combines bookkeeping, VAT automation, payroll PAYE, and NRS compliance in one place — built specifically for Nigerian businesses.
+                    The platform that combines Accounting, Sales, VAT automation, payroll PAYE, and NRS compliance in one place — built specifically for Nigerian businesses.
                 </p>
 
                 <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
@@ -92,7 +92,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-slate-800">VAT Return Filed</p>
-                        <p class="text-[10px] text-slate-500">Automatically submitted to NRS</p>
+                        <p class="text-[10px] text-slate-500">Automatically Calculated</p>
                     </div>
                 </div>
             </div>
@@ -202,7 +202,7 @@
                 @foreach([
                     ['VAT','7.5%','Standard Rate','₦372,225 due 21 Apr','amber','Computed'],
                     ['WHT','10%','Supplier Payments','₦48,500 credited','blue','Tracked'],
-                    ['CIT','30%','Annual Profit Tax','₦0 payable (WHT offset)','green','Optimised'],
+                    ['CIT','30%','Annual Profit Tax','₦0 payable (WHT offset)','green','Computed'],
                     ['PAYE','Auto','Progressive Bands','₦156,800 remitted','purple','Filed'],
                 ] as [$tax,$rate,$label,$status,$color,$badge])
                 <div class="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 transition-colors">
