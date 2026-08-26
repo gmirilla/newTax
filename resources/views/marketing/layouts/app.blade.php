@@ -57,6 +57,9 @@
     {{-- Alpine.js --}}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    {{-- Interactive product tour (screenshot carousel) --}}
+    <script src="{{ asset('js/image-tour.js') }}"></script>
+
     <style>
         [x-cloak] { display: none !important; }
         .gradient-hero { background: linear-gradient(135deg, #9f9f9f 0%, #0d2444 60%, #0A1A2F 100%); }

@@ -5,6 +5,25 @@
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6">
 
+    {{-- ─── Custom Company Login URL ────────────────────────────────────────────── --}}
+    <div class="bg-white rounded-lg shadow p-6" x-data="{ copied: false }">
+        <div class="mb-3">
+            <h2 class="text-base font-semibold">Your Company Login Link</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Share this branded link with your team — it shows your company name and logo on sign-in.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <input type="text" readonly value="{{ route('login.tenant', $tenant->slug) }}"
+                   x-ref="loginLink" onclick="this.select()"
+                   class="flex-1 rounded-md border-gray-300 bg-gray-50 shadow-sm text-sm font-mono text-gray-700">
+            <button type="button"
+                    @click="navigator.clipboard.writeText($refs.loginLink.value); copied = true; setTimeout(() => copied = false, 1500)"
+                    class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 whitespace-nowrap">
+                <span x-show="!copied">Copy link</span>
+                <span x-show="copied" x-cloak>Copied!</span>
+            </button>
+        </div>
+    </div>
+
     {{-- ─── Logo Upload ──────────────────────────────────────────────────────── --}}
     <div class="bg-white rounded-lg shadow p-6">
         <div class="mb-4">

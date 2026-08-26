@@ -58,6 +58,7 @@ Route::get('/',          [MarketingController::class, 'home'])->name('home');
 Route::get('/features',  [MarketingController::class, 'features'])->name('marketing.features');
 Route::get('/pricing',   [MarketingController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/about',     [MarketingController::class, 'about'])->name('marketing.about');
+Route::get('/faq',       [MarketingController::class, 'faq'])->name('marketing.faq');
 Route::get('/contact',   [MarketingController::class, 'contact'])->name('marketing.contact');
 Route::post('/contact',  [MarketingController::class, 'contactSubmit'])->name('marketing.contact.submit');
 
@@ -194,6 +195,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::delete('/{invoice}',   [InvoiceController::class, 'destroy'])->name('destroy');
             Route::post('/{invoice}/payment',    [InvoiceController::class, 'recordPayment'])->name('payment');
             Route::get('/{invoice}/pdf',         [InvoiceController::class, 'downloadPdf'])->name('pdf');
+            Route::get('/{invoice}/payments/{payment}/receipt', [InvoiceController::class, 'printThermalReceipt'])->name('payment.receipt');
             Route::post('/{invoice}/send',       [InvoiceController::class, 'sendEmail'])->name('send');
             Route::post('/{invoice}/void',       [InvoiceController::class, 'void'])->name('void');
             Route::post('/{invoice}/submit-firs',[InvoiceController::class, 'submitToFirs'])->name('submit-firs')->middleware('plan:firs');

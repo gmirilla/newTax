@@ -6,22 +6,28 @@ use App\Models\Customer;
 use App\Models\Employee;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Tenant;
+use App\Models\User;
 use App\Services\VatService;
-use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class SampleDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->seedInvoices();
-        $this->seedEmployees();
+        $tenant = Tenant::where('slug', 'adetokunbo-ventures')->first();
+        if (!$tenant) return;
+
+        $this->seedInvoices($tenant);
+        $this->seedEmployees($tenant);
     }
 
-    private function seedInvoices(): void
+    private function seedInvoices(Tenant $tenant): void
     {
-        $customer = Customer::where('tenant_id', 1)->first();
+        $customer = Customer::where('tenant_id', $tenant->id)->first();
         if (!$customer) return;
+
+        $admin = User::where('tenant_id', $tenant->id)->where('role', 'admin')->first();
 
         // Create 3 sample invoices
         $invoices = [
@@ -55,7 +61,7 @@ class SampleDataSeeder extends Seeder
             $total         = $subtotal + $vatAmount;
 
             $invoice = Invoice::create([
-                'tenant_id'      => 1,
+                'tenant_id'      => $tenant->id,
                 'customer_id'    => $customer->id,
                 'invoice_number' => $invoiceNumber,
                 'invoice_date'   => $data['invoice_date'],
@@ -71,7 +77,7 @@ class SampleDataSeeder extends Seeder
                 'currency'       => 'NGN',
                 'notes'          => 'Payment via bank transfer to account 0123456789 (GTB).',
                 'terms'          => 'Payment due within 30 days of invoice date.',
-                'created_by'     => 1,
+                'created_by'     => $admin?->id,
             ]);
 
             InvoiceItem::create([
@@ -89,7 +95,7 @@ class SampleDataSeeder extends Seeder
         }
     }
 
-    private function seedEmployees(): void
+    private function seedEmployees(Tenant $tenant): void
     {
         $employees = [
             [
@@ -127,7 +133,7 @@ class SampleDataSeeder extends Seeder
         foreach ($employees as $idx => $data) {
             $gross = $data['basic_salary'] + $data['housing_allowance'] + $data['transport_allowance'];
             Employee::create(array_merge($data, [
-                'tenant_id'        => 1,
+                'tenant_id'        => $tenant->id,
                 'employee_id'      => 'EMP-' . str_pad($idx + 1, 4, '0', STR_PAD_LEFT),
                 'gross_salary'     => $gross,
                 'state_of_residence' => 'Lagos',

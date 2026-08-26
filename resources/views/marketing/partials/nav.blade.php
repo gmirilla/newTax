@@ -22,10 +22,35 @@
                    class="text-sm font-medium text-slate-900 hover:text-white transition-colors {{ request()->routeIs('marketing.pricing') ? 'text-white' : '' }}">
                     Pricing
                 </a>
-                <a href="{{ route('marketing.about') }}"
-                   class="text-sm font-medium text-slate-900 hover:text-white transition-colors {{ request()->routeIs('marketing.about') ? 'text-white' : '' }}">
-                    About
-                </a>
+                {{-- About dropdown --}}
+                <div x-data="{ aboutOpen: false }" class="relative"
+                     @mouseenter="aboutOpen = true" @mouseleave="aboutOpen = false">
+                    <button type="button"
+                            class="flex items-center gap-1 text-sm font-medium text-slate-900 hover:text-white transition-colors {{ request()->routeIs(['marketing.about', 'marketing.faq']) ? 'text-white' : '' }}"
+                            :class="aboutOpen ? 'text-white' : ''">
+                        About
+                        <svg class="w-3.5 h-3.5 transition-transform duration-150" :class="aboutOpen ? 'rotate-180' : ''"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <div x-show="aboutOpen" x-cloak x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="absolute top-full left-1/2 -translate-x-1/2 pt-3 w-48">
+                        <div class="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden py-1">
+                            <a href="{{ route('marketing.about') }}"
+                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                                About Us
+                            </a>
+                            <a href="{{ route('marketing.faq') }}"
+                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                                FAQ
+                            </a>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- Resources dropdown --}}
                 <div x-data="{ resOpen: false }" class="relative"
@@ -136,6 +161,7 @@
             <a href="{{ route('marketing.features') }}" class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Features</a>
             <a href="{{ route('marketing.pricing') }}"  class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Pricing</a>
             <a href="{{ route('marketing.about') }}"    class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">About</a>
+            <a href="{{ route('marketing.faq') }}"      class="block pl-8 pr-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors">— FAQ</a>
             <a href="https://forum.accounttaxng.com" target="_blank" class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Forum</a>
             <a href="{{ route('marketing.contact') }}"  class="block px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">Contact</a>
 

@@ -14,7 +14,7 @@
             Simple, honest pricing.
         </h1>
         <p class="mt-4 text-lg text-slate-300 leading-relaxed">
-            Start free. Upgrade when you're ready. Cancel anytime. No setup fees, no hidden charges.
+            Every account starts with a full-featured 14-day trial — no credit card required. Keep the plan that fits, or land automatically on Starter, free forever.
         </p>
     </div>
 </section>
@@ -68,7 +68,7 @@
                 <div class="mb-7">
                     @if($isFree)
                     <div class="font-display text-5xl font-900 text-[#0A1A2F]">Free</div>
-                    <p class="text-sm text-slate-500 mt-1">Forever — no credit card needed</p>
+                    <p class="text-sm text-slate-500 mt-1">Forever — where every account lands after its 14-day trial</p>
                     @else
                     {{-- Monthly price display --}}
                     <div x-show="cycle === 'monthly'">
@@ -96,7 +96,7 @@
 
                 <a href="{{ route('register') }}"
                    class="{{ $popular ? 'btn-gold' : 'btn-outline-dark' }} text-sm font-700 px-5 py-3 rounded-xl text-center block mb-7">
-                    {{ $isFree ? 'Get Started Free' : 'Start 14-Day Free Trial' }}
+                    {{ $isFree ? 'Start Free — 14-Day Trial Included' : 'Start 14-Day Free Trial' }}
                 </a>
 
                 <div class="border-t border-slate-100 pt-6">
@@ -163,11 +163,11 @@
                     @if($price !== 'Free')
                     <p class="text-sm text-slate-500 mt-1">/month</p>
                     @else
-                    <p class="text-sm text-slate-500 mt-1">Forever free</p>
+                    <p class="text-sm text-slate-500 mt-1">Forever — where every account lands after its 14-day trial</p>
                     @endif
                 </div>
                 <a href="{{ route('register') }}" class="{{ $popular ? 'btn-gold' : 'btn-outline-dark' }} text-sm font-700 px-5 py-3 rounded-xl text-center block mb-6">
-                    {{ $price === 'Free' ? 'Get Started Free' : 'Start Free Trial' }}
+                    {{ $price === 'Free' ? 'Start Free — 14-Day Trial Included' : 'Start 14-Day Free Trial' }}
                 </a>
                 <ul class="space-y-2.5 border-t border-slate-100 pt-5">
                     @foreach($features as $f)
@@ -240,7 +240,7 @@
         </div>
 
         <p class="text-center text-sm text-slate-500 mt-8">
-            All paid plans include a <strong class="text-[#1E293B]">14-day free trial</strong>. No credit card required. Cancel anytime.
+            Every account — including Starter — begins with a <strong class="text-[#1E293B]">14-day trial of full Growth-plan features</strong>. No credit card required. Don't upgrade, and you'll continue automatically on Starter, free forever.
         </p>
     </div>
 </section>
@@ -255,8 +255,8 @@
 
         <div class="space-y-3">
             @php $pricingFaqs = [
-                ['Is there really a free plan?', 'Yes. Our Starter plan is completely free — no credit card, no time limit. It includes 5 invoices per month, basic expense tracking, VAT computation, and cloud access. It\'s designed for very small businesses or those just starting out.'],
-                ['What happens after the 14-day trial?', 'After your trial, you can choose a paid plan to continue with full features, or downgrade to the free Starter plan. Your data is never deleted — you stay in control.'],
+                ['Is there really a free plan?', 'Yes. Every new account gets a 14-day trial of our full Growth plan first — no credit card required. If you don\'t upgrade, you land automatically on Starter: completely free, forever, with no time limit. It includes 5 invoices per month, basic expense tracking, VAT computation, and cloud access — ideal for very small businesses or those just starting out.'],
+                ['What happens after the 14-day trial?', 'If you\'ve added a paid plan, billing starts and you keep full access. If you haven\'t, your account automatically continues on the free Starter plan — no action needed, and your data is never deleted.'],
                 ['Can I switch plans at any time?', 'Yes. You can upgrade or downgrade at any time. Upgrades take effect immediately. Downgrades take effect at the end of your current billing period.'],
                 ['Is there a discount for annual billing?', 'Yes — you save up to 20% when you choose annual billing over monthly. The discount is applied automatically and shown on the pricing page.'],
                 ['Can I get a custom plan for my business?', 'For businesses with special requirements — more users, custom integrations, or dedicated support — please contact us at hello@accounttaxng.com and we\'ll work out a plan that fits.'],
@@ -287,7 +287,7 @@
             <h3 class="font-display font-700 text-lg text-[#0A1A2F] mb-2">Still have questions?</h3>
             <p class="text-sm text-[#64748B] mb-5">Talk to our team — we're happy to walk you through the right plan for your business.</p>
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="{{ route('marketing.contact') }}#demo" class="btn-gold inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-700">Book a Demo</a>
+                <a href="{{ route('marketing.contact') }}" class="btn-gold inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-700">Talk to Sales</a>
                 <a href="mailto:hello@accounttaxng.com" class="btn-outline-dark inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-700">Email Us</a>
             </div>
         </div>
@@ -298,7 +298,7 @@
 <section class="py-16 bg-[#0A1A2F]">
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 class="font-display text-2xl lg:text-3xl font-800 text-white">Start for free today</h2>
-        <p class="mt-3 text-slate-300">No credit card. No setup fees. Full access for 14 days.</p>
+        <p class="mt-3 text-slate-300">No credit card. Full access for 14 days, then free forever on Starter if you don't upgrade.</p>
         <a href="{{ route('register') }}" class="mt-6 btn-gold inline-flex items-center gap-2 px-8 py-3.5 rounded-xl text-sm font-700 shadow-lg shadow-[#D4AF37]/20">
             Create Free Account
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
