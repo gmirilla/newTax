@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In — AccountTaxNG</title>
+    <title>Log In — {{ isset($tenant) ? $tenant->name : 'AccountTaxNG' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,10 +31,19 @@
 
         <div class="relative">
             <a href="{{ route('home') }}" class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#D4AF37,#C9A227)">
-                    <span class="text-xs font-black text-[#0A1A2F]">AT</span>
-                </div>
-                <span class="font-display text-white text-lg font-800">Account<span class="text-[#D4AF37]">Tax</span>NG</span>
+                @if(isset($tenant) && $tenant->logo)
+                    <img src="{{ Storage::url($tenant->logo) }}" alt="{{ $tenant->name }}" class="h-9 w-auto max-w-[9rem] object-contain">
+                @elseif(isset($tenant))
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#D4AF37,#C9A227)">
+                        <span class="text-xs font-black text-[#0A1A2F]">{{ strtoupper(substr($tenant->name, 0, 2)) }}</span>
+                    </div>
+                    <span class="font-display text-white text-lg font-800">{{ $tenant->name }}</span>
+                @else
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#D4AF37,#C9A227)">
+                        <span class="text-xs font-black text-[#0A1A2F]">AT</span>
+                    </div>
+                    <span class="font-display text-white text-lg font-800">Account<span class="text-[#D4AF37]">Tax</span>NG</span>
+                @endif
             </a>
         </div>
 
@@ -70,17 +79,28 @@
         {{-- Mobile logo --}}
         <div class="lg:hidden mb-8 text-center">
             <a href="{{ route('home') }}" class="inline-flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#D4AF37,#C9A227)">
-                    <span class="text-xs font-black text-[#0A1A2F]">AT</span>
-                </div>
-                <span class="font-display text-[#0A1A2F] text-lg font-800">Account<span class="text-[#D4AF37]">Tax</span>NG</span>
+                @if(isset($tenant) && $tenant->logo)
+                    <img src="{{ Storage::url($tenant->logo) }}" alt="{{ $tenant->name }}" class="h-8 w-auto max-w-[8rem] object-contain">
+                @elseif(isset($tenant))
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,#D4AF37,#C9A227)">
+                        <span class="text-xs font-black text-[#0A1A2F]">{{ strtoupper(substr($tenant->name, 0, 2)) }}</span>
+                    </div>
+                    <span class="font-display text-[#0A1A2F] text-lg font-800">{{ $tenant->name }}</span>
+                @else
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:linear-gradient(135deg,#D4AF37,#C9A227)">
+                        <span class="text-xs font-black text-[#0A1A2F]">AT</span>
+                    </div>
+                    <span class="font-display text-[#0A1A2F] text-lg font-800">Account<span class="text-[#D4AF37]">Tax</span>NG</span>
+                @endif
             </a>
         </div>
 
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <h1 class="font-display text-2xl font-800 text-[#0A1A2F]">Welcome back</h1>
-                <p class="text-sm text-[#64748B] mt-1.5">Sign in to your AccountTaxNG workspace</p>
+                <p class="text-sm text-[#64748B] mt-1.5">
+                    {{ isset($tenant) ? 'Sign in to ' . $tenant->name . '’s workspace' : 'Sign in to your AccountTaxNG workspace' }}
+                </p>
             </div>
 
             @if($errors->any())
@@ -91,7 +111,7 @@
             </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="space-y-4">
+            <form method="POST" action="{{ isset($tenant) ? route('login.tenant.submit', $tenant->slug) : route('login') }}" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-sm font-600 text-[#1E293B] mb-1.5">Email address</label>
@@ -117,8 +137,12 @@
             </form>
 
             <p class="mt-6 text-center text-sm text-[#64748B]">
-                Don't have an account?
-                <a href="{{ route('register') }}" class="text-[#D4AF37] font-600 hover:underline ml-1">Start free trial</a>
+                @if(isset($tenant))
+                    Don't have a login? Contact your {{ $tenant->name }} admin for an invite.
+                @else
+                    Don't have an account?
+                    <a href="{{ route('register') }}" class="text-[#D4AF37] font-600 hover:underline ml-1">Start free trial</a>
+                @endif
             </p>
 
         </div>

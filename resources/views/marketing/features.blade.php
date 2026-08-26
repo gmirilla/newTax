@@ -110,7 +110,7 @@
         <div class="text-center max-w-2xl mx-auto mb-14">
             <div class="section-badge mb-4 mx-auto">Tax Compliance</div>
             <h2 class="font-display text-3xl lg:text-4xl font-800 text-[#0A1A2F] leading-tight">
-                FIRS-ready tax computation — automatically
+                NRS-ready tax computation — automatically
             </h2>
             <p class="mt-4 text-[#64748B] leading-relaxed">
                 Nigerian tax compliance is complex. AccountTaxNG handles every layer — VAT, WHT, CIT, and PAYE — so you're always prepared for filing deadlines.
@@ -299,7 +299,7 @@
                 ['VAT Summary Report','VAT output, input, and net position. Formatted for NRS VAT return (Form 002).','M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z'],
                 ['Accounts Receivable','Aged debtors report — who owes you, for how long, and how much. Filterable by client.','M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z'],
                 ['Cash Flow Statement','Operating, investing, and financing activities. See exactly where cash is moving.','M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-                ['WHT Credit Schedule','All WHT deductions received from customers — structured for CIT offset with FIRS.','M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+                ['WHT Credit Schedule','All WHT deductions received from customers — structured for CIT offset with NRS.','M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
                 ['Payroll Summary','Monthly payroll register with gross, deductions, and net for every employee.','M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z'],
                 ['Trial Balance','Full debit/credit trial balance for any period. Ready for external auditors or your accountant.','M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4'],
             ] as [$title, $desc, $icon])
@@ -360,23 +360,6 @@
 <section class="py-20 lg:py-28 bg-[#F5F7FA]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid lg:grid-cols-2 gap-8">
-            <div class="bg-[#0A1A2F] rounded-3xl p-8 lg:p-10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-10"
-                     style="background:radial-gradient(circle,#D4AF37,transparent)"></div>
-                <div class="inline-flex items-center gap-2 bg-rose-500/20 border border-rose-500/30 text-rose-400 text-[11px] font-700 px-3 py-1 rounded-full mb-5">
-                    Coming Soon
-                </div>
-                <h3 class="font-display text-2xl font-800 text-white mb-4">NRS NRS e-Invoice Integration</h3>
-                <p class="text-slate-300 leading-relaxed mb-6">The Federal Inland Revenue Service is mandating digital invoice submission through the National Revenue Service (NRS) platform. AccountTaxNG is building native NRS integration — every invoice you generate will be automatically submitted to FIRS.</p>
-                <ul class="space-y-3">
-                    @foreach(['Real-time invoice submission to NRS NRS','Digital tax receipt generation per transaction','NRS validation before invoice is finalised','Full audit trail of all e-invoice submissions','Automatic integration — no extra steps for users'] as $item)
-                    <li class="flex items-center gap-3 text-sm text-slate-300">
-                        <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        {{ $item }}
-                    </li>
-                    @endforeach
-                </ul>
-            </div>
 
             <div class="bg-white rounded-3xl p-8 lg:p-10 border border-slate-100 shadow-sm">
                 <div class="w-12 h-12 rounded-2xl bg-[#0A1A2F] flex items-center justify-center mb-5">

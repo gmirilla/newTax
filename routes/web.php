@@ -58,6 +58,7 @@ Route::get('/',          [MarketingController::class, 'home'])->name('home');
 Route::get('/features',  [MarketingController::class, 'features'])->name('marketing.features');
 Route::get('/pricing',   [MarketingController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/about',     [MarketingController::class, 'about'])->name('marketing.about');
+Route::get('/faq',       [MarketingController::class, 'faq'])->name('marketing.faq');
 Route::get('/contact',   [MarketingController::class, 'contact'])->name('marketing.contact');
 Route::post('/contact',  [MarketingController::class, 'contactSubmit'])->name('marketing.contact.submit');
 

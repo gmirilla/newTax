@@ -12,6 +12,9 @@
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    {{-- Interactive tour engine --}}
+    <script src="{{ asset('js/tour.js') }}"></script>
+
     <style>
         [x-cloak] { display: none !important; }
         .bg-naija-green  { background-color: #008751; }
@@ -281,7 +284,7 @@
 
                     {{-- Notification bell --}}
                     <div class="relative" x-data="{ open: false }" @click.outside="open = false">
-                        <button type="button" @click="open = !open"
+                        <button type="button" @click="open = !open" data-tour="topbar-notifications"
                                 class="relative inline-flex items-center justify-center h-8 w-8 rounded-full text-gray-500 hover:bg-gray-100 focus:outline-none">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -511,6 +514,29 @@ function dismissNotification(id) {
     });
 }
 </script>
+
+@if(isset($currentTenant))
+<script>
+function startAppTour(force) {
+    if (!window.SiteTour) return;
+    var steps = [
+        { target: '[data-tour="nav-dashboard"]', title: 'Your Dashboard', body: 'See your cash position, recent activity, and what needs attention — all at a glance.' },
+        { target: '[data-tour="nav-sales"]', title: 'Sales & Finance', body: 'Create invoices and quotes, and record transactions and expenses here.' },
+        { target: '[data-tour="nav-tax"]', title: 'Tax & Compliance', body: 'VAT, WHT, and CIT are computed automatically as you record transactions — review and file when ready.' },
+        { target: '[data-tour="nav-reports"]', title: 'Reports', body: 'Profit & Loss, Balance Sheet, and more — generated instantly, whenever you need them.' },
+        { target: '[data-tour="nav-settings"]', title: 'Settings', body: 'Manage your team, bank accounts, billing, and company details here.' },
+        { target: '[data-tour="topbar-notifications"]', title: 'Notifications', body: 'We\'ll flag anything that needs your attention right here.' },
+        { target: '[data-tour="nav-help"]', title: 'Need help?', body: 'The Help Center has guides for every module. Replay this tour anytime from the button just above it.' },
+        { target: null, title: 'You\'re all set!', body: 'Explore at your own pace — you can replay this tour anytime from the “Take a Tour” link in the sidebar.' },
+    ];
+    new window.SiteTour(steps, { storageKey: 'nb_tour_app_v1' }).start(!!force);
+}
+window.startAppTour = startAppTour;
+@if(request()->routeIs('dashboard', 'staff.dashboard'))
+document.addEventListener('DOMContentLoaded', function () { startAppTour(false); });
+@endif
+</script>
+@endif
 </body>
 
 </html>

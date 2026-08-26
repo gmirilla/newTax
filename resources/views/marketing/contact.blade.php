@@ -1,6 +1,6 @@
 @extends('marketing.layouts.app')
 
-@section('title', 'Contact Us — AccountTaxNG | Get in Touch or Book a Demo')
+@section('title', 'Contact Us — AccountTaxNG | Get in Touch')
 @section('meta_description', 'Contact AccountTaxNG for support, demos, or partnership enquiries. Our Nigerian-based team is ready to help you get started with accounting and tax compliance.')
 
 @section('content')
@@ -105,10 +105,10 @@
                         <div class="w-8 h-8 rounded-lg bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center mb-3">
                             <svg class="w-4 h-4 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z"/></svg>
                         </div>
-                        <h3 class="font-display font-700 text-white text-sm mb-1.5">Book a Live Demo</h3>
-                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">See AccountTaxNG in action with a 30-minute personalised demo. We'll walk through your specific use case.</p>
+                        <h3 class="font-display font-700 text-white text-sm mb-1.5">Prefer to Just Dive In?</h3>
+                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">Create your account and explore AccountTaxNG risk-free for 14 days — no credit card, no waiting on a callback.</p>
                         <a href="{{ route('register') }}" class="btn-gold text-xs font-700 px-4 py-2 rounded-lg inline-block">
-                            Schedule Demo →
+                            Start Free Trial →
                         </a>
                     </div>
                 </div>

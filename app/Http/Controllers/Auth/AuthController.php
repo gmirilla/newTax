@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\CaptureUtmParams;
+use App\Models\Tenant;
 use App\Services\TenancyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,46 @@ class AuthController extends Controller
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
+    }
+
+    /** Branded login page for a company's custom URL (e.g. /acme-ltd/login). */
+    public function showTenantLogin(Tenant $tenant): View
+    {
+        abort_unless($tenant->is_active, 404);
+
+        return view('auth.login', ['tenant' => $tenant]);
+    }
+
+    public function tenantLogin(Request $request, Tenant $tenant): RedirectResponse
+    {
+        abort_unless($tenant->is_active, 404);
+
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required',
+        ]);
+
+        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->onlyInput('email');
+        }
+
+        $user = Auth::user();
+
+        // A company's custom URL only signs in members of that company.
+        if ($user->isSuperAdmin() || $user->tenant_id != $tenant->id) {
+            Auth::logout();
+
+            return back()->withErrors([
+                'email' => "This account isn't part of {$tenant->name}.",
+            ])->onlyInput('email');
+        }
+
+        $request->session()->regenerate();
+        $this->tenancyService->setCurrentTenant($user);
+
+        return redirect()->intended(route('dashboard'));
     }
 
     public function showRegister(): View

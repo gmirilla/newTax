@@ -41,24 +41,30 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
                         </svg>
                     </a>
-                    <a href="{{ route('marketing.contact') }}#demo"
+                    <a href="{{ route('marketing.contact') }}"
                        class="btn-outline-white inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-600">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/>
                         </svg>
-                        Book a Demo
+                        Talk to Sales
                     </a>
                 </div>
 
                 <p class="mt-5 text-xs text-slate-500">
-                    14-day free trial &nbsp;·&nbsp; No Debit card required &nbsp;·&nbsp; Cancel anytime
+                    14-day free trial &nbsp;·&nbsp; No credit card required &nbsp;·&nbsp; Cancel anytime
                 </p>
+
+                <button type="button" onclick="startMarketingTour()"
+                        class="mt-4 inline-flex items-center gap-1.5 text-sm font-600 text-[#D4AF37] hover:text-[#E8C84A] transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z"/></svg>
+                    See it in action
+                </button>
 
                 {{-- Mini trust bar --}}
                 <div class="mt-8 flex flex-wrap items-center gap-5 justify-center lg:justify-start">
                     <div class="flex items-center gap-1.5 text-xs text-slate-400">
                         <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        NRS Compliant
+                        Designed for NRS compliance
                     </div>
                     <div class="flex items-center gap-1.5 text-xs text-slate-400">
                         <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -90,28 +96,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
-
-{{-- ═══════════════════════════════════════════════════════ --}}
-{{-- STATS BAR                  ['500+', 'Businesses Onboarded', 'and growing every month'],
-                ['₦2.1B+', 'Invoices Processed', 'worth of transactions managed'],                                             --}}
-{{-- ═══════════════════════════════════════════════════════ --}}
-<section class="bg-white border-b border-slate-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-            @foreach([
-
-                ['99.9%', 'Platform Uptime', 'reliable access, always'],
-                ['100%', 'NRS Compliant', 'Nigerian Tax Act 2025 aligned'],
-            ] as [$stat, $label, $sub])
-            <div class="text-center">
-                <p class="font-display text-3xl lg:text-4xl font-800 text-[#0A1A2F]">{{ $stat }}</p>
-                <p class="mt-1 text-sm font-600 text-slate-700">{{ $label }}</p>
-                <p class="text-xs text-slate-400 mt-0.5">{{ $sub }}</p>
-            </div>
-            @endforeach
         </div>
     </div>
 </section>
@@ -196,8 +180,8 @@
                         ['VAT Returns', 'Auto-calculated from invoices and purchases. Download or submit directly.'],
                         ['Withholding Tax (WHT)', 'Track WHT deducted on supplier payments. Generate credit notes automatically.'],
                         ['Company Income Tax (CIT)', 'Finance Act-aligned CIT computation with WHT credits applied.'],
-                        ['PAYE Remittances', 'Payroll PAYE totals ready for monthly State IRS remittance.'],
-                        ['NRS e-Invoice (Coming Soon)', 'NRS NRS integration for digital invoice submission — ready for rollout.'],
+                        ['PAYE Remittances', 'Payroll PAYE totals ready for monthly State IRS remittance.']
+    
                     ] as [$title, $desc])
                     <div class="flex gap-4">
                         <div class="flex-shrink-0 w-5 h-5 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 flex items-center justify-center mt-0.5">
@@ -275,7 +259,7 @@
 </section>
 
 {{-- ═══════════════════════════════════════════════════════ --}}
-{{-- FOR SMEs / FOR ACCOUNTANTS                              --}}
+{{-- FOR SMEs                                                --}}
 {{-- ═══════════════════════════════════════════════════════ --}}
 <section class="py-20 lg:py-28 bg-[#F5F7FA]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -303,96 +287,7 @@
             </div>
             <div class="bg-white rounded-3xl p-8 lg:p-10 border border-slate-100 shadow-sm">
                 <img src="{{ asset('images/marketing/financeworkspace.webp') }}" alt="For SMEs" class="mx-auto">
-                </div> 
-
-            {{-- For Accountants --}}
-            <div class="hidden" style="display: none;">
-            <div class="bg-[#0A1A2F] rounded-3xl p-8 lg:p-10 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-10 pointer-events-none"
-                     style="background: radial-gradient(circle, #D4AF37, transparent)"></div>
-                <div class="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center mb-6">
-                    <svg class="w-6 h-6 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                </div>
-                <span class="section-badge mb-4 inline-flex">For Accountants</span>
-                <h3 class="font-display text-2xl font-800 text-white mb-4">Manage multiple clients. One platform.</h3>
-                <p class="text-slate-300 leading-relaxed mb-6">Serve more SME clients efficiently. AccountTaxNG gives you a professional collaboration workspace — view financials, prepare filings, and guide clients without back-and-forth emails.</p>
-                <ul class="space-y-3">
-                    @foreach(['Multi-client dashboard access from one login','Accountant role with full financial access','Generate VAT returns and CIT schedules instantly','Download audit-ready reports in seconds','Guided tax computation reduces manual error','Build your practice around compliant software'] as $item)
-                    <li class="flex items-start gap-3 text-sm text-slate-300">
-                        <svg class="w-4 h-4 text-[#D4AF37] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        {{ $item }}
-                    </li>
-                    @endforeach
-                </ul>
-                <a href="{{ route('marketing.contact') }}#demo" class="mt-8 btn-outline-white inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-700">
-                    Book an Accountant Demo
-                </a>
             </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- ═══════════════════════════════════════════════════════ --}}
-{{-- TESTIMONIALS                                            --}}
-{{-- ═══════════════════════════════════════════════════════ --}}
-<section class="py-20 lg:py-28 bg-white" style="display: none;">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-xl mx-auto mb-14">
-            <div class="section-badge mb-4 mx-auto">Testimonials</div>
-            <h2 class="font-display text-3xl lg:text-4xl font-800 text-[#0A1A2F]">Trusted by Nigerian businesses</h2>
-        </div>
-
-        <div class="grid md:grid-cols-3 gap-6">
-            @php
-            $testimonials = [
-                [
-                    'quote'   => 'AccountTaxNG completely changed how we handle VAT. Before, we spent days preparing returns. Now it literally takes 10 minutes at the end of each quarter. The NRS alignment gives us total peace of mind.',
-                    'name'    => 'Amaka Okonkwo',
-                    'role'    => 'CEO, Okonkwo Trading Ltd',
-                    'city'    => 'Lagos',
-                    'initial' => 'AO',
-                    'color'   => 'bg-blue-600',
-                ],
-                [
-                    'quote'   => 'As an accountant managing over 20 SME clients, AccountTaxNG has been a game-changer. I can prepare CIT schedules and VAT returns for multiple businesses from one platform. Highly recommended.',
-                    'name'    => 'Biodun Adeleke',
-                    'role'    => 'Chartered Accountant, Adeleke & Associates',
-                    'city'    => 'Abuja',
-                    'initial' => 'BA',
-                    'color'   => 'bg-[#0A1A2F]',
-                ],
-                [
-                    'quote'   => 'We were using spreadsheets for payroll and kept making PAYE errors. AccountTaxNG automated everything — payslips, PAYE computation, pension deductions. The Finance Act calculations are spot on.',
-                    'name'    => 'Chukwudi Obi',
-                    'role'    => 'Finance Director, Beta Supplies Ltd',
-                    'city'    => 'Port Harcourt',
-                    'initial' => 'CO',
-                    'color'   => 'bg-emerald-600',
-                ],
-            ];
-            @endphp
-
-            @foreach($testimonials as $t)
-            <div class="bg-[#F5F7FA] rounded-2xl p-7 border border-slate-100 flex flex-col">
-                {{-- Stars --}}
-                <div class="flex gap-1 mb-5">
-                    @for($i = 0; $i < 5; $i++)
-                    <svg class="w-4 h-4 text-[#D4AF37]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                    @endfor
-                </div>
-                <blockquote class="text-sm text-[#475569] leading-relaxed flex-1">"{{ $t['quote'] }}"</blockquote>
-                <div class="mt-6 flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full {{ $t['color'] }} flex items-center justify-center flex-shrink-0">
-                        <span class="text-xs font-700 text-white">{{ $t['initial'] }}</span>
-                    </div>
-                    <div>
-                        <p class="text-sm font-600 text-[#1E293B]">{{ $t['name'] }}</p>
-                        <p class="text-xs text-[#64748B]">{{ $t['role'] }} · {{ $t['city'] }}</p>
-                    </div>
-                </div>
-            </div>
-            @endforeach
         </div>
     </div>
 </section>
@@ -430,7 +325,7 @@
                 <p class="text-sm text-[#64748B] leading-relaxed mb-6">{{ $plan->description }}</p>
                 <a href="{{ route('register') }}"
                    class="{{ $popular ? 'btn-gold' : 'btn-outline-dark' }} text-sm font-700 px-5 py-2.5 rounded-xl text-center block mt-auto">
-                    {{ $plan->price_monthly == 0 ? 'Get Started Free' : 'Start Free Trial' }}
+                    Start Free Trial
                 </a>
             </div>
             @endforeach
@@ -445,53 +340,6 @@
     </div>
 </section>
 @endif
-
-{{-- ═══════════════════════════════════════════════════════ --}}
-{{-- FAQ                                                     --}}
-{{-- ═══════════════════════════════════════════════════════ --}}
-<section class="py-20 lg:py-28 bg-white" x-data="{ open: null }">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <div class="section-badge mb-4 mx-auto">FAQ</div>
-            <h2 class="font-display text-3xl lg:text-4xl font-800 text-[#0A1A2F]">Frequently asked questions</h2>
-        </div>
-
-        <div class="space-y-3">
-            @php
-            $faqs = [
-                ['Is AccountTaxNG compliant with NRS regulations?', 'Yes. AccountTaxNG is fully aligned with the Federal Inland Revenue Service (FIRS) requirements and the Finance Act 2023. All VAT calculations use the current 7.5% rate, WHT rates are applied per the correct schedule, and CIT computations follow the applicable tax bands for SMEs.'],
-                ['Can I try it for free?', 'Absolutely. We offer a 14-day full-access free trial with no credit card required. You can explore all features, create invoices, track expenses, and see your tax position — completely free for the first two weeks.'],
-                ['How does VAT automation work?', 'Every time you create an invoice or record an expense, AccountTaxNG automatically identifies whether VAT applies and calculates the correct amount. At the end of each period, your VAT return is pre-populated and ready to review and file — no manual calculations needed.'],
-                ['Can my accountant access my account?', 'Yes. You can invite your accountant as a collaborator with the Accountant role. They get full access to financial records, reports, and tax schedules — without access to billing or team management settings.'],
-                ['Is my financial data secure?', 'Your data is encrypted in transit using 256-bit SSL and at rest using AES-256 encryption. We comply with the Nigeria Data Protection Regulation (NDPR) and maintain strict data residency standards. We do not share your data with third parties.'],
-                ['Does it handle payroll?', 'Yes. The payroll module covers staff salary management, automatic PAYE computation per the Finance Act income bands, pension deductions (employee and employer), and payslip generation. Monthly payroll reports are available for State IRS remittance.'],
-                ['What is NRS integration?', 'NRS is rolling out a National e-Invoice system (NRS) for standardised digital invoicing. AccountTaxNG is building NRS integration so your invoices will be automatically submitted to NRS upon issuance. This feature is currently in development.'],
-                ['Can I use it on my phone?', 'Yes. AccountTaxNG is fully responsive and works on any device — mobile, tablet, or desktop. A dedicated mobile app is also on our development roadmap.'],
-            ];
-            @endphp
-
-            @foreach($faqs as $i => [$question, $answer])
-            <div class="border border-slate-100 rounded-xl overflow-hidden"
-                 x-data="{ id: {{ $i }} }">
-                <button @click="$root.open === id ? $root.open = null : $root.open = id"
-                        class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors">
-                    <span class="text-sm font-600 text-[#1E293B] pr-4">{{ $question }}</span>
-                    <svg class="w-5 h-5 text-[#64748B] flex-shrink-0 transition-transform duration-200"
-                         :class="$root.open === id ? 'rotate-45' : ''"
-                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-                    </svg>
-                </button>
-                <div x-show="$root.open === id" x-collapse x-cloak>
-                    <div class="px-6 pb-5 text-sm text-[#64748B] leading-relaxed border-t border-slate-100 pt-4">
-                        {{ $answer }}
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</section>
 
 {{-- ═══════════════════════════════════════════════════════ --}}
 {{-- FINAL CTA BANNER                                        --}}
@@ -513,7 +361,7 @@
                 Create Free Account
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
             </a>
-            <a href="{{ route('marketing.contact') }}#demo"
+            <a href="{{ route('marketing.contact') }}"
                class="btn-outline-white inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-base font-600">
                 Talk to Sales
             </a>
@@ -528,14 +376,22 @@
 
 @push('scripts')
 <script>
-// x-collapse polyfill for Alpine FAQ
-document.addEventListener('alpine:init', () => {
-    Alpine.directive('collapse', (el) => {
-        el.style.overflow = 'hidden';
-        if (el._x_isHidden) {
-            el.style.height = '0px';
-        }
-    });
-});
+function startMarketingTour() {
+    if (!window.ImageTour) return;
+    var base = '{{ asset('images/marketing/tour') }}/';
+    var slides = [
+        { src: base + '01-login.png', title: 'Sign in to your workspace', body: 'A branded sign-in for your business — set up in minutes.' },
+        { src: base + '02-dashboard.png', title: 'Your Dashboard', body: 'Cash position, VAT/CIT status, and payroll — all at a glance, updated automatically as you work.' },
+        { src: base + '03-invoices.png', title: 'Invoices', body: 'Every invoice tracked — paid, outstanding, or overdue — with totals rolled up at the top.' },
+        { src: base + '04-invoice-create.png', title: 'Create an invoice', body: 'VAT is calculated automatically as you add line items — no manual math.' },
+        { src: base + '05-tax-dashboard.png', title: 'Tax Compliance Dashboard', body: 'VAT, WHT, and CIT organised in one place, with due dates and current Nigerian tax rates.' },
+        { src: base + '06-vat-computation.png', title: 'Compute your VAT return', body: 'One click computes output VAT, input VAT, and what\'s payable — ready to file.' },
+        { src: base + '07-expenses.png', title: 'Expenses & WHT', body: 'Record an expense and the correct WHT rate is deducted automatically based on the vendor.' },
+        { src: base + '08-payroll-employees.png', title: 'Payroll & PAYE', body: 'Manage your team and run payroll with PAYE computed per current Finance Act bands.' },
+        { src: base + '09-reports.png', title: 'Financial Reports', body: 'P&L, Balance Sheet, Trial Balance, and tax reports — generated instantly, exportable to PDF or Excel.' },
+        { src: base + '10-profit-loss.png', title: 'Profit & Loss Statement', body: 'Real profit, calculated automatically from your invoices, expenses, and payroll.' },
+    ];
+    new window.ImageTour(slides, { ctaHref: '{{ route('register') }}', ctaLabel: 'Start Free Trial' }).start();
+}
 </script>
 @endpush

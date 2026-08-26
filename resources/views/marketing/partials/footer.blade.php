@@ -55,7 +55,7 @@
                 <ul class="space-y-3 text-sm">
                     <li><a href="{{ route('marketing.about') }}"   class="hover:text-white transition-colors">About Us</a></li>
                     <li><a href="{{ route('marketing.contact') }}" class="hover:text-white transition-colors">Contact</a></li>
-                    <li><a href="{{ route('marketing.contact') }}#demo" class="hover:text-white transition-colors">Book a Demo</a></li>
+                    <li><a href="{{ route('marketing.contact') }}" class="hover:text-white transition-colors">Talk to Sales</a></li>
                     <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
                     <li><a href="#" class="hover:text-white transition-colors">Careers</a></li>
                 </ul>
@@ -90,7 +90,7 @@
                     <svg class="w-4 h-4 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
                 </div>
                 <div>
-                    <p class="text-[11px] font-semibold text-white">NRS Compliant</p>
+                    <p class="text-[11px] font-semibold text-white">Designed for NRS compliance</p>
                     <p class="text-[10px] text-slate-500">Finance Act Aligned</p>
                 </div>
             </div>
