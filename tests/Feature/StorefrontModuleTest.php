@@ -5,11 +5,15 @@ namespace Tests\Feature;
 use App\Mail\NewStorefrontOrder;
 use App\Models\Customer;
 use App\Models\InventoryItem;
+use App\Models\InventoryLocation;
 use App\Models\Plan;
 use App\Models\SalesOrder;
 use App\Models\Storefront;
+use App\Models\StorefrontCategory;
 use App\Models\StorefrontOrder;
 use App\Models\StorefrontProduct;
+use App\Models\StorefrontService;
+use App\Models\StockMovement;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\BookkeepingService;
@@ -102,6 +106,29 @@ class StorefrontModuleTest extends TestCase
             'inventory_item_id' => $this->item->id,
             'is_published'      => true,
         ]);
+
+        $location = InventoryLocation::withoutGlobalScope('tenant')->create([
+            'tenant_id'  => $this->tenant->id,
+            'name'       => 'Main Store',
+            'code'       => 'MAIN',
+            'is_default' => true,
+            'is_active'  => true,
+        ]);
+
+        // The stock-availability check reads live StockMovement balances per
+        // location (InventoryItem::stockAtLocation), not the current_stock
+        // column directly — seed an opening movement so confirm() sees stock.
+        StockMovement::create([
+            'tenant_id'       => $this->tenant->id,
+            'item_id'         => $this->item->id,
+            'location_id'     => $location->id,
+            'type'            => 'opening',
+            'quantity'        => 100,
+            'unit_cost'       => 38000,
+            'running_balance' => 100,
+            'notes'           => 'Opening stock',
+            'created_by'      => $this->admin->id,
+        ]);
     }
 
     // ── Scenario 1: Public catalog visibility ─────────────────────────────────
@@ -156,8 +183,9 @@ class StorefrontModuleTest extends TestCase
         Mail::fake();
 
         $this->post(route('storefront.cart.add', $this->tenant->slug), [
-            'storefront_product_id' => $this->product->id,
-            'quantity'               => 2,
+            'type'     => 'product',
+            'id'       => $this->product->id,
+            'quantity' => 2,
         ])->assertRedirect();
 
         $response = $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
@@ -200,8 +228,9 @@ class StorefrontModuleTest extends TestCase
         Mail::fake();
 
         $this->post(route('storefront.cart.add', $this->tenant->slug), [
-            'storefront_product_id' => $this->product->id,
-            'quantity'               => 1,
+            'type'     => 'product',
+            'id'       => $this->product->id,
+            'quantity' => 1,
         ]);
 
         $response = $this->post(route('storefront.checkout.whatsapp', $this->tenant->slug), [
@@ -339,7 +368,274 @@ class StorefrontModuleTest extends TestCase
             ->assertForbidden();
     }
 
+    // ── Scenario 6: Categories ─────────────────────────────────────────────────
+
+    public function test_admin_category_and_service_index_pages_render(): void
+    {
+        $this->actingAs($this->admin)->get(route('storefront.categories.index'))->assertOk();
+        $this->actingAs($this->admin)->get(route('storefront.services.index'))->assertOk();
+        $this->actingAs($this->admin)->get(route('storefront.products.index'))->assertOk();
+    }
+
+    public function test_admin_can_create_update_and_delete_category(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('storefront.categories.store'), ['name' => 'Groceries'])
+            ->assertRedirect();
+
+        $category = StorefrontCategory::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+        $this->assertEquals('Groceries', $category->name);
+
+        $this->actingAs($this->admin)
+            ->put(route('storefront.categories.update', $category), ['name' => 'Food & Groceries', 'is_active' => true])
+            ->assertRedirect();
+        $this->assertEquals('Food & Groceries', $category->fresh()->name);
+
+        $this->product->update(['storefront_category_id' => $category->id]);
+
+        $this->actingAs($this->admin)
+            ->delete(route('storefront.categories.destroy', $category))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('storefront_categories', ['id' => $category->id]);
+        // Deleting a category uncategorizes its products rather than deleting them.
+        $this->assertNotNull($this->product->fresh());
+        $this->assertNull($this->product->fresh()->storefront_category_id);
+    }
+
+    // ── Scenario 7: Services ───────────────────────────────────────────────────
+
+    public function test_admin_can_create_publish_and_unpublish_a_service(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('storefront.services.store'), [
+                'name'  => 'Home Cleaning',
+                'price' => 15000,
+            ])->assertRedirect();
+
+        $service = StorefrontService::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+        $this->assertFalse($service->is_published);
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.services.publish', $service))
+            ->assertRedirect();
+        $this->assertTrue($service->fresh()->is_published);
+
+        $this->get(route('storefront.service', ['tenant' => $this->tenant->slug, 'storefrontService' => $service->id]))
+            ->assertOk()
+            ->assertSee('Home Cleaning');
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.services.unpublish', $service))
+            ->assertRedirect();
+        $this->assertFalse($service->fresh()->is_published);
+    }
+
+    public function test_public_catalog_shows_products_and_services_filtered_by_category(): void
+    {
+        $groceries = StorefrontCategory::withoutGlobalScope('tenant')->create(['tenant_id' => $this->tenant->id, 'name' => 'Groceries']);
+        $services  = StorefrontCategory::withoutGlobalScope('tenant')->create(['tenant_id' => $this->tenant->id, 'name' => 'Services']);
+
+        $this->product->update(['storefront_category_id' => $groceries->id]);
+
+        $service = StorefrontService::withoutGlobalScope('tenant')->create([
+            'tenant_id'               => $this->tenant->id,
+            'storefront_category_id'  => $services->id,
+            'name'                    => 'Home Cleaning',
+            'price'                   => 15000,
+            'is_published'            => true,
+        ]);
+
+        $response = $this->get(route('storefront.index', $this->tenant->slug));
+        $response->assertOk()->assertSee('Bag of Rice')->assertSee('Home Cleaning');
+
+        $groceriesOnly = $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'category' => $groceries->id]));
+        $groceriesOnly->assertOk()->assertSee('Bag of Rice')->assertDontSee('Home Cleaning');
+
+        $servicesOnly = $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'category' => $services->id]));
+        $servicesOnly->assertOk()->assertSee('Home Cleaning')->assertDontSee('Bag of Rice');
+    }
+
+    // ── Scenario 8: Mixed cart (product + service) ─────────────────────────────
+
+    public function test_cart_can_hold_a_product_and_a_service_and_checkout_creates_mixed_order(): void
+    {
+        Mail::fake();
+
+        $service = StorefrontService::withoutGlobalScope('tenant')->create([
+            'tenant_id'     => $this->tenant->id,
+            'name'          => 'Delivery',
+            'price'         => 2000,
+            'is_published'  => true,
+        ]);
+
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
+        ])->assertRedirect();
+
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'service', 'id' => $service->id, 'quantity' => 1,
+        ])->assertRedirect();
+
+        $this->get(route('storefront.cart', $this->tenant->slug))
+            ->assertOk()->assertSee('Bag of Rice')->assertSee('Delivery');
+
+        $this->get(route('storefront.checkout', $this->tenant->slug))
+            ->assertOk()->assertSee('Bag of Rice')->assertSee('Delivery');
+
+        $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
+            'customer_name'  => 'Mixed Cart Customer',
+            'customer_email' => 'mixed@example.com',
+            'customer_phone' => '08099998888',
+        ])->assertRedirect();
+
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+        $this->assertEquals(2, $order->items()->count());
+
+        $itemLine    = $order->items()->whereNotNull('inventory_item_id')->first();
+        $serviceLine = $order->items()->whereNotNull('storefront_service_id')->first();
+
+        $this->assertNotNull($itemLine);
+        $this->assertNotNull($serviceLine);
+        $this->assertEquals($this->item->id, $itemLine->inventory_item_id);
+        $this->assertEquals($service->id, $serviceLine->storefront_service_id);
+        $this->assertEquals(45000 + 2000, (float) $order->subtotal);
+    }
+
+    // ── Scenario 9: Accept + confirm a mixed order through the Sales Order pipeline ──
+
+    public function test_accepting_and_confirming_a_mixed_order_only_moves_stock_for_the_item_line(): void
+    {
+        $service = StorefrontService::withoutGlobalScope('tenant')->create([
+            'tenant_id'     => $this->tenant->id,
+            'name'          => 'Delivery',
+            'price'         => 2000,
+            'is_published'  => true,
+        ]);
+
+        $order = $this->makeMixedPendingOrder($service);
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.orders.accept', $order))
+            ->assertRedirect();
+
+        $order->refresh();
+        $salesOrder = SalesOrder::withoutGlobalScope('tenant')->findOrFail($order->sales_order_id);
+        $this->assertEquals(2, $salesOrder->items()->count());
+
+        $itemLine    = $salesOrder->items()->whereNotNull('item_id')->first();
+        $serviceLine = $salesOrder->items()->whereNull('item_id')->first();
+        $this->assertNotNull($itemLine);
+        $this->assertNotNull($serviceLine);
+        $this->assertEquals('Delivery', $serviceLine->description);
+
+        $stockBefore = (float) $this->item->fresh()->current_stock;
+
+        $this->actingAs($this->admin)
+            ->post(route('inventory.sales.confirm', $salesOrder))
+            ->assertRedirect(route('inventory.sales.show', $salesOrder));
+
+        $salesOrder->refresh();
+        $this->assertEquals(SalesOrder::STATUS_CONFIRMED, $salesOrder->status);
+
+        // Stock only moved for the item line — the service line carries no inventory_item_id.
+        $this->assertEquals($stockBefore - 2, (float) $this->item->fresh()->current_stock);
+        $this->assertEquals(1, StockMovement::where('tenant_id', $this->tenant->id)
+            ->withoutGlobalScope('tenant')->where('reference_id', $salesOrder->id)->count());
+
+        $invoice = $salesOrder->invoice;
+        $this->assertNotNull($invoice);
+        $this->assertEquals(2, $invoice->items()->count());
+    }
+
+    public function test_confirming_and_cancelling_an_all_service_order_does_not_touch_stock(): void
+    {
+        $service = StorefrontService::withoutGlobalScope('tenant')->create([
+            'tenant_id'     => $this->tenant->id,
+            'name'          => 'Consultation',
+            'price'         => 5000,
+            'is_published'  => true,
+        ]);
+
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->create([
+            'tenant_id'     => $this->tenant->id,
+            'order_number'  => 'WEB-' . now()->format('Ym') . '-0002',
+            'customer_name' => 'Jane Customer',
+            'customer_email'=> 'jane2@example.com',
+            'customer_phone'=> '08011112222',
+            'status'        => StorefrontOrder::STATUS_PENDING,
+            'channel'       => StorefrontOrder::CHANNEL_WEB,
+            'subtotal'      => 5000,
+            'vat_amount'    => 375,
+            'total_amount'  => 5375,
+        ]);
+        $order->items()->create([
+            'storefront_service_id' => $service->id,
+            'description'           => $service->name,
+            'quantity'              => 1,
+            'unit_price'            => 5000,
+            'vat_amount'            => 375,
+            'subtotal'              => 5000,
+            'total'                 => 5375,
+        ]);
+
+        $this->actingAs($this->admin)->post(route('storefront.orders.accept', $order))->assertRedirect();
+
+        $salesOrder = SalesOrder::withoutGlobalScope('tenant')->findOrFail($order->fresh()->sales_order_id);
+
+        $this->actingAs($this->admin)
+            ->post(route('inventory.sales.confirm', $salesOrder))
+            ->assertRedirect(route('inventory.sales.show', $salesOrder));
+
+        $this->assertEquals(0, StockMovement::where('tenant_id', $this->tenant->id)
+            ->withoutGlobalScope('tenant')->where('reference_id', $salesOrder->id)->count());
+
+        $this->actingAs($this->admin)
+            ->post(route('inventory.sales.cancel', $salesOrder->fresh()))
+            ->assertRedirect();
+
+        $this->assertEquals(SalesOrder::STATUS_CANCELLED, $salesOrder->fresh()->status);
+    }
+
     // ── Helper ────────────────────────────────────────────────────────────────
+
+    private function makeMixedPendingOrder(StorefrontService $service): StorefrontOrder
+    {
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->create([
+            'tenant_id'        => $this->tenant->id,
+            'order_number'     => 'WEB-' . now()->format('Ym') . '-0003',
+            'customer_name'    => 'Mixed Customer',
+            'customer_email'   => 'mixed2@example.com',
+            'customer_phone'   => '08011112222',
+            'status'           => StorefrontOrder::STATUS_PENDING,
+            'channel'          => StorefrontOrder::CHANNEL_WEB,
+            'subtotal'         => 47000,
+            'vat_amount'       => 3525,
+            'total_amount'     => 50525,
+        ]);
+
+        $order->items()->create([
+            'inventory_item_id' => $this->item->id,
+            'description'       => $this->item->name,
+            'quantity'          => 2,
+            'unit_price'        => 45000,
+            'vat_amount'        => 6750,
+            'subtotal'          => 90000,
+            'total'             => 96750,
+        ]);
+
+        $order->items()->create([
+            'storefront_service_id' => $service->id,
+            'description'           => $service->name,
+            'quantity'              => 1,
+            'unit_price'            => 2000,
+            'vat_amount'            => 150,
+            'subtotal'              => 2000,
+            'total'                 => 2150,
+        ]);
+
+        return $order;
+    }
 
     private function makePendingOrder(): StorefrontOrder
     {

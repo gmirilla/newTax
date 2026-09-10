@@ -3,17 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class StorefrontProduct extends Model
+class StorefrontService extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
-        'tenant_id', 'inventory_item_id', 'storefront_category_id',
-        'is_published', 'web_description', 'sort_order',
+        'tenant_id', 'storefront_category_id', 'name', 'description',
+        'price', 'is_published', 'sort_order',
     ];
 
     protected $casts = [
+        'price'        => 'decimal:2',
         'is_published' => 'boolean',
     ];
 
@@ -21,7 +25,7 @@ class StorefrontProduct extends Model
     {
         static::addGlobalScope('tenant', function ($query) {
             if (app()->bound('currentTenant')) {
-                $query->where('storefront_products.tenant_id', app('currentTenant')->id);
+                $query->where('storefront_services.tenant_id', app('currentTenant')->id);
             }
         });
     }
@@ -31,11 +35,6 @@ class StorefrontProduct extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    public function item(): BelongsTo
-    {
-        return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
-    }
-
     public function category(): BelongsTo
     {
         return $this->belongsTo(StorefrontCategory::class, 'storefront_category_id');
@@ -43,11 +42,6 @@ class StorefrontProduct extends Model
 
     public function images(): HasMany
     {
-        return $this->hasMany(StorefrontProductImage::class)->orderBy('sort_order');
-    }
-
-    public function description(): string
-    {
-        return $this->web_description ?: (string) ($this->item?->description ?? '');
+        return $this->hasMany(StorefrontServiceImage::class)->orderBy('sort_order');
     }
 }
