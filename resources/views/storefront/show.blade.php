@@ -36,8 +36,16 @@
     </div>
 
     <div>
+        @php
+            $unitPrice = (float) $product->item->selling_price;
+            $unitVat   = round($unitPrice * \App\Models\Invoice::VAT_RATE / 100, 2);
+        @endphp
         <h1 class="text-xl font-bold text-gray-900">{{ $product->item->name }}</h1>
-        <p class="text-2xl font-bold text-gray-900 mt-2">₦{{ number_format((float) $product->item->selling_price, 2) }}</p>
+        <p class="text-2xl font-bold text-gray-900 mt-2">
+            ₦{{ number_format($unitPrice, 2) }}
+            <span class="text-sm font-normal text-gray-400">+ VAT</span>
+        </p>
+        <p class="text-xs text-gray-500 mt-0.5">₦{{ number_format($unitPrice + $unitVat, 2) }} incl. VAT (7.5%)</p>
 
         @if($product->description())
         <p class="mt-4 text-sm text-gray-600 leading-relaxed">{{ $product->description() }}</p>

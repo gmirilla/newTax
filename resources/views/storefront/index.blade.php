@@ -33,7 +33,10 @@
         </div>
         <div class="p-3">
             <p class="text-sm font-medium text-gray-900 truncate">{{ $product->item->name }}</p>
-            <p class="text-sm font-bold text-gray-900 mt-1">₦{{ number_format((float) $product->item->selling_price, 2) }}</p>
+            <p class="text-sm font-bold text-gray-900 mt-1">
+                ₦{{ number_format((float) $product->item->selling_price, 2) }}
+                <span class="text-xs font-normal text-gray-400">+ VAT</span>
+            </p>
         </div>
     </a>
     @endforeach
