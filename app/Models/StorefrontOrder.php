@@ -84,6 +84,7 @@ class StorefrontOrder extends Model
 
         $lines[] = 'Total: ₦' . number_format((float) $this->total_amount, 2);
         $lines[] = "Customer: {$this->customer_name} ({$this->customer_phone})";
+        $lines[] = "Address: {$this->delivery_address}";
 
         return implode("\n", $lines);
     }
