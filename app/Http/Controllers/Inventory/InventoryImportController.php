@@ -161,19 +161,49 @@ class InventoryImportController extends Controller
             $valid
         ));
 
-        // Store only clean rows in session — signed by tenant so commit() can cross-check
+        // Store the full parsed payload in session — signed by tenant so commit()
+        // can cross-check. Keeping both the full row set (for display, including
+        // errored/duplicate rows) and the clean subset (for commit) means the
+        // preview page can be re-rendered on GET without re-parsing the file.
         session([self::SESSION_KEY => [
             'tenant_id'   => $tenantId,
-            'rows'        => array_values($valid),
+            'rows'        => $rows,
+            'valid_rows'  => array_values($valid),
             'total_value' => round($totalValue, 2),
         ]]);
 
+        // Redirect rather than returning the view directly (Post/Redirect/Get) —
+        // otherwise the browser is left sitting on a POST-only URL, and any
+        // refresh, back/forward navigation, or bookmark throws a 405.
+        return redirect()->route('inventory.import.preview');
+    }
+
+    // ── Show preview (GET — re-renders from the session payload) ───────────────
+
+    public function showPreview(): View|RedirectResponse
+    {
+        $this->authorize('create', InventoryItem::class);
+
+        $payload = session(self::SESSION_KEY);
+
+        if (! $payload || empty($payload['rows'])) {
+            return redirect()->route('inventory.import.index')
+                ->with('error', 'No pending import found. Please upload your file again.');
+        }
+
+        if ((int) $payload['tenant_id'] !== (int) auth()->user()->tenant_id) {
+            session()->forget(self::SESSION_KEY);
+            abort(403);
+        }
+
+        $rows = $payload['rows'];
+
         return view('inventory.import.preview', [
             'rows'       => $rows,
-            'validCount' => count($valid),
+            'validCount' => count($payload['valid_rows']),
             'dupeCount'  => count(array_filter($rows, fn($r) => $r['is_duplicate'])),
             'errorCount' => count(array_filter($rows, fn($r) => ! empty($r['errors']))),
-            'totalValue' => $totalValue,
+            'totalValue' => (float) $payload['total_value'],
         ]);
     }
 
@@ -185,7 +215,7 @@ class InventoryImportController extends Controller
 
         $payload = session(self::SESSION_KEY);
 
-        if (! $payload || empty($payload['rows'])) {
+        if (! $payload || empty($payload['valid_rows'])) {
             return redirect()->route('inventory.import.index')
                 ->with('error', 'No pending import found. Please upload your file again.');
         }
@@ -198,7 +228,7 @@ class InventoryImportController extends Controller
             abort(403);
         }
 
-        $rows       = $payload['rows'];
+        $rows       = $payload['valid_rows'];
         $totalValue = (float) $payload['total_value'];
         $imported   = 0;
 

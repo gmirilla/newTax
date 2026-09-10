@@ -51,6 +51,10 @@ use App\Http\Controllers\Maintenance\MaintenanceScheduleController;
 use App\Http\Controllers\Maintenance\MaintenanceWorkOrderController;
 use App\Http\Controllers\Maintenance\MaintenanceBreakdownController;
 use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\StorefrontOrderController;
+use App\Http\Controllers\StorefrontProductController;
+use App\Http\Controllers\StorefrontSettingsController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Marketing / Public site ─────────────────────────────────────────────────
@@ -77,6 +81,19 @@ Route::prefix('invite')->name('invite.')->group(function () {
 Route::prefix('inv')->name('invoice.public.')->group(function () {
     Route::get('/{token}',     [PublicInvoiceController::class, 'show'])->name('show');
     Route::get('/{token}/pdf', [PublicInvoiceController::class, 'downloadPdf'])->name('pdf');
+});
+
+// ─── Public storefront (no auth required, gated by plan + tenant toggle) ─────
+Route::prefix('{tenant:slug}/shop')->name('storefront.')->middleware('storefront.enabled')->group(function () {
+    Route::get('/',                    [StorefrontController::class, 'index'])->name('index');
+    Route::get('/product/{storefrontProduct}', [StorefrontController::class, 'show'])->name('product');
+    Route::get('/cart',                [StorefrontController::class, 'cart'])->name('cart');
+    Route::post('/cart/add',           [StorefrontController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/remove',        [StorefrontController::class, 'removeFromCart'])->name('cart.remove');
+    Route::get('/checkout',            [StorefrontController::class, 'checkout'])->name('checkout');
+    Route::post('/checkout',           [StorefrontController::class, 'placeOrder'])->name('checkout.submit');
+    Route::post('/checkout/whatsapp',  [StorefrontController::class, 'placeOrderViaWhatsapp'])->name('checkout.whatsapp');
+    Route::get('/order/{token}',       [StorefrontController::class, 'orderStatus'])->name('order.status');
 });
 
 // ─── Authenticated + Tenant-scoped routes ───────────────────────────────────
@@ -288,7 +305,8 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::prefix('import')->name('import.')->group(function () {
                 Route::get('/',         [InventoryImportController::class, 'index'])->name('index');
                 Route::get('/sample',   [InventoryImportController::class, 'sample'])->name('sample');
-                Route::post('/preview', [InventoryImportController::class, 'preview'])->name('preview');
+                Route::get('/preview',  [InventoryImportController::class, 'showPreview'])->name('preview');
+                Route::post('/preview', [InventoryImportController::class, 'preview'])->name('preview.store');
                 Route::post('/commit',  [InventoryImportController::class, 'commit'])->name('commit');
                 Route::post('/cancel',  [InventoryImportController::class, 'cancel'])->name('cancel');
             });
@@ -431,6 +449,26 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::post('/{productionOrder}/cancel',           [ProductionOrderController::class, 'cancel'])->name('cancel');
                 Route::post('/{productionOrder}/restock-shortfalls', [ProductionOrderController::class, 'requestRestock'])->name('restock-shortfalls');
             });
+        });
+
+        // ── Online Storefront ─────────────────────────────────────────────────────
+        Route::prefix('storefront')->name('storefront.')->middleware('plan:storefront')->group(function () {
+            Route::get('/settings',         [StorefrontSettingsController::class, 'edit'])->name('settings');
+            Route::post('/settings',        [StorefrontSettingsController::class, 'update'])->name('settings.update');
+            Route::post('/settings/banner', [StorefrontSettingsController::class, 'uploadBanner'])->name('settings.banner.upload');
+            Route::delete('/settings/banner', [StorefrontSettingsController::class, 'deleteBanner'])->name('settings.banner.delete');
+
+            Route::get('/products',                            [StorefrontProductController::class, 'index'])->name('products.index');
+            Route::post('/products/{inventoryItem}/publish',   [StorefrontProductController::class, 'publish'])->name('products.publish');
+            Route::post('/products/{inventoryItem}/unpublish', [StorefrontProductController::class, 'unpublish'])->name('products.unpublish');
+            Route::patch('/products/{storefrontProduct}',      [StorefrontProductController::class, 'updateDescription'])->name('products.update');
+            Route::post('/products/{storefrontProduct}/images', [StorefrontProductController::class, 'uploadImage'])->name('products.images.upload');
+            Route::delete('/products/images/{image}',          [StorefrontProductController::class, 'deleteImage'])->name('products.images.delete');
+
+            Route::get('/orders',                    [StorefrontOrderController::class, 'index'])->name('orders.index');
+            Route::get('/orders/{storefrontOrder}',  [StorefrontOrderController::class, 'show'])->name('orders.show');
+            Route::post('/orders/{storefrontOrder}/accept', [StorefrontOrderController::class, 'accept'])->name('orders.accept');
+            Route::post('/orders/{storefrontOrder}/reject', [StorefrontOrderController::class, 'reject'])->name('orders.reject');
         });
 
         // Reports

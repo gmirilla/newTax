@@ -34,6 +34,12 @@
     $canInventoryReports   = $currentTenant->planAllows('inventory_reports') && $currentUser->canAccess('reports');
     $canManufacturing      = $currentTenant->planAllows('manufacturing') && $currentUser->canAccess('manufacturing');
     $canMaintenance        = $currentTenant->planAllows('maintenance')   && $currentUser->canAccess('maintenance');
+    $canStorefront         = $currentTenant->planAllows('storefront')    && $currentUser->canAccess('storefront');
+
+    $navPendingStorefrontOrders = $canStorefront
+        ? \App\Models\StorefrontOrder::where('tenant_id', auth()->user()->tenant_id ?? 0)
+              ->withoutGlobalScope('tenant')->where('status', 'pending')->count()
+        : 0;
 
     $navAlertCount = $canInventory
         ? \App\Models\InventoryAlert::where('tenant_id', auth()->user()->tenant_id ?? 0)
@@ -56,6 +62,7 @@
     $navInInventory      = request()->routeIs('inventory.*') && ! request()->routeIs('inventory.reports.*');
     $navInManufacturing  = request()->routeIs('manufacturing.*');
     $navInMaintenance    = request()->routeIs('maintenance.*');
+    $navInStorefront     = request()->routeIs('storefront.*');
     $navInReports   = request()->routeIs('reports.*', 'inventory.reports.*');
     $navInSettings  = request()->routeIs('team.*', 'billing*', 'settings.*', 'referrals.*');
 @endphp
