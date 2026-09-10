@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuditLogMiddleware;
 use App\Http\Middleware\CaptureUtmParams;
+use App\Http\Middleware\EnsureStorefrontEnabled;
 use App\Http\Middleware\RequiresPlan;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SuperAdminMiddleware;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'audit'       => AuditLogMiddleware::class,
             'superadmin'  => SuperAdminMiddleware::class,
             'plan'        => RequiresPlan::class,
+            'storefront.enabled' => EnsureStorefrontEnabled::class,
         ]);
 
         $middleware->web(append: [CaptureUtmParams::class]);

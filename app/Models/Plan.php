@@ -38,6 +38,7 @@ class Plan extends Model
         'inventory_reports'  => false,
         'manufacturing'      => false,
         'maintenance'        => false,
+        'storefront'         => false,
         'api_access'         => false,
     ];
 

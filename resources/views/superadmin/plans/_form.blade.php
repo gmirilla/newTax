@@ -160,6 +160,7 @@
                     'feature_inventory_reports'  => ['label' => 'Inventory Reports',    'desc' => 'Stock valuation, low stock, sales analytics'],
                     'feature_manufacturing'      => ['label' => 'Manufacturing',        'desc' => 'Bills of Materials and Production Orders'],
                     'feature_maintenance'        => ['label' => 'Maintenance Module',   'desc' => 'Asset register, PM schedules, work orders, breakdowns'],
+                    'feature_storefront'         => ['label' => 'Online Storefront',    'desc' => 'Public product catalog, guest checkout, order inbox'],
                     'feature_api_access'         => ['label' => 'API Access',           'desc' => 'Programmatic access via API keys (future)'],
                 ];
                 $featureKeyMap = [
@@ -170,6 +171,7 @@
                     'feature_inventory_reports'  => 'inventory_reports',
                     'feature_manufacturing'      => 'manufacturing',
                     'feature_maintenance'        => 'maintenance',
+                    'feature_storefront'         => 'storefront',
                     'feature_api_access'         => 'api_access',
                 ];
             @endphp

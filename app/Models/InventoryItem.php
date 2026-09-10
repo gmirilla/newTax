@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[ObservedBy(InventoryItemObserver::class)]
 class InventoryItem extends Model
@@ -79,6 +80,11 @@ class InventoryItem extends Model
     public function alerts(): HasMany
     {
         return $this->hasMany(InventoryAlert::class, 'item_id');
+    }
+
+    public function storefrontProduct(): HasOne
+    {
+        return $this->hasOne(StorefrontProduct::class, 'inventory_item_id');
     }
 
     /** Per-location stock computed live from movements. */

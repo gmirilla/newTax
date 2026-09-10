@@ -143,6 +143,7 @@ class PlanController extends Controller
             'inventory_reports'  => $request->boolean('feature_inventory_reports'),
             'manufacturing'      => $request->boolean('feature_manufacturing'),
             'maintenance'        => $request->boolean('feature_maintenance'),
+            'storefront'         => $request->boolean('feature_storefront'),
             'api_access'         => $request->boolean('feature_api_access'),
         ];
     }

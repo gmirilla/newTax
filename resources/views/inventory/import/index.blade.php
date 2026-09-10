@@ -14,7 +14,7 @@
         <div class="flex-1 text-sm">
             <p class="font-medium text-amber-800">You have an unconfirmed import pending.</p>
             <p class="text-amber-700 mt-0.5">
-                Either go back to the preview to confirm, or upload a new file (this will replace the pending import).
+                Either <a href="{{ route('inventory.import.preview') }}" class="underline font-medium">go back to the preview</a> to confirm, or upload a new file (this will replace the pending import).
             </p>
         </div>
     </div>
@@ -56,7 +56,7 @@
             </a>
         </div>
 
-        <form method="POST" action="{{ route('inventory.import.preview') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('inventory.import.preview.store') }}" enctype="multipart/form-data">
             @csrf
 
             <label class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300

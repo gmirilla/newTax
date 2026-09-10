@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 use App\Models\SubscriptionPayment;
 
@@ -153,6 +154,21 @@ class Tenant extends Model
     public function vendors(): HasMany
     {
         return $this->hasMany(Vendor::class);
+    }
+
+    public function storefront(): HasOne
+    {
+        return $this->hasOne(Storefront::class);
+    }
+
+    public function storefrontProducts(): HasMany
+    {
+        return $this->hasMany(StorefrontProduct::class);
+    }
+
+    public function storefrontOrders(): HasMany
+    {
+        return $this->hasMany(StorefrontOrder::class);
     }
 
     public function employees(): HasMany
