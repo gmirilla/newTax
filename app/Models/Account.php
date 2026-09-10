@@ -33,6 +33,8 @@ class Account extends Model
         ['code' => '1003', 'name' => 'Bank Account - Savings', 'type' => 'asset', 'sub_type' => 'bank'],
         ['code' => '1100', 'name' => 'Accounts Receivable',    'type' => 'asset', 'sub_type' => 'accounts_receivable'],
         ['code' => '1200', 'name' => 'Inventory',              'type' => 'asset', 'sub_type' => 'inventory'],
+        ['code' => '1201', 'name' => 'Raw Materials Inventory', 'type' => 'asset', 'sub_type' => 'inventory'],
+        ['code' => '1202', 'name' => 'Finished Goods Inventory','type' => 'asset', 'sub_type' => 'inventory'],
         ['code' => '1300', 'name' => 'Prepaid Expenses',       'type' => 'asset', 'sub_type' => 'other_asset'],
         ['code' => '1500', 'name' => 'Fixed Assets',           'type' => 'asset', 'sub_type' => 'fixed_asset'],
         // Liabilities (2xxx)
