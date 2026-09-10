@@ -57,7 +57,7 @@ class StorefrontOrderController extends Controller
         $tenant   = $request->user()->tenant;
         $location = $this->defaultLocation($tenant);
 
-        $storefrontOrder->load('items.item');
+        $storefrontOrder->load('items.item', 'items.service');
 
         $salesOrder = DB::transaction(function () use ($storefrontOrder, $tenant, $location, $request) {
             $customer = Customer::withoutGlobalScope('tenant')->firstOrCreate(
@@ -86,7 +86,11 @@ class StorefrontOrderController extends Controller
             foreach ($storefrontOrder->items as $index => $storefrontItem) {
                 // Re-price against the current selling price — protects against
                 // stale prices between the customer's order and the tenant's review.
-                $unitPrice = (float) ($storefrontItem->item->selling_price ?? $storefrontItem->unit_price);
+                $unitPrice = (float) (
+                    $storefrontItem->inventory_item_id
+                        ? ($storefrontItem->item->selling_price ?? $storefrontItem->unit_price)
+                        : ($storefrontItem->service->price ?? $storefrontItem->unit_price)
+                );
 
                 $line = new SaleOrderItem([
                     'sale_order_id'      => $salesOrder->id,

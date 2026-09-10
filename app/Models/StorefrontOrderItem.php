@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StorefrontOrderItem extends Model
 {
     protected $fillable = [
-        'storefront_order_id', 'inventory_item_id', 'description',
+        'storefront_order_id', 'inventory_item_id', 'storefront_service_id', 'description',
         'quantity', 'unit_price', 'vat_amount', 'subtotal', 'total',
     ];
 
@@ -28,6 +28,11 @@ class StorefrontOrderItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(InventoryItem::class, 'inventory_item_id');
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(StorefrontService::class, 'storefront_service_id');
     }
 
     public function calculateTotals(): void

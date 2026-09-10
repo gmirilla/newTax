@@ -66,7 +66,7 @@
             <div class="space-y-2 text-sm">
                 @foreach($lines as $line)
                 <div class="flex justify-between text-gray-600">
-                    <span class="truncate pr-2">{{ rtrim(rtrim(number_format($line->quantity, 2), '0'), '.') }} × {{ $line->product->item->name }}</span>
+                    <span class="truncate pr-2">{{ rtrim(rtrim(number_format($line->quantity, 2), '0'), '.') }} × {{ $line->name }}</span>
                     <span class="flex-shrink-0">₦{{ number_format($line->total, 2) }}</span>
                 </div>
                 @endforeach

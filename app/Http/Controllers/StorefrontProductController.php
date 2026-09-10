@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\InventoryItem;
+use App\Models\StorefrontCategory;
 use App\Models\StorefrontProduct;
 use App\Models\StorefrontProductImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class StorefrontProductController extends Controller
@@ -19,11 +21,21 @@ class StorefrontProductController extends Controller
         $items = InventoryItem::where('tenant_id', $tenant->id)
             ->withoutGlobalScope('tenant')
             ->where('is_active', true)
-            ->with('storefrontProduct.images')
+            ->with('storefrontProduct.images', 'storefrontProduct.category')
+            ->when($request->filled('category'), fn($q) => $q->whereHas(
+                'storefrontProduct',
+                fn($sq) => $sq->where('storefront_category_id', $request->integer('category'))
+            ))
             ->orderBy('name')
-            ->paginate(25);
+            ->paginate(25)
+            ->withQueryString();
 
-        return view('storefront_admin.products.index', compact('items'));
+        $categories = StorefrontCategory::where('storefront_categories.tenant_id', $tenant->id)
+            ->withoutGlobalScope('tenant')
+            ->orderBy('name')
+            ->get();
+
+        return view('storefront_admin.products.index', compact('items', 'categories'));
     }
 
     public function publish(Request $request, InventoryItem $inventoryItem): RedirectResponse
@@ -52,12 +64,13 @@ class StorefrontProductController extends Controller
         $this->authorizeProduct($request, $storefrontProduct);
 
         $validated = $request->validate([
-            'web_description' => 'nullable|string|max:3000',
+            'web_description'         => 'nullable|string|max:3000',
+            'storefront_category_id'  => ['nullable', 'integer', Rule::exists('storefront_categories', 'id')->where('tenant_id', $storefrontProduct->tenant_id)],
         ]);
 
         $storefrontProduct->update($validated);
 
-        return back()->with('success', 'Product description updated.');
+        return back()->with('success', 'Product updated.');
     }
 
     public function uploadImage(Request $request, StorefrontProduct $storefrontProduct): RedirectResponse

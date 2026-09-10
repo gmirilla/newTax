@@ -51,9 +51,11 @@ use App\Http\Controllers\Maintenance\MaintenanceScheduleController;
 use App\Http\Controllers\Maintenance\MaintenanceWorkOrderController;
 use App\Http\Controllers\Maintenance\MaintenanceBreakdownController;
 use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\StorefrontCategoryController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\StorefrontOrderController;
 use App\Http\Controllers\StorefrontProductController;
+use App\Http\Controllers\StorefrontServiceController;
 use App\Http\Controllers\StorefrontSettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -87,6 +89,7 @@ Route::prefix('inv')->name('invoice.public.')->group(function () {
 Route::prefix('{tenant:slug}/shop')->name('storefront.')->middleware('storefront.enabled')->group(function () {
     Route::get('/',                    [StorefrontController::class, 'index'])->name('index');
     Route::get('/product/{storefrontProduct}', [StorefrontController::class, 'show'])->name('product');
+    Route::get('/service/{storefrontService}', [StorefrontController::class, 'showService'])->name('service');
     Route::get('/cart',                [StorefrontController::class, 'cart'])->name('cart');
     Route::post('/cart/add',           [StorefrontController::class, 'addToCart'])->name('cart.add');
     Route::post('/cart/remove',        [StorefrontController::class, 'removeFromCart'])->name('cart.remove');
@@ -458,12 +461,26 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::post('/settings/banner', [StorefrontSettingsController::class, 'uploadBanner'])->name('settings.banner.upload');
             Route::delete('/settings/banner', [StorefrontSettingsController::class, 'deleteBanner'])->name('settings.banner.delete');
 
+            Route::get('/categories',                     [StorefrontCategoryController::class, 'index'])->name('categories.index');
+            Route::post('/categories',                    [StorefrontCategoryController::class, 'store'])->name('categories.store');
+            Route::put('/categories/{storefrontCategory}', [StorefrontCategoryController::class, 'update'])->name('categories.update');
+            Route::delete('/categories/{storefrontCategory}', [StorefrontCategoryController::class, 'destroy'])->name('categories.destroy');
+
             Route::get('/products',                            [StorefrontProductController::class, 'index'])->name('products.index');
             Route::post('/products/{inventoryItem}/publish',   [StorefrontProductController::class, 'publish'])->name('products.publish');
             Route::post('/products/{inventoryItem}/unpublish', [StorefrontProductController::class, 'unpublish'])->name('products.unpublish');
             Route::patch('/products/{storefrontProduct}',      [StorefrontProductController::class, 'updateDescription'])->name('products.update');
             Route::post('/products/{storefrontProduct}/images', [StorefrontProductController::class, 'uploadImage'])->name('products.images.upload');
             Route::delete('/products/images/{image}',          [StorefrontProductController::class, 'deleteImage'])->name('products.images.delete');
+
+            Route::get('/services',                            [StorefrontServiceController::class, 'index'])->name('services.index');
+            Route::post('/services',                           [StorefrontServiceController::class, 'store'])->name('services.store');
+            Route::put('/services/{storefrontService}',        [StorefrontServiceController::class, 'update'])->name('services.update');
+            Route::delete('/services/{storefrontService}',     [StorefrontServiceController::class, 'destroy'])->name('services.destroy');
+            Route::post('/services/{storefrontService}/publish',   [StorefrontServiceController::class, 'publish'])->name('services.publish');
+            Route::post('/services/{storefrontService}/unpublish', [StorefrontServiceController::class, 'unpublish'])->name('services.unpublish');
+            Route::post('/services/{storefrontService}/images', [StorefrontServiceController::class, 'uploadImage'])->name('services.images.upload');
+            Route::delete('/services/images/{image}',          [StorefrontServiceController::class, 'deleteImage'])->name('services.images.delete');
 
             Route::get('/orders',                    [StorefrontOrderController::class, 'index'])->name('orders.index');
             Route::get('/orders/{storefrontOrder}',  [StorefrontOrderController::class, 'show'])->name('orders.show');

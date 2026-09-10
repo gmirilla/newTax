@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Mail\NewStorefrontOrder;
 use App\Models\Invoice;
+use App\Models\StorefrontCategory;
 use App\Models\StorefrontOrder;
 use App\Models\StorefrontOrderItem;
 use App\Models\StorefrontProduct;
+use App\Models\StorefrontService;
 use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,17 +20,40 @@ class StorefrontController extends Controller
 {
     // ── Catalog ──────────────────────────────────────────────────────────────
 
-    public function index(Tenant $tenant): View
+    public function index(Request $request, Tenant $tenant): View
     {
+        $categoryId = $request->integer('category') ?: null;
+
         $products = StorefrontProduct::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
             ->where('is_published', true)
+            ->when($categoryId, fn($q) => $q->where('storefront_category_id', $categoryId))
             ->with(['item', 'images'])
             ->whereHas('item', fn($q) => $q->where('is_active', true))
             ->orderBy('sort_order')
             ->get();
 
-        return view('storefront.index', compact('tenant', 'products'));
+        $services = StorefrontService::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('is_published', true)
+            ->when($categoryId, fn($q) => $q->where('storefront_category_id', $categoryId))
+            ->with('images')
+            ->orderBy('sort_order')
+            ->get();
+
+        $categoryIds = $products->pluck('storefront_category_id')
+            ->merge($services->pluck('storefront_category_id'))
+            ->filter()
+            ->unique();
+
+        $categories = StorefrontCategory::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $categoryIds)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('storefront.index', compact('tenant', 'products', 'services', 'categories', 'categoryId'));
     }
 
     public function show(Tenant $tenant, StorefrontProduct $storefrontProduct): View
@@ -38,6 +63,15 @@ class StorefrontController extends Controller
         $storefrontProduct->load(['item', 'images']);
 
         return view('storefront.show', ['tenant' => $tenant, 'product' => $storefrontProduct]);
+    }
+
+    public function showService(Tenant $tenant, StorefrontService $storefrontService): View
+    {
+        abort_unless($storefrontService->tenant_id === $tenant->id && $storefrontService->is_published, 404);
+
+        $storefrontService->load('images');
+
+        return view('storefront.service', ['tenant' => $tenant, 'service' => $storefrontService]);
     }
 
     // ── Cart (session-based, no persistence until checkout) ────────────────────
@@ -52,17 +86,16 @@ class StorefrontController extends Controller
     public function addToCart(Request $request, Tenant $tenant): RedirectResponse
     {
         $validated = $request->validate([
-            'storefront_product_id' => 'required|integer',
-            'quantity'               => 'required|numeric|min:0.01',
+            'type'       => 'required|in:product,service',
+            'id'         => 'required|integer',
+            'quantity'   => 'required|numeric|min:0.01',
         ]);
 
-        $product = StorefrontProduct::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenant->id)
-            ->where('is_published', true)
-            ->findOrFail($validated['storefront_product_id']);
+        $this->assertPublished($tenant, $validated['type'], $validated['id']);
 
+        $key  = $this->cartLineKey($validated['type'], (int) $validated['id']);
         $cart = session()->get($this->cartKey($tenant), []);
-        $cart[$product->id] = ($cart[$product->id] ?? 0) + (float) $validated['quantity'];
+        $cart[$key] = ($cart[$key] ?? 0) + (float) $validated['quantity'];
         session()->put($this->cartKey($tenant), $cart);
 
         return back()->with('success', 'Added to cart.');
@@ -70,10 +103,13 @@ class StorefrontController extends Controller
 
     public function removeFromCart(Request $request, Tenant $tenant): RedirectResponse
     {
-        $validated = $request->validate(['storefront_product_id' => 'required|integer']);
+        $validated = $request->validate([
+            'type' => 'required|in:product,service',
+            'id'   => 'required|integer',
+        ]);
 
         $cart = session()->get($this->cartKey($tenant), []);
-        unset($cart[$validated['storefront_product_id']]);
+        unset($cart[$this->cartLineKey($validated['type'], (int) $validated['id'])]);
         session()->put($this->cartKey($tenant), $cart);
 
         return back()->with('success', 'Removed from cart.');
@@ -139,7 +175,27 @@ class StorefrontController extends Controller
         return "storefront_cart_{$tenant->id}";
     }
 
-    /** Cart lines with live product/pricing data, keyed by storefront_product_id. */
+    private function cartLineKey(string $type, int $id): string
+    {
+        return "{$type}_{$id}";
+    }
+
+    private function assertPublished(Tenant $tenant, string $type, int $id): void
+    {
+        if ($type === 'product') {
+            StorefrontProduct::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenant->id)
+                ->where('is_published', true)
+                ->findOrFail($id);
+        } else {
+            StorefrontService::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenant->id)
+                ->where('is_published', true)
+                ->findOrFail($id);
+        }
+    }
+
+    /** Cart lines with live product/service pricing data, uniform across both types. */
     private function cartLines(Tenant $tenant)
     {
         $cart = session()->get($this->cartKey($tenant), []);
@@ -148,26 +204,75 @@ class StorefrontController extends Controller
             return collect();
         }
 
-        return StorefrontProduct::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenant->id)
-            ->whereIn('id', array_keys($cart))
-            ->with('item')
-            ->get()
-            ->map(function (StorefrontProduct $product) use ($cart) {
-                $qty        = (float) $cart[$product->id];
-                $unitPrice  = (float) $product->item->selling_price;
-                $subtotal   = round($qty * $unitPrice, 2);
-                $vatAmount  = round($subtotal * Invoice::VAT_RATE / 100, 2);
+        $productIds = [];
+        $serviceIds = [];
+        foreach (array_keys($cart) as $key) {
+            if (str_starts_with($key, 'product_')) {
+                $productIds[] = (int) substr($key, strlen('product_'));
+            } elseif (str_starts_with($key, 'service_')) {
+                $serviceIds[] = (int) substr($key, strlen('service_'));
+            }
+        }
 
-                return (object) [
-                    'product'    => $product,
-                    'quantity'   => $qty,
-                    'unit_price' => $unitPrice,
-                    'subtotal'   => $subtotal,
-                    'vat_amount' => $vatAmount,
-                    'total'      => $subtotal + $vatAmount,
-                ];
-            });
+        $lines = collect();
+
+        if (!empty($productIds)) {
+            $lines = $lines->merge(
+                StorefrontProduct::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $tenant->id)
+                    ->whereIn('id', $productIds)
+                    ->with('item', 'images')
+                    ->get()
+                    ->map(function (StorefrontProduct $product) use ($cart) {
+                        $qty       = (float) $cart[$this->cartLineKey('product', $product->id)];
+                        $unitPrice = (float) $product->item->selling_price;
+                        $subtotal  = round($qty * $unitPrice, 2);
+                        $vatAmount = round($subtotal * Invoice::VAT_RATE / 100, 2);
+
+                        return (object) [
+                            'type'       => 'product',
+                            'product'    => $product,
+                            'service'    => null,
+                            'name'       => $product->item->name,
+                            'quantity'   => $qty,
+                            'unit_price' => $unitPrice,
+                            'subtotal'   => $subtotal,
+                            'vat_amount' => $vatAmount,
+                            'total'      => $subtotal + $vatAmount,
+                        ];
+                    })
+            );
+        }
+
+        if (!empty($serviceIds)) {
+            $lines = $lines->merge(
+                StorefrontService::withoutGlobalScope('tenant')
+                    ->where('tenant_id', $tenant->id)
+                    ->whereIn('id', $serviceIds)
+                    ->with('images')
+                    ->get()
+                    ->map(function (StorefrontService $service) use ($cart) {
+                        $qty       = (float) $cart[$this->cartLineKey('service', $service->id)];
+                        $unitPrice = (float) $service->price;
+                        $subtotal  = round($qty * $unitPrice, 2);
+                        $vatAmount = round($subtotal * Invoice::VAT_RATE / 100, 2);
+
+                        return (object) [
+                            'type'       => 'service',
+                            'product'    => null,
+                            'service'    => $service,
+                            'name'       => $service->name,
+                            'quantity'   => $qty,
+                            'unit_price' => $unitPrice,
+                            'subtotal'   => $subtotal,
+                            'vat_amount' => $vatAmount,
+                            'total'      => $subtotal + $vatAmount,
+                        ];
+                    })
+            );
+        }
+
+        return $lines;
     }
 
     private function createOrderFromCart(Request $request, Tenant $tenant, string $channel): ?StorefrontOrder
@@ -201,11 +306,12 @@ class StorefrontController extends Controller
 
             foreach ($lines as $line) {
                 $item = new StorefrontOrderItem([
-                    'storefront_order_id' => $order->id,
-                    'inventory_item_id'   => $line->product->inventory_item_id,
-                    'description'         => $line->product->item->name,
-                    'quantity'            => $line->quantity,
-                    'unit_price'          => $line->unit_price,
+                    'storefront_order_id'    => $order->id,
+                    'inventory_item_id'      => $line->type === 'product' ? $line->product->inventory_item_id : null,
+                    'storefront_service_id'  => $line->type === 'service' ? $line->service->id : null,
+                    'description'            => $line->name,
+                    'quantity'               => $line->quantity,
+                    'unit_price'             => $line->unit_price,
                 ]);
                 $item->calculateTotals();
                 $item->save();

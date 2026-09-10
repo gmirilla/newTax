@@ -272,7 +272,12 @@ class SalesOrderController extends Controller
                 $locationId = $salesOrder->location_id;
 
                 // 1. Validate stock availability at the order's location
+                // (service lines carry no item_id and have no stock to check)
                 foreach ($salesOrder->items as $line) {
+                    if (!$line->item_id) {
+                        continue;
+                    }
+
                     $available = $locationId
                         ? $line->item->stockAtLocation($locationId)
                         : (float) $line->item->current_stock;
@@ -287,9 +292,14 @@ class SalesOrderController extends Controller
                     }
                 }
 
-                // 2. Write stock movements and decrement stock
+                // 2. Write stock movements and decrement stock (service lines are skipped —
+                //    they never touch inventory and contribute $0 to COGS)
                 $totalCOGS = 0;
                 foreach ($salesOrder->items as $line) {
+                    if (!$line->item_id) {
+                        continue;
+                    }
+
                     $avgCost  = (float) $line->item->avg_cost;
                     $newStock = round((float) $line->item->current_stock - (float) $line->quantity, 3);
 
@@ -483,8 +493,12 @@ class SalesOrderController extends Controller
     {
         $salesOrder->load('items.item');
 
-        // Reverse stock movements and restore avg_cost
+        // Reverse stock movements and restore avg_cost (service lines never moved stock)
         foreach ($salesOrder->items as $line) {
+            if (!$line->item_id) {
+                continue;
+            }
+
             $item        = $line->item;
             $qtyReturned = (float) $line->quantity;
             $costAtSale  = (float) $line->cost_price_at_sale;
