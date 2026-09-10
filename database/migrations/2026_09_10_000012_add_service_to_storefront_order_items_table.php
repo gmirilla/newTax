@@ -10,29 +10,33 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('storefront_order_items', function (Blueprint $table) {
-            $table->dropForeign(['inventory_item_id']);
-        });
-
-        DB::statement('ALTER TABLE storefront_order_items ALTER COLUMN inventory_item_id DROP NOT NULL');
-
-        Schema::table('storefront_order_items', function (Blueprint $table) {
-            $table->foreign('inventory_item_id')->references('id')->on('inventory_items')->restrictOnDelete();
             $table->foreignId('storefront_service_id')->nullable()->after('inventory_item_id')
                 ->constrained('storefront_services')->restrictOnDelete();
         });
+
+        // Relaxing a column to nullable doesn't require touching its foreign key
+        // on either driver — no need to drop/recreate the constraint.
+        $driver = DB::getDriverName();
+
+        if ($driver === 'mysql') {
+            DB::statement('ALTER TABLE storefront_order_items MODIFY inventory_item_id BIGINT UNSIGNED NULL');
+        } elseif ($driver !== 'sqlite') {
+            DB::statement('ALTER TABLE storefront_order_items ALTER COLUMN inventory_item_id DROP NOT NULL');
+        }
     }
 
     public function down(): void
     {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'mysql') {
+            DB::statement('ALTER TABLE storefront_order_items MODIFY inventory_item_id BIGINT UNSIGNED NOT NULL');
+        } elseif ($driver !== 'sqlite') {
+            DB::statement('ALTER TABLE storefront_order_items ALTER COLUMN inventory_item_id SET NOT NULL');
+        }
+
         Schema::table('storefront_order_items', function (Blueprint $table) {
             $table->dropConstrainedForeignId('storefront_service_id');
-            $table->dropForeign(['inventory_item_id']);
-        });
-
-        DB::statement('ALTER TABLE storefront_order_items ALTER COLUMN inventory_item_id SET NOT NULL');
-
-        Schema::table('storefront_order_items', function (Blueprint $table) {
-            $table->foreign('inventory_item_id')->references('id')->on('inventory_items')->restrictOnDelete();
         });
     }
 };
