@@ -24,8 +24,10 @@
             </div>
             @endforeach
         </div>
-        <div class="flex justify-between font-bold text-gray-900 pt-3 mt-3 border-t border-gray-100">
-            <span>Total</span><span>₦{{ number_format((float) $order->total_amount, 2) }}</span>
+        <div class="space-y-1.5 pt-3 mt-3 border-t border-gray-100 text-sm">
+            <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>₦{{ number_format((float) $order->subtotal, 2) }}</span></div>
+            <div class="flex justify-between text-gray-500"><span>VAT (7.5%)</span><span>₦{{ number_format((float) $order->vat_amount, 2) }}</span></div>
+            <div class="flex justify-between font-bold text-gray-900 pt-1.5 mt-1.5 border-t border-gray-100"><span>Total</span><span>₦{{ number_format((float) $order->total_amount, 2) }}</span></div>
         </div>
     </div>
 
