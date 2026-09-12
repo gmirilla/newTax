@@ -597,6 +597,147 @@ class StorefrontModuleTest extends TestCase
         $this->assertEquals(SalesOrder::STATUS_CANCELLED, $salesOrder->fresh()->status);
     }
 
+    // ── Scenario 10: Storefront VAT toggle (store-level and item-level) ───────
+
+    public function test_store_level_vat_off_removes_vat_from_checkout(): void
+    {
+        $this->tenant->storefront->update(['vat_applicable' => false]);
+
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
+        ]);
+
+        $response = $this->get(route('storefront.checkout', $this->tenant->slug));
+        $response->assertOk()->assertDontSee('VAT (7.5%)');
+
+        Mail::fake();
+        $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
+            'customer_name'  => 'No VAT Customer',
+            'customer_email' => 'novat@example.com',
+            'customer_phone' => '08011110000',
+        ]);
+
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+        $this->assertEquals(0.0, (float) $order->vat_amount);
+        $this->assertEquals(45000.0, (float) $order->total_amount);
+        $this->assertFalse((bool) $order->items->first()->vat_applicable);
+    }
+
+    public function test_item_level_vat_off_only_affects_that_item_in_a_mixed_cart(): void
+    {
+        // Store-level VAT stays on (default); only the service is exempt.
+        $service = StorefrontService::withoutGlobalScope('tenant')->create([
+            'tenant_id'      => $this->tenant->id,
+            'name'           => 'Basic Foodstuff Delivery',
+            'price'          => 2000,
+            'is_published'   => true,
+            'vat_applicable' => false,
+        ]);
+
+        Mail::fake();
+
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
+        ]);
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'service', 'id' => $service->id, 'quantity' => 1,
+        ]);
+
+        $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
+            'customer_name'  => 'Mixed VAT Customer',
+            'customer_email' => 'mixedvat@example.com',
+            'customer_phone' => '08011110001',
+        ]);
+
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+
+        // Only the product's VAT (45,000 * 7.5%) — the exempt service contributes 0.
+        $this->assertEquals(3375.0, (float) $order->vat_amount);
+
+        $itemLine    = $order->items()->whereNotNull('inventory_item_id')->first();
+        $serviceLine = $order->items()->whereNotNull('storefront_service_id')->first();
+        $this->assertTrue((bool) $itemLine->vat_applicable);
+        $this->assertFalse((bool) $serviceLine->vat_applicable);
+    }
+
+    public function test_admin_can_toggle_store_level_vat_via_settings_form(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('storefront.settings.update'), [
+                'is_enabled'     => '1',
+                'vat_applicable' => '0',
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse((bool) $this->tenant->storefront->fresh()->vat_applicable);
+    }
+
+    public function test_admin_can_mark_a_product_vat_exempt(): void
+    {
+        $this->actingAs($this->admin)
+            ->patch(route('storefront.products.update', $this->product), [
+                'vat_applicable' => '0',
+            ])
+            ->assertRedirect();
+
+        $this->assertFalse((bool) $this->product->fresh()->vat_applicable);
+    }
+
+    public function test_admin_can_mark_a_service_vat_exempt_on_create(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('storefront.services.store'), [
+                'name'           => 'Exempt Service',
+                'price'          => 5000,
+                'vat_applicable' => '0',
+            ])
+            ->assertRedirect();
+
+        $service = StorefrontService::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+        $this->assertFalse((bool) $service->vat_applicable);
+    }
+
+    public function test_accepting_and_confirming_an_all_exempt_order_posts_no_vat(): void
+    {
+        $this->product->update(['vat_applicable' => false]);
+
+        Mail::fake();
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
+        ]);
+        $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
+            'customer_name'  => 'Exempt Customer',
+            'customer_email' => 'exempt@example.com',
+            'customer_phone' => '08011110002',
+        ]);
+
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+
+        $this->actingAs($this->admin)->post(route('storefront.orders.accept', $order))->assertRedirect();
+
+        $salesOrder = SalesOrder::withoutGlobalScope('tenant')->findOrFail($order->fresh()->sales_order_id);
+        $this->assertFalse((bool) $salesOrder->items()->first()->vat_applicable);
+
+        $this->actingAs($this->admin)
+            ->post(route('inventory.sales.confirm', $salesOrder))
+            ->assertRedirect(route('inventory.sales.show', $salesOrder));
+
+        $salesOrder->refresh();
+        $this->assertEquals(0.0, (float) $salesOrder->vat_amount);
+        $this->assertEquals(0.0, (float) $salesOrder->invoice->vat_amount);
+    }
+
+    public function test_public_views_hide_vat_labels_for_exempt_product(): void
+    {
+        $this->product->update(['vat_applicable' => false]);
+
+        $this->get(route('storefront.index', $this->tenant->slug))
+            ->assertOk()->assertDontSee('+ VAT');
+
+        $this->get(route('storefront.product', ['tenant' => $this->tenant->slug, 'storefrontProduct' => $this->product->id]))
+            ->assertOk()->assertDontSee('+ VAT')->assertDontSee('incl. VAT');
+    }
+
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private function makeMixedPendingOrder(StorefrontService $service): StorefrontOrder

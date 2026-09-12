@@ -52,7 +52,9 @@
             <p class="text-sm font-medium text-gray-900 truncate">{{ $product->item->name }}</p>
             <p class="text-sm font-bold text-gray-900 mt-1">
                 ₦{{ number_format((float) $product->item->selling_price, 2) }}
-                <span class="text-xs font-normal text-gray-400">+ VAT</span>
+                @if($storeVatApplicable && $product->vat_applicable)
+                    <span class="text-xs font-normal text-gray-400">+ VAT</span>
+                @endif
             </p>
         </div>
     </a>
@@ -72,7 +74,9 @@
             <p class="text-sm font-medium text-gray-900 truncate">{{ $service->name }}</p>
             <p class="text-sm font-bold text-gray-900 mt-1">
                 ₦{{ number_format((float) $service->price, 2) }}
-                <span class="text-xs font-normal text-gray-400">+ VAT</span>
+                @if($storeVatApplicable && $service->vat_applicable)
+                    <span class="text-xs font-normal text-gray-400">+ VAT</span>
+                @endif
             </p>
         </div>
     </a>

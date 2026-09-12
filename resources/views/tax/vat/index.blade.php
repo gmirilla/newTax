@@ -100,6 +100,10 @@
                                 </button>
                                 @endif
                                 @if($return->status === 'pending' || $return->status === 'nil_return')
+                                <a href="{{ route('tax.vat.compute', ['year' => $return->tax_year, 'month' => $return->tax_month]) }}"
+                                   class="text-xs text-gray-600 hover:underline font-medium">
+                                    Recalculate
+                                </a>
                                 <form method="POST" action="{{ route('tax.vat.filed', $return) }}" class="flex gap-1">
                                     @csrf
                                     <input type="hidden" name="filed_date" value="{{ now()->toDateString() }}">

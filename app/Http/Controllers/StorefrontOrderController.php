@@ -99,7 +99,7 @@ class StorefrontOrderController extends Controller
                     'quantity'           => $storefrontItem->quantity,
                     'unit_price'         => $unitPrice,
                     'cost_price_at_sale' => 0,
-                    'vat_applicable'     => true,
+                    'vat_applicable'     => $storefrontItem->vat_applicable,
                     'vat_rate'           => Invoice::VAT_RATE,
                     'sort_order'         => $index + 1,
                 ]);

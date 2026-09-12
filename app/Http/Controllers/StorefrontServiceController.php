@@ -39,7 +39,8 @@ class StorefrontServiceController extends Controller
 
         StorefrontService::withoutGlobalScope('tenant')->create([
             ...$validated,
-            'tenant_id' => $tenant->id,
+            'tenant_id'      => $tenant->id,
+            'vat_applicable' => $request->boolean('vat_applicable'),
         ]);
 
         return back()->with('success', 'Service created.');
@@ -51,7 +52,10 @@ class StorefrontServiceController extends Controller
 
         $validated = $this->validateService($request, $storefrontService->tenant_id);
 
-        $storefrontService->update($validated);
+        $storefrontService->update([
+            ...$validated,
+            'vat_applicable' => $request->boolean('vat_applicable'),
+        ]);
 
         return back()->with('success', 'Service updated.');
     }
@@ -122,6 +126,7 @@ class StorefrontServiceController extends Controller
             'description'             => ['nullable', 'string', 'max:3000'],
             'price'                   => ['required', 'numeric', 'min:0'],
             'storefront_category_id'  => ['nullable', 'integer', Rule::exists('storefront_categories', 'id')->where('tenant_id', $tenantId)],
+            'vat_applicable'          => ['boolean'],
         ]);
     }
 

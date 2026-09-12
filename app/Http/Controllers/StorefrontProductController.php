@@ -66,9 +66,13 @@ class StorefrontProductController extends Controller
         $validated = $request->validate([
             'web_description'         => 'nullable|string|max:3000',
             'storefront_category_id'  => ['nullable', 'integer', Rule::exists('storefront_categories', 'id')->where('tenant_id', $storefrontProduct->tenant_id)],
+            'vat_applicable'          => 'boolean',
         ]);
 
-        $storefrontProduct->update($validated);
+        $storefrontProduct->update([
+            ...$validated,
+            'vat_applicable' => $request->boolean('vat_applicable'),
+        ]);
 
         return back()->with('success', 'Product updated.');
     }

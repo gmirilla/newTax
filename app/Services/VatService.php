@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\Expense;
 use App\Models\Tenant;
@@ -42,6 +43,25 @@ class VatService
     }
 
     /**
+     * Output VAT recognized on a cash basis: each invoice's vat_amount is
+     * prorated by how much of it has actually been paid. A fully-paid
+     * invoice contributes its full vat_amount; an unpaid invoice (amount_paid
+     * == 0, e.g. status 'sent') contributes 0. Overpayment is clamped so a
+     * single invoice never contributes more than its own vat_amount.
+     */
+    public function sumOutputVatReceived(Collection $invoices): float
+    {
+        return round($invoices->sum(function (Invoice $invoice) {
+            $total = (float) $invoice->total_amount;
+            if ($total <= 0) {
+                return 0.0;
+            }
+            $ratio = min(1.0, (float) $invoice->amount_paid / $total);
+            return round((float) $invoice->vat_amount * $ratio, 2);
+        }), 2);
+    }
+
+    /**
      * Compute monthly VAT return for a tenant.
      * Net VAT = Output VAT (from sales) - Input VAT (from purchases)
      * Positive result: payable to FIRS
@@ -52,12 +72,15 @@ class VatService
         $start = Carbon::create($year, $month, 1)->startOfMonth();
         $end   = Carbon::create($year, $month, 1)->endOfMonth();
 
-        // Output VAT: VAT collected from customers on invoices
-        $outputVat = Invoice::where('tenant_id', $tenant->id)
+        // Output VAT: VAT collected from customers on invoices, recognized
+        // only on the portion of each invoice actually paid so far.
+        $invoices = Invoice::where('tenant_id', $tenant->id)
             ->where('vat_applicable', true)
             ->whereBetween('invoice_date', [$start, $end])
             ->whereIn('status', ['sent', 'partial', 'paid'])
-            ->sum('vat_amount');
+            ->get(['vat_amount', 'amount_paid', 'total_amount']);
+
+        $outputVat = $this->sumOutputVatReceived($invoices);
 
         // Input VAT: VAT paid to vendors on expenses (claimable as credit)
         $inputVat = Expense::where('tenant_id', $tenant->id)
@@ -97,13 +120,24 @@ class VatService
      */
     public function createOrUpdateReturn(Tenant $tenant, int $year, int $month): VatReturn
     {
-        $data = $this->computeMonthlyReturn($tenant, $year, $month);
-
         $vatReturn = VatReturn::firstOrNew([
             'tenant_id' => $tenant->id,
             'tax_year'  => $year,
             'tax_month' => $month,
         ]);
+
+        // Filed/paid returns are locked against silent recompute — once a
+        // return has been reported to NRS, changing its figures needs an
+        // explicit, audited amendment (see TODO.md), not a routine refresh.
+        if ($vatReturn->exists && in_array($vatReturn->status, ['filed', 'paid'], true)) {
+            return $vatReturn;
+        }
+
+        $before = $vatReturn->exists
+            ? $vatReturn->only(['output_vat', 'input_vat', 'net_vat_payable'])
+            : null;
+
+        $data = $this->computeMonthlyReturn($tenant, $year, $month);
 
         // Always refresh computed financial figures
         $vatReturn->fill(array_merge($data, ['tenant_id' => $tenant->id]));
@@ -114,6 +148,15 @@ class VatService
         }
 
         $vatReturn->save();
+
+        if ($before !== null && $vatReturn->wasChanged(['output_vat', 'input_vat', 'net_vat_payable'])) {
+            AuditLog::record('vat_return.recalculated', $vatReturn, $before, [
+                'output_vat'      => $vatReturn->output_vat,
+                'input_vat'       => $vatReturn->input_vat,
+                'net_vat_payable' => $vatReturn->net_vat_payable,
+            ], 'tax,vat');
+        }
+
         return $vatReturn;
     }
 
@@ -137,11 +180,13 @@ class VatService
         $currentYear  = now()->year;
         $currentMonth = now()->month;
 
-        $ytdOutput = Invoice::where('tenant_id', $tenant->id)
+        $ytdInvoices = Invoice::where('tenant_id', $tenant->id)
             ->where('vat_applicable', true)
             ->whereYear('invoice_date', $currentYear)
             ->whereIn('status', ['sent', 'partial', 'paid'])
-            ->sum('vat_amount');
+            ->get(['vat_amount', 'amount_paid', 'total_amount']);
+
+        $ytdOutput = $this->sumOutputVatReceived($ytdInvoices);
 
         $ytdInput = Expense::where('tenant_id', $tenant->id)
             ->where('vat_applicable', true)

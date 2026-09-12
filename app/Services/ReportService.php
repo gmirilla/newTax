@@ -38,10 +38,12 @@ class ReportService
             ->where('due_date', '<', now())
             ->count();
 
-        $outputVat = (float)Invoice::where('tenant_id', $tenant->id)
-            ->whereYear('invoice_date', $year)
-            ->whereIn('status', ['sent', 'partial', 'paid'])
-            ->sum('vat_amount');
+        $outputVat = $this->vatService->sumOutputVatReceived(
+            Invoice::where('tenant_id', $tenant->id)
+                ->whereYear('invoice_date', $year)
+                ->whereIn('status', ['sent', 'partial', 'paid'])
+                ->get(['vat_amount', 'amount_paid', 'total_amount'])
+        );
 
         $inputVat = (float)Expense::where('tenant_id', $tenant->id)
             ->whereYear('expense_date', $year)
@@ -239,13 +241,13 @@ class ReportService
             'tax_month'     => $month,
             'output_vat'    => [
                 'items'     => $invoices,
-                'total'     => round($invoices->sum('vat_amount'), 2),
+                'total'     => $this->vatService->sumOutputVatReceived($invoices),
             ],
             'input_vat'     => [
                 'items'     => $expenses,
                 'total'     => round($expenses->sum('vat_amount'), 2),
             ],
-            'net_vat'       => round($invoices->sum('vat_amount') - $expenses->sum('vat_amount'), 2),
+            'net_vat'       => round($this->vatService->sumOutputVatReceived($invoices) - $expenses->sum('vat_amount'), 2),
             'due_date'      => $this->vatService->getFilingDueDate($year, $month),
         ];
     }

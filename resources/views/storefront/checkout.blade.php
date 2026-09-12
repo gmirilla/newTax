@@ -78,7 +78,9 @@
             @endphp
             <div class="space-y-1.5 pt-3 mt-3 border-t border-gray-100 text-sm">
                 <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>₦{{ number_format($subtotal, 2) }}</span></div>
+                @if($vat > 0)
                 <div class="flex justify-between text-gray-500"><span>VAT (7.5%)</span><span>₦{{ number_format($vat, 2) }}</span></div>
+                @endif
                 <div class="flex justify-between font-bold text-gray-900 pt-1.5 mt-1.5 border-t border-gray-100"><span>Total</span><span>₦{{ number_format($total, 2) }}</span></div>
             </div>
         </div>

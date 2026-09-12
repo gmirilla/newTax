@@ -13,12 +13,13 @@ class StorefrontService extends Model
 
     protected $fillable = [
         'tenant_id', 'storefront_category_id', 'name', 'description',
-        'price', 'is_published', 'sort_order',
+        'price', 'is_published', 'vat_applicable', 'sort_order',
     ];
 
     protected $casts = [
-        'price'        => 'decimal:2',
-        'is_published' => 'boolean',
+        'price'          => 'decimal:2',
+        'is_published'   => 'boolean',
+        'vat_applicable' => 'boolean',
     ];
 
     protected static function booted(): void

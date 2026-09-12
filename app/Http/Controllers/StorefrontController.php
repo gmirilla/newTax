@@ -53,7 +53,9 @@ class StorefrontController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('storefront.index', compact('tenant', 'products', 'services', 'categories', 'categoryId'));
+        $storeVatApplicable = (bool) ($tenant->storefront?->vat_applicable ?? true);
+
+        return view('storefront.index', compact('tenant', 'products', 'services', 'categories', 'categoryId', 'storeVatApplicable'));
     }
 
     public function show(Tenant $tenant, StorefrontProduct $storefrontProduct): View
@@ -204,6 +206,10 @@ class StorefrontController extends Controller
             return collect();
         }
 
+        // Store-level VAT is a master switch: if it's off, nothing on this
+        // storefront ever carries VAT regardless of the item's own setting.
+        $storeVatApplicable = (bool) ($tenant->storefront?->vat_applicable ?? true);
+
         $productIds = [];
         $serviceIds = [];
         foreach (array_keys($cart) as $key) {
@@ -223,22 +229,24 @@ class StorefrontController extends Controller
                     ->whereIn('id', $productIds)
                     ->with('item', 'images')
                     ->get()
-                    ->map(function (StorefrontProduct $product) use ($cart) {
-                        $qty       = (float) $cart[$this->cartLineKey('product', $product->id)];
-                        $unitPrice = (float) $product->item->selling_price;
-                        $subtotal  = round($qty * $unitPrice, 2);
-                        $vatAmount = round($subtotal * Invoice::VAT_RATE / 100, 2);
+                    ->map(function (StorefrontProduct $product) use ($cart, $storeVatApplicable) {
+                        $qty           = (float) $cart[$this->cartLineKey('product', $product->id)];
+                        $unitPrice     = (float) $product->item->selling_price;
+                        $subtotal      = round($qty * $unitPrice, 2);
+                        $vatApplicable = $storeVatApplicable && $product->vat_applicable;
+                        $vatAmount     = $vatApplicable ? round($subtotal * Invoice::VAT_RATE / 100, 2) : 0.0;
 
                         return (object) [
-                            'type'       => 'product',
-                            'product'    => $product,
-                            'service'    => null,
-                            'name'       => $product->item->name,
-                            'quantity'   => $qty,
-                            'unit_price' => $unitPrice,
-                            'subtotal'   => $subtotal,
-                            'vat_amount' => $vatAmount,
-                            'total'      => $subtotal + $vatAmount,
+                            'type'           => 'product',
+                            'product'        => $product,
+                            'service'        => null,
+                            'name'           => $product->item->name,
+                            'quantity'       => $qty,
+                            'unit_price'     => $unitPrice,
+                            'subtotal'       => $subtotal,
+                            'vat_applicable' => $vatApplicable,
+                            'vat_amount'     => $vatAmount,
+                            'total'          => $subtotal + $vatAmount,
                         ];
                     })
             );
@@ -251,22 +259,24 @@ class StorefrontController extends Controller
                     ->whereIn('id', $serviceIds)
                     ->with('images')
                     ->get()
-                    ->map(function (StorefrontService $service) use ($cart) {
-                        $qty       = (float) $cart[$this->cartLineKey('service', $service->id)];
-                        $unitPrice = (float) $service->price;
-                        $subtotal  = round($qty * $unitPrice, 2);
-                        $vatAmount = round($subtotal * Invoice::VAT_RATE / 100, 2);
+                    ->map(function (StorefrontService $service) use ($cart, $storeVatApplicable) {
+                        $qty           = (float) $cart[$this->cartLineKey('service', $service->id)];
+                        $unitPrice     = (float) $service->price;
+                        $subtotal      = round($qty * $unitPrice, 2);
+                        $vatApplicable = $storeVatApplicable && $service->vat_applicable;
+                        $vatAmount     = $vatApplicable ? round($subtotal * Invoice::VAT_RATE / 100, 2) : 0.0;
 
                         return (object) [
-                            'type'       => 'service',
-                            'product'    => null,
-                            'service'    => $service,
-                            'name'       => $service->name,
-                            'quantity'   => $qty,
-                            'unit_price' => $unitPrice,
-                            'subtotal'   => $subtotal,
-                            'vat_amount' => $vatAmount,
-                            'total'      => $subtotal + $vatAmount,
+                            'type'           => 'service',
+                            'product'        => null,
+                            'service'        => $service,
+                            'name'           => $service->name,
+                            'quantity'       => $qty,
+                            'unit_price'     => $unitPrice,
+                            'subtotal'       => $subtotal,
+                            'vat_applicable' => $vatApplicable,
+                            'vat_amount'     => $vatAmount,
+                            'total'          => $subtotal + $vatAmount,
                         ];
                     })
             );
@@ -312,6 +322,7 @@ class StorefrontController extends Controller
                     'description'            => $line->name,
                     'quantity'               => $line->quantity,
                     'unit_price'             => $line->unit_price,
+                    'vat_applicable'         => $line->vat_applicable,
                 ]);
                 $item->calculateTotals();
                 $item->save();
