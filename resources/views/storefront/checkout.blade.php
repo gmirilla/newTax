@@ -4,12 +4,19 @@
 
 @section('content')
 
+@php
+    $pickupEnabled   = $storefront->pickup_enabled ?? true;
+    $deliveryEnabled = $storefront->delivery_enabled ?? true;
+    $bothEnabled     = $pickupEnabled && $deliveryEnabled;
+@endphp
+
 <h1 class="font-display text-2xl font-semibold text-gray-900 tracking-tight mb-7">Checkout</h1>
 
 <div class="grid lg:grid-cols-5 gap-8">
 
     <div class="lg:col-span-3">
-        <form method="POST" action="{{ route('storefront.checkout.submit', $tenant->slug) }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+        <form method="POST" action="{{ route('storefront.checkout.submit', $tenant->slug) }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4"
+              @if($bothEnabled) x-data="{ method: '{{ old('delivery_method', 'delivery') }}' }" @endif>
             @csrf
 
             <div>
@@ -29,11 +36,51 @@
                            class="w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-gray-900 focus:border-gray-900">
                 </div>
             </div>
+            @if($bothEnabled)
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">How would you like your order? <span class="text-red-500">*</span></label>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="radio" name="delivery_method" value="delivery" x-model="method"
+                               class="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-900">
+                        Delivery
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="radio" name="delivery_method" value="pickup" x-model="method"
+                               class="h-4 w-4 border-gray-300 text-gray-900 focus:ring-gray-900">
+                        Pickup
+                    </label>
+                </div>
+                @error('delivery_method')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+
+            <div x-show="method === 'delivery'">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address <span class="text-red-500">*</span></label>
                 <textarea name="delivery_address" rows="2"
                           class="w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-gray-900 focus:border-gray-900">{{ old('delivery_address') }}</textarea>
+                @error('delivery_address')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
+
+            @if($storefront?->pickup_address)
+            <p x-show="method === 'pickup'" x-cloak class="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                You'll collect your order at: {{ $storefront->pickup_address }}
+            </p>
+            @endif
+            @elseif($deliveryEnabled)
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address <span class="text-red-500">*</span></label>
+                <textarea name="delivery_address" rows="2"
+                          class="w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-gray-900 focus:border-gray-900">{{ old('delivery_address') }}</textarea>
+                @error('delivery_address')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+            @else
+            <input type="hidden" name="delivery_method" value="pickup">
+            @if($storefront?->pickup_address)
+            <p class="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                You'll collect your order at: {{ $storefront->pickup_address }}
+            </p>
+            @endif
+            @endif
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Order Notes</label>
                 <textarea name="notes" rows="2" placeholder="Anything the seller should know"

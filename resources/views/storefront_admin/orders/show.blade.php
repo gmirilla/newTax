@@ -61,10 +61,17 @@
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-sm space-y-1.5">
-        <h2 class="text-sm font-semibold text-gray-700 mb-2">Customer</h2>
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-semibold text-gray-700">Customer</h2>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 capitalize">
+                {{ $order->delivery_method === \App\Models\StorefrontOrder::DELIVERY_METHOD_PICKUP ? 'Pickup' : 'Delivery' }}
+            </span>
+        </div>
         <p class="text-gray-600"><strong class="text-gray-800">{{ $order->customer_name }}</strong></p>
         <p class="text-gray-600">{{ $order->customer_phone }} · {{ $order->customer_email }}</p>
-        @if($order->delivery_address)<p class="text-gray-600">{{ $order->delivery_address }}</p>@endif
+        @if($order->delivery_method !== \App\Models\StorefrontOrder::DELIVERY_METHOD_PICKUP && $order->delivery_address)
+            <p class="text-gray-600">{{ $order->delivery_address }}</p>
+        @endif
         @if($order->notes)<p class="text-gray-500 mt-2 italic">"{{ $order->notes }}"</p>@endif
     </div>
 

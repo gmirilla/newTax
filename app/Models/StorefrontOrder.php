@@ -20,9 +20,12 @@ class StorefrontOrder extends Model
     const CHANNEL_WEB      = 'web';
     const CHANNEL_WHATSAPP = 'whatsapp';
 
+    const DELIVERY_METHOD_PICKUP   = 'pickup';
+    const DELIVERY_METHOD_DELIVERY = 'delivery';
+
     protected $fillable = [
         'tenant_id', 'order_number', 'token',
-        'customer_name', 'customer_email', 'customer_phone', 'delivery_address',
+        'customer_name', 'customer_email', 'customer_phone', 'delivery_address', 'delivery_method',
         'subtotal', 'vat_amount', 'total_amount',
         'status', 'channel', 'notes', 'rejection_reason', 'sales_order_id',
     ];
@@ -84,7 +87,13 @@ class StorefrontOrder extends Model
 
         $lines[] = 'Total: ₦' . number_format((float) $this->total_amount, 2);
         $lines[] = "Customer: {$this->customer_name} ({$this->customer_phone})";
-        $lines[] = "Address: {$this->delivery_address}";
+
+        if ($this->delivery_method === self::DELIVERY_METHOD_PICKUP) {
+            $lines[] = 'Method: Pickup';
+        } else {
+            $lines[] = 'Method: Delivery';
+            $lines[] = "Address: {$this->delivery_address}";
+        }
 
         return implode("\n", $lines);
     }

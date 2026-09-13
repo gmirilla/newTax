@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class StorefrontController extends Controller
@@ -154,7 +155,7 @@ class StorefrontController extends Controller
             return redirect()->route('storefront.cart', $tenant->slug)->with('error', 'Your cart is empty.');
         }
 
-        return view('storefront.checkout', ['tenant' => $tenant, 'lines' => $lines]);
+        return view('storefront.checkout', ['tenant' => $tenant, 'lines' => $lines, 'storefront' => $tenant->storefront]);
     }
 
     public function placeOrder(Request $request, Tenant $tenant): RedirectResponse
@@ -320,22 +321,45 @@ class StorefrontController extends Controller
             return null;
         }
 
-        $validated = $request->validate([
-            'customer_name'     => 'required|string|max:150',
-            'customer_email'    => 'required|email|max:150',
-            'customer_phone'    => 'required|string|max:30',
-            'delivery_address'  => 'nullable|string|max:1000',
-            'notes'             => 'nullable|string|max:1000',
-        ]);
+        $storefront      = $tenant->storefront;
+        $pickupEnabled   = $storefront->pickup_enabled ?? true;
+        $deliveryEnabled = $storefront->delivery_enabled ?? true;
 
-        $order = DB::transaction(function () use ($validated, $tenant, $channel, $lines) {
+        $rules = [
+            'customer_name'  => 'required|string|max:150',
+            'customer_email' => 'required|email|max:150',
+            'customer_phone' => 'required|string|max:30',
+            'notes'          => 'nullable|string|max:1000',
+        ];
+
+        if ($pickupEnabled && $deliveryEnabled) {
+            $rules['delivery_method']  = ['required', Rule::in([StorefrontOrder::DELIVERY_METHOD_PICKUP, StorefrontOrder::DELIVERY_METHOD_DELIVERY])];
+            $rules['delivery_address'] = 'required_if:delivery_method,' . StorefrontOrder::DELIVERY_METHOD_DELIVERY . '|nullable|string|max:1000';
+        } elseif ($deliveryEnabled) {
+            $rules['delivery_address'] = 'required|string|max:1000';
+        } else {
+            $rules['delivery_address'] = 'nullable|string|max:1000';
+        }
+
+        $validated = $request->validate($rules);
+
+        $deliveryMethod = $pickupEnabled && $deliveryEnabled
+            ? $validated['delivery_method']
+            : ($deliveryEnabled ? StorefrontOrder::DELIVERY_METHOD_DELIVERY : StorefrontOrder::DELIVERY_METHOD_PICKUP);
+
+        $deliveryAddress = $deliveryMethod === StorefrontOrder::DELIVERY_METHOD_DELIVERY
+            ? ($validated['delivery_address'] ?? null)
+            : null;
+
+        $order = DB::transaction(function () use ($validated, $tenant, $channel, $lines, $deliveryMethod, $deliveryAddress) {
             $order = StorefrontOrder::withoutGlobalScope('tenant')->create([
                 'tenant_id'         => $tenant->id,
                 'order_number'      => $this->generateOrderNumber($tenant->id),
                 'customer_name'     => $validated['customer_name'],
                 'customer_email'    => $validated['customer_email'],
                 'customer_phone'    => $validated['customer_phone'],
-                'delivery_address'  => $validated['delivery_address'] ?? null,
+                'delivery_address'  => $deliveryAddress,
+                'delivery_method'   => $deliveryMethod,
                 'notes'             => $validated['notes'] ?? null,
                 'status'            => StorefrontOrder::STATUS_PENDING,
                 'channel'           => $channel,

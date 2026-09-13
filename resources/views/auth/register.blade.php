@@ -124,7 +124,7 @@
                             <label class="block text-sm font-600 text-[#1E293B] mb-1.5">State <span class="text-red-500">*</span></label>
                             <select name="state" class="input-field">
                                 <option value="">— Select —</option>
-                                @foreach(['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'] as $state)
+                                @foreach(config('nigeria_states') as $state)
                                 <option value="{{ $state }}" {{ old('state') === $state ? 'selected' : '' }}>{{ $state }}</option>
                                 @endforeach
                             </select>
