@@ -5,14 +5,14 @@
 @section('content')
 <div class="max-w-5xl mx-auto space-y-4">
 
-    <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between gap-4 flex-wrap">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4 flex-wrap">
         <p class="text-sm text-gray-500">Publish inventory items to your storefront so customers can order them. Unpublishing keeps your images and description saved for later.</p>
         <a href="{{ route('storefront.categories.index') }}" class="text-sm font-medium text-green-700 hover:text-green-900 whitespace-nowrap">Manage categories →</a>
     </div>
 
-    <form method="GET" action="{{ route('storefront.products.index') }}" class="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+    <form method="GET" action="{{ route('storefront.products.index') }}" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-3">
         <label class="text-sm font-medium text-gray-700">Category</label>
-        <select name="category" onchange="this.form.submit()" class="rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">
+        <select name="category" onchange="this.form.submit()" class="rounded-lg border-gray-200 text-sm focus:ring-green-500 focus:border-green-500">
             <option value="">All categories</option>
             @foreach($categories as $category)
                 <option value="{{ $category->id }}" @selected(request()->integer('category') === $category->id)>{{ $category->name }}</option>
@@ -20,7 +20,7 @@
         </select>
     </form>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -36,7 +36,7 @@
             <tbody class="divide-y divide-gray-100">
                 @foreach($items as $item)
                 @php $product = $item->storefrontProduct; @endphp
-                <tr>
+                <tr class="hover:bg-gray-50/60 transition-colors">
                     <td class="px-4 py-3 text-sm text-gray-800">{{ $item->name }}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">₦{{ number_format((float) $item->selling_price, 2) }}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">{{ rtrim(rtrim(number_format((float) $item->current_stock, 2), '0'), '.') }}</td>
@@ -79,7 +79,7 @@
                                 @csrf @method('PATCH')
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                                    <select name="storefront_category_id" class="w-full rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">
+                                    <select name="storefront_category_id" class="w-full rounded-lg border-gray-200 text-sm focus:ring-green-500 focus:border-green-500">
                                         <option value="">Uncategorized</option>
                                         @foreach($categories as $category)
                                             <option value="{{ $category->id }}" @selected($product->storefront_category_id === $category->id)>{{ $category->name }}</option>
@@ -88,7 +88,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Shop description (optional — falls back to the item description)</label>
-                                    <textarea name="web_description" rows="2" class="w-full rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">{{ old('web_description', $product->web_description) }}</textarea>
+                                    <textarea name="web_description" rows="2" class="w-full rounded-lg border-gray-200 text-sm focus:ring-green-500 focus:border-green-500">{{ old('web_description', $product->web_description) }}</textarea>
                                 </div>
                                 <label class="flex items-center gap-2 text-xs text-gray-600">
                                     <input type="hidden" name="vat_applicable" value="0">
@@ -103,7 +103,7 @@
                                 <div class="flex flex-wrap gap-2 mb-2">
                                     @foreach($product->images as $image)
                                     <div class="relative">
-                                        <img src="{{ Storage::url($image->image_path) }}" class="h-14 w-14 object-cover rounded border border-gray-200">
+                                        <img src="{{ Storage::url($image->image_path) }}" class="h-14 w-14 object-cover rounded-lg border border-gray-200">
                                         <form method="POST" action="{{ route('storefront.products.images.delete', $image) }}" class="absolute -top-1.5 -right-1.5">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="h-4 w-4 bg-red-500 text-white rounded-full text-[10px] leading-4">×</button>

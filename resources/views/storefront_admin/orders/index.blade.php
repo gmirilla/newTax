@@ -8,7 +8,7 @@
     <div class="flex items-center gap-2">
         @foreach(['' => 'All', 'pending' => 'Pending', 'accepted' => 'Accepted', 'rejected' => 'Rejected'] as $value => $label)
         <a href="{{ route('storefront.orders.index', $value ? ['status' => $value] : []) }}"
-           class="px-3 py-1.5 text-sm rounded-md {{ request('status', '') === $value ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200' }}">
+           class="px-3 py-1.5 text-sm rounded-lg transition-colors {{ request('status', '') === $value ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
             {{ $label }}
             @if($value === 'pending' && $pendingCount > 0)
                 <span class="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-red-500 text-white text-[10px] font-bold">{{ $pendingCount }}</span>
@@ -17,7 +17,7 @@
         @endforeach
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -32,7 +32,7 @@
             <tbody class="divide-y divide-gray-100">
                 @forelse($orders as $order)
                 @php $statusColor = ['pending' => 'bg-amber-100 text-amber-800', 'accepted' => 'bg-green-100 text-green-800', 'rejected' => 'bg-red-100 text-red-800', 'cancelled' => 'bg-gray-100 text-gray-600'][$order->status] ?? 'bg-gray-100 text-gray-600'; @endphp
-                <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ route('storefront.orders.show', $order) }}'">
+                <tr class="hover:bg-gray-50/60 transition-colors cursor-pointer" onclick="window.location='{{ route('storefront.orders.show', $order) }}'">
                     <td class="px-4 py-3 text-sm font-medium text-green-700">{{ $order->order_number }}</td>
                     <td class="px-4 py-3 text-sm text-gray-800">{{ $order->customer_name }}</td>
                     <td class="px-4 py-3 text-sm text-gray-500 capitalize">{{ $order->channel }}</td>
