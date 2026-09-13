@@ -8,13 +8,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StorefrontProduct extends Model
 {
+    public const MAX_IMAGES = 4;
+
     protected $fillable = [
         'tenant_id', 'inventory_item_id', 'storefront_category_id',
-        'is_published', 'web_description', 'sort_order',
+        'is_published', 'vat_applicable', 'web_description', 'sort_order',
     ];
 
     protected $casts = [
-        'is_published' => 'boolean',
+        'is_published'   => 'boolean',
+        'vat_applicable' => 'boolean',
     ];
 
     protected static function booted(): void

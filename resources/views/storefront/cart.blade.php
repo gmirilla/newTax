@@ -51,7 +51,9 @@
 
 <div class="mt-6 bg-white rounded-xl border border-gray-100 shadow-sm p-5 max-w-sm ml-auto space-y-2 text-sm">
     <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>₦{{ number_format($subtotal, 2) }}</span></div>
+    @if($vat > 0)
     <div class="flex justify-between text-gray-500"><span>VAT (7.5%)</span><span>₦{{ number_format($vat, 2) }}</span></div>
+    @endif
     <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-100"><span>Total</span><span>₦{{ number_format($total, 2) }}</span></div>
 </div>
 

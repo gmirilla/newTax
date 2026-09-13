@@ -6,156 +6,274 @@ shorter, actionable to-dos.
 
 ---
 
-## VAT Returns should be based on payment received, not invoiced amount 🔍
+## ✅ Fixed (2026-09-13): Paginate the storefront catalog
 
-**What:** [VatService::computeMonthlyReturn()](app/Services/VatService.php#L50) and
-[VatService::getDashboardSummary()](app/Services/VatService.php#L135) both sum the
-**full** `vat_amount` of every invoice with status `sent`, `partial`, or `paid`
-that falls in the period. For a `partial` invoice this counts VAT on the whole
-invoice total, not on the portion actually paid — reported by the user
-(2026-09-10): *"When calculating VAT Returns Due, VAT should be calculated
-based only on the payment received, not on the full sum."*
+`StorefrontController::index()` used to load the tenant's entire published
+catalog on every visit (`->get()`, no limit). Fixed:
 
-**Current state (confirmed 2026-09-10):**
-- [VatService.php:56-60](app/Services/VatService.php#L56-L60) — output VAT:
-  `Invoice::where('vat_applicable', true)->whereIn('status', ['sent','partial','paid'])->sum('vat_amount')`.
-  A ₦100,000 invoice (₦7,500 VAT) with only ₦20,000 received still contributes
-  the full ₦7,500 to output VAT for the period.
-- `Invoice` already tracks `amount_paid` / `total_amount` / `balance_due`
-  ([Invoice.php:20,34-35](app/Models/Invoice.php#L20)), so the data needed for
-  a paid-proportion calculation already exists — `output_vat` just isn't using
-  it. Cash-basis VAT for a partial invoice would be
-  `vat_amount * (amount_paid / total_amount)`.
-- Input VAT has the same shape of issue on the expense side
-  ([VatService.php:63-67](app/Services/VatService.php#L63-L67)) if expenses
-  ever get a comparable partial-payment status — worth checking `Expense`'s
-  `status` values (`approved`, `paid`) when this is picked up.
-- **Recalculating an existing return**: technically possible today —
-  revisiting "Compute New Return" for the same year/month re-runs
-  `VatService::createOrUpdateReturn()`, which is a `firstOrNew` + refresh of
-  the computed figures ([VatService.php:98-118](app/Services/VatService.php#L98-L118)).
-  But there's no discoverable way to trigger this for a specific period: the
-  VAT Returns table ([tax/vat/index.blade.php:94-119](resources/views/tax/vat/index.blade.php#L94-L119))
-  only offers "Mark Filed" / "Mark Paid" / "View Details" per row — no
-  "Recalculate" action once a return exists, especially for `pending` returns
-  where new invoices/payments may have landed since it was first computed.
-  Also note: revisiting the compute page silently overwrites the financial
-  figures even for a return already `filed`/`paid` (only `status` is
-  protected from being reset) — worth deciding whether recalculating a
-  filed/paid return should be blocked or explicitly confirmed, once this is
-  addressed.
+- Products and services are now paginated independently via
+  `->paginate(24, ['*'], 'products_page')` / `...'services_page'` — distinct
+  `pageName`s so paging one doesn't collide with or reset the other.
+- Per the user's call over a combined-grid-via-SQL-UNION alternative, the
+  storefront view now splits into two clearly labeled sections ("Products" /
+  "Services"), each with its own heading, grid, and pager
+  (`resources/views/storefront/index.blade.php`) — the per-tile "Service"
+  badge was removed as redundant now that the section heading says so.
+- Found and fixed a real, pre-existing, unrelated bug in the same pass: the
+  category-tab list used to be computed from the already-category-filtered
+  product/service collections, so clicking one category tab collapsed the
+  tab bar down to just that category, hiding every sibling tab. The tab list
+  is now computed from its own separate, unfiltered, lightweight
+  `distinct()->pluck('storefront_category_id')` query — fixes both the
+  pagination independence and the tab-collapse bug at once.
+- Tests added to `tests/Feature/StorefrontModuleTest.php`: pagination
+  correctness + independence between the two paginators, and a direct
+  regression test for the tab-collapse bug.
 
-**Needed:**
-- Decide the cash-basis formula and whether it applies per invoice-payment or
-  needs a running allocation across multiple partial payments on the same
-  invoice.
-- Update `computeMonthlyReturn()` (and `getDashboardSummary()`) to use
-  paid-proportion VAT instead of `vat_amount` directly for `partial` invoices.
-- Add an explicit "Recalculate" action per period on the VAT Returns index
-  (`pending` at minimum; decide the filed/paid case above).
-- Test coverage per CLAUDE.md conventions: a partial invoice should contribute
-  less than its full `vat_amount` to `output_vat`, and a recalculate action
-  should update the figures without disturbing `status`/`filing_reference`
-  once filed.
+Still open, tracked separately below: storefront search (once built, will
+combine with this same pagination) and the "Discover Storefronts" directory.
 
 ---
 
-## Amend a filed/paid VAT Return 🔍
+## ✅ Fixed (2026-09-13): Cap storefront images at 4, with multi-select upload
 
-**What:** Once [VAT Returns should be based on payment received](#vat-returns-should-be-based-on-payment-received-not-invoiced-amount-)
-above locks `output_vat`/`input_vat`/`net_vat_payable` after a return is
-`filed` or `paid` (so recompute stops silently overwriting numbers already
-reported to NRS), users still need a deliberate way to correct a filed return
-when new information shows up — a late invoice, a corrected expense, a
-payment-allocation fix. This item is that escape hatch: an explicit,
-audited "Amend" action, distinct from the ordinary recompute/"Recalculate"
-flow, which only ever touches `pending`/`nil_return` returns.
+`StorefrontProductController::uploadImage()` / `StorefrontServiceController::uploadImage()`
+used to accept unlimited images, one file per submission. Fixed:
 
-**Proposed approach:**
-- **Trigger:** a separate "Amend Return" action on `filed`/`paid` rows in
-  [tax/vat/index.blade.php](resources/views/tax/vat/index.blade.php), gated
-  to `admin`/`accountant` (same as the rest of Tax), requiring a short
-  free-text reason — this is compliance-sensitive, so it shouldn't be a
-  silent one-click recompute like the `pending` case.
-- **History, not new columns:** don't add `original_output_vat`-style
-  snapshot columns to `vat_returns`. This codebase already has
-  `AuditLog::record()` for before/after diffs (see the "Audit logging"
-  convention in CLAUDE.md, and e.g. `sales_order.cancelled` in
-  [SalesOrderController.php](app/Http/Controllers/Inventory/SalesOrderController.php)
-  for the pattern) — capture the amendment the same way:
-  `AuditLog::record('vat_return.amended', $vatReturn, $before, $after, 'tax,approval')`
-  with the reason in the audit payload. Called after the update, per the
-  existing convention (never inside the same `DB::transaction()`).
-- **Re-filing, not auto-reconciliation (v1 scope):** an amendment recomputes
-  the figures but does **not** try to automatically reconcile a payment
-  already recorded against the old `net_vat_payable`. Simplest v1: amending
-  a `filed` return resets its status back to `pending` and clears
-  `filing_reference`/`filed_date`, requiring the user to re-file the
-  corrected figure with NRS and re-enter a new reference — mirrors what
-  actually happens with NRS (an amended return is its own filing). Amending
-  a `paid` return should probably just be blocked in v1 (money has already
-  moved) with a message pointing at manual adjustment, rather than trying to
-  model a refund/additional-payment flow — revisit only if this turns out to
-  be a real user need.
-- **New method, not reuse:** add `VatService::amendReturn(VatReturn $vatReturn, string $reason): VatReturn`
-  rather than loosening `createOrUpdateReturn()` — keeps the ordinary
-  recompute path (used by "Compute New Return") permanently safe for
-  `pending` returns only, with amendment as a separate, explicit, audited
-  code path.
-
-**Needed:**
-- Confirm the re-filing-required behavior above is actually what a Nigerian
-  VAT filer expects (worth a quick check against FIRS/NRS guidance rather
-  than assuming) before building it.
-- `VatService::amendReturn()` + `TaxController::vatAmend()` + route.
-- UI: "Amend Return" action + reason prompt on `filed` rows (and the
-  paid-is-blocked messaging) in `tax/vat/index.blade.php`.
-- Test coverage per CLAUDE.md conventions: amending a `filed` return updates
-  figures, resets status to `pending`, clears the filing reference, and
-  writes an audit log entry with reason + before/after amounts; amending a
-  `paid` return is rejected.
+- `StorefrontProduct::MAX_IMAGES` / `StorefrontService::MAX_IMAGES` (both
+  `= 4`) — a flat constant, not plan-gated (no reason found to gate it).
+- Upload forms now use `<input type="file" name="images[]" multiple>`,
+  processed as a batch server-side.
+- Per the user's call: a batch that would exceed the cap uploads as many as
+  fit and flashes a message naming how many were skipped ("Added 1 photo. 2
+  were not added — you've reached the 4-photo limit."), rather than
+  rejecting the whole batch. Already-at-cap uploads add nothing, with an
+  error flash.
+- The admin view now shows a running `N/4` count and hides the upload form
+  entirely once at the cap (replaced with a "remove one to add more" note),
+  rather than only handling it as a rejected submission after the fact.
+  Existing images past the cap (if any) are never force-deleted — only new
+  uploads are blocked.
+- Tests added to `tests/Feature/StorefrontModuleTest.php`: under-cap batch,
+  over-cap batch (partial accept), already-at-cap (rejects all), delete
+  re-enabling upload, and the view hiding the form at the cap (products +
+  one mirrored case for services).
 
 ---
 
-## Chart of Accounts management 🔍
+## ✅ Fixed (2026-09-13): Storefront search
 
-**What:** Tenants currently have no way to view, create, edit, or deactivate
-their own GL accounts. The `Account` model (Chart of Accounts) is entirely
-system-managed — the full set is provisioned once, automatically, via
-`BookkeepingService::provisionDefaultAccounts()` at tenant registration, and
-nothing after that point ever creates a new `Account` row for a tenant.
+`StorefrontController::index()` used to only support `?category=` — no way
+for a customer to search by name. Fixed, following the existing
+`db_like()`-based search convention already used by `InventoryItemController::index()`:
 
-**Current state (confirmed 2026-09-10):**
-- No `AccountController`, no route, no view exists for account CRUD — checked
-  every `Account::create()` call site in the app; the only one outside a test
-  is the registration-time provisioning call.
-- The only tenant-facing account screen is the read-only account-code filter
-  dropdown on **Reports → Ledger**.
-- [resources/views/help/topics/bookkeeping.blade.php](resources/views/help/topics/bookkeeping.blade.php#L27)
-  tells users to go to *"Bookkeeping → Chart of Accounts"* — that page/menu
-  doesn't exist anywhere in the app. Stale docs describing a feature that was
-  either never built or removed; needs fixing regardless of when this item
-  gets picked up.
-- This already bit real functionality once: `InventoryImportController` and
-  `ProductionOrderController` (Manufacturing) both depend on GL codes 1201/1202
-  existing, and those two accounts were simply missing from the default chart
-  for every tenant — fixed 2026-09-10 by adding them to
-  `Account::DEFAULT_ACCOUNTS` plus a backfill migration
-  (`2026_09_10_000007_add_raw_material_and_finished_goods_accounts.php`). That
-  fix only works because it's a code-level default; any *tenant-specific*
-  custom account (e.g. a second bank account's GL line, a custom expense
-  category) still has no way to ever exist, short of a manual DB insert.
+- A `?q=` param now filters products (by `InventoryItem.name` or
+  `web_description`) and services (by `name` or `description`) via
+  `db_like()` (driver-aware `ilike`/`like`).
+- Combines correctly with both the existing `?category=` filter and the
+  `products_page`/`services_page` pagination (same `->withQueryString()`
+  mechanism as the pagination fix) — searching, filtering, and paging never
+  drop each other.
+- A search box was added to `resources/views/storefront/index.blade.php`;
+  the category tabs and empty state were updated to preserve/reflect the
+  active search term ("No results for '...' — try a different search").
+- Scoped to the catalog index page only, not the storefront layout header on
+  every page (kept the change contained to where category filtering and
+  pagination already live, rather than adding a new site-wide search
+  surface in the same pass).
+- Tests added to `tests/Feature/StorefrontModuleTest.php`: matches products
+  by name, matches services by name, and combines correctly with an active
+  category filter (tenant isolation was already covered by existing tests).
+
+---
+
+## Marketing site: "Discover Storefronts" directory
+
+**What:** Requested 2026-09-12. Let visitors to the marketing site (not just
+people who already have a direct shop link) browse/discover tenant
+storefronts.
+
+**Current state (confirmed 2026-09-12):**
+- `MarketingController` ([app/Http/Controllers/MarketingController.php](app/Http/Controllers/MarketingController.php))
+  only has `home`/`features`/`pricing`/`about`/`faq`/`taxRules`/`contact` — no
+  directory/listing action, no public route for one.
+- There is currently **no way to discover a storefront at all** except being
+  given its direct link (`{tenant:slug}/shop`) — no public listing exists
+  anywhere in the app today.
+- `Storefront` ([app/Models/Storefront.php](app/Models/Storefront.php)) has
+  no flag for "listed in a public directory" — only `is_enabled` (shop is
+  reachable at all) and `vat_applicable`. **Every enabled storefront would
+  become publicly discoverable by default** if this just queried
+  `is_enabled = true` tenants — worth deciding explicitly rather than
+  defaulting a business into public listing without their say.
 
 **Needed:**
-- `AccountController` (index/create/edit/deactivate) — likely under
-  `Settings → Chart of Accounts` or a new `Bookkeeping` nav section, matching
-  the existing help-doc's implied location.
-- Guard rails: `is_system` accounts (the default 29) should not be deletable
-  and probably not renamable/re-typed, only activatable/deactivatable —
-  custom tenant-added accounts get full CRUD.
-- Validate new account codes against the existing numbering convention
-  (1xxx asset / 2xxx liability / 3xxx equity / 4xxx revenue / 5xxx expense)
-  so custom accounts don't break report groupings that key off the code range.
-- Plan-gate decision: is this Free-tier or a paid-plan feature? (Everything
-  else account-adjacent — Advanced Reports, Inventory — is plan-gated.)
-- Test coverage per CLAUDE.md conventions once routes exist.
+- Decide the opt-in question above first: a new `Storefront.is_listed`
+  (or similar) flag, defaulting to `false`, with a toggle in
+  `storefront_admin/settings.blade.php` next to the existing `is_enabled`
+  checkbox — a tenant enabling their shop for direct links shouldn't
+  automatically mean "list me publicly" without asking.
+- New `MarketingController::discoverStorefronts()` (or a small dedicated
+  controller) + route + view, querying tenants with an enabled, listed,
+  plan-eligible storefront (`is_active`, `planAllows('storefront')`,
+  `storefront.is_enabled`, `storefront.is_listed`).
+- Decide what's shown per store in the directory (name, logo, description,
+  banner?) and whether it needs its own search/category/pagination given it
+  could span many tenants — likely wants the same search treatment as the
+  per-store search TODO above, just across tenants instead of within one.
+- Test coverage per CLAUDE.md conventions: only listed + enabled + plan-eligible
+  storefronts appear; an unlisted-but-enabled storefront is still reachable
+  by direct link but doesn't show up in discovery.
+
+---
+
+## Storefront gives no notice when it goes dark on subscription lapse 🔍
+
+**What:** When a tenant's subscription lapses (past the 7-day grace period —
+see `Tenant::subscriptionActive()`) or they're downgraded off a storefront-
+including plan, `planAllows('storefront')` starts returning `false` and the
+entire public storefront 404s with zero explanation — no "this store is
+temporarily unavailable" messaging, nothing. Confirmed 2026-09-12 while
+investigating "what happens when a storefront subscription ends."
+
+**Current state:**
+- [EnsureStorefrontEnabled](app/Http/Middleware/EnsureStorefrontEnabled.php)
+  gates the whole public route group (`{tenant:slug}/shop/*`) on
+  `$tenant->is_active && $tenant->planAllows('storefront') && $tenant->storefront->is_enabled`
+  and just `abort(404)`s if any of those fail — same bare 404 whether the
+  shop was never enabled, is deliberately disabled, or lapsed on billing.
+- This includes `storefront.order.status` — a customer with a saved
+  order-confirmation link from *before* the lapse gets a 404 too, with no way
+  to tell "this store is down" from "this link is wrong."
+- Nothing on the tenant side proactively warns them their storefront is about
+  to go dark either — no email/banner tied to the existing `TrialEndingSoon`-style
+  notification pattern ([DowngradeExpiredTrials.php](app/Console/Commands/DowngradeExpiredTrials.php)
+  already sends a "trial ending soon" email 3 days out; there's no storefront-
+  specific equivalent).
+- Nothing is deleted or disabled in the data — `Storefront`/`StorefrontProduct`/`StorefrontService`/`StorefrontOrder`
+  rows are untouched, and everything reappears exactly as it was once the
+  tenant resubscribes/upgrades. This item is purely about the *experience*
+  during the gap, not data safety.
+
+**Needed:**
+- Decide what a lapsed/disabled storefront should show instead of a bare 404
+  — likely a distinct "this store is temporarily unavailable" page rather
+  than reusing the generic 404, at least for the case where a `Storefront`
+  row exists but access is currently denied (vs. genuinely no such
+  tenant/slug, which should probably stay a real 404).
+- Decide whether `storefront.order.status` deserves special handling so an
+  existing customer with a valid order token isn't told nothing at all.
+- Consider a heads-up notification to the tenant before the grace period
+  expires (mirroring `TrialEndingSoon`), so they're not surprised by orders
+  going unreachable.
+- Test coverage per CLAUDE.md conventions once the approach is decided.
+
+---
+
+## ✅ Fixed (2026-09-12): VAT Returns now calculated on payment received
+
+VAT Returns previously counted the full `vat_amount` of every invoice touched
+in a period, even a `partial` invoice — inflating what's actually due to NRS.
+Fixed:
+
+- `VatService::sumOutputVatReceived()` (new) prorates each invoice's
+  `vat_amount` by `amount_paid / total_amount` (clamped at 1.0 to guard
+  against overpayment); used by `computeMonthlyReturn()`, `getDashboardSummary()`,
+  and `ReportService::getComplianceDashboard()`/`getVatReport()`, which had the
+  same bug on the Tax dashboard's compliance card. Input VAT (`Expense`)
+  wasn't changed — confirmed it has no partial-payment concept to prorate.
+- `VatService::createOrUpdateReturn()` now locks `output_vat`/`input_vat`/`net_vat_payable`
+  once a return is `filed` or `paid` — recompute is a no-op for those, so
+  revisiting "Compute New Return" can no longer silently overwrite numbers
+  already reported to NRS. A genuine change to a filed/paid return needs the
+  "Amend" workflow below instead.
+- A "Recalculate" link was added to `pending`/`nil_return` rows on
+  `tax/vat/index.blade.php`, reusing the existing `tax.vat.compute` route.
+- Recomputing an existing return now writes a `vat_return.recalculated`
+  audit log entry (only when the figures actually changed).
+- Tests: `tests/Unit/VatCalculationTest.php` (also fixed along the way — its
+  `@test` docblock annotations were silently not being picked up by this
+  project's PHPUnit 12 install; converted to `test_`-prefixed method names so
+  all 15 tests, old and new, actually run) and the new
+  `tests/Feature/VatReturnCalculationTest.php`.
+
+*Same-shape bug still open elsewhere:* `tests/Unit/CitCalculationTest.php`,
+`PayeCalculationTest.php`, and `WhtCalculationTest.php` likely have the same
+`@test`-annotation problem (not fixed here — out of scope for this change,
+worth a quick pass later).
+
+---
+
+## ✅ Fixed (2026-09-13): Amend a filed/paid VAT Return
+
+Since `VatService::createOrUpdateReturn()` locks figures once a return is
+`filed`/`paid`, tenants needed a deliberate way to correct one. Fixed:
+
+- **Confirmed against real guidance first** (the "Needed" list below asked
+  for this rather than assuming): per Taxngr's "How to Amend a Tax Return
+  Already Filed With the NRS", a self-amendment is filed as a new corrected
+  return with its own reference and explanation, not an in-place edit —
+  confirming the reset-to-pending design was the right shape.
+- `VatService::amendReturn(VatReturn, string $reason)` — recomputes the
+  period's figures, resets `status` to `pending`/`nil_return`, clears
+  `filing_reference`/`filed_date`/`filed_by`, appends the reason to the
+  existing `notes` column (no new columns needed), and writes a
+  `vat_return.amended` audit log entry with before/after figures + reason.
+  A separate method from `createOrUpdateReturn()`, which stays permanently
+  safe for the ordinary Recalculate/Compute path.
+- `TaxController::vatAmend()` + `POST /tax/vat/{vatReturn}/amend` (route
+  name `tax.vat.amend`), mirroring `vatFiled()`/`vatPaid()`'s plain-validation
+  shape. Only `filed` returns can be amended; `paid` is blocked in v1 with a
+  message pointing at manual adjustment (money's already moved — modeling a
+  refund/additional-payment flow is real extra scope, revisit only if a
+  tenant actually needs it).
+- UI: an "Amend Return" toggle + reason field on `filed` rows in
+  `tax/vat/index.blade.php`; a muted "Contact support to amend a paid
+  return" note on `paid` rows instead of a control.
+- Tests added to `tests/Feature/VatReturnCalculationTest.php`: amending a
+  filed return recomputes/resets/audits correctly; amending paid/pending
+  returns is rejected; a reason is required; an amended return re-files
+  normally afterward; the view renders the new controls correctly for both
+  `filed` and `paid` rows.
+
+---
+
+## ✅ Fixed (2026-09-13): Chart of Accounts management
+
+Tenants previously had no way to view, create, edit, or deactivate their own
+GL accounts — the chart was entirely system-provisioned once at
+registration. Fixed:
+
+- New **Settings → Chart of Accounts** page (`AccountController` + view),
+  gated `role:admin` only, same as Bank Accounts sits — no plan gate. This
+  was a deliberate call: every other plan-gated feature (payroll, FIRS,
+  inventory, manufacturing, maintenance, storefront, api_access,
+  advanced_reports) is operational or reporting-depth; core bookkeeping
+  (bank accounts, transactions, the ledger itself) is ungated even on Free
+  today, and there was no reason found to make this the first-ever
+  bookkeeping paywall.
+- **Guard rails for `is_system` accounts** (the 29 defaults): can be
+  renamed, re-described, re-sub-typed, and activated/deactivated, but their
+  `code`/`type` are stripped server-side on update regardless of what's
+  submitted, and delete is blocked entirely by `AccountPolicy`. This closes
+  a real hazard found during investigation: many controllers/services do a
+  direct `Account::where('code', 'XXXX')` lookup when posting GL entries
+  (some, like `TransactionController`, `firstOrFail()` on it), so renaming
+  or retyping a load-bearing code would silently break GL posting or the
+  type-based report aggregation elsewhere — `is_system` existed as a column
+  with a comment ("cannot be deleted") but had zero enforcement anywhere
+  until now.
+- **Custom accounts** get full CRUD, with the new account's `code` validated
+  against its `type`'s leading-digit convention (1xxx asset / 2xxx liability
+  / 3xxx equity / 4xxx revenue / 5xxx expense) and the existing
+  `sub_type` DB enum (invalid values now caught by validation, not a raw
+  DB error). Delete is blocked (with a message pointing at deactivation
+  instead) if the account has journal entries — mirrors
+  `BankAccountController`'s exact existing pattern for the same situation.
+- Fixed the stale help doc
+  ([resources/views/help/topics/bookkeeping.blade.php](resources/views/help/topics/bookkeeping.blade.php))
+  that pointed at a fictional "Bookkeeping → Chart of Accounts" menu.
+- Tests added: `tests/Feature/ChartOfAccountsTest.php` (12 cases — viewing,
+  role-gating, valid/invalid custom-account creation, editing a custom vs.
+  system account, delete guards for system accounts and accounts with
+  journal entries, tenant isolation).

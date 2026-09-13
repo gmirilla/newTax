@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Storefront extends Model
 {
     protected $fillable = [
-        'tenant_id', 'is_enabled', 'whatsapp_number', 'banner_image', 'description',
+        'tenant_id', 'is_enabled', 'vat_applicable', 'whatsapp_number', 'banner_image', 'description',
     ];
 
     protected $casts = [
-        'is_enabled' => 'boolean',
+        'is_enabled'     => 'boolean',
+        'vat_applicable' => 'boolean',
     ];
 
     protected static function booted(): void

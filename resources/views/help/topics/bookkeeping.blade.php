@@ -24,7 +24,7 @@
             <h2 class="text-sm font-semibold text-gray-800">Chart of Accounts</h2>
         </div>
         <div class="p-5 space-y-3 text-sm text-gray-700">
-            <p>The <strong>Chart of Accounts</strong> is the complete list of accounts used to categorise every transaction. Go to <strong>Bookkeeping → Chart of Accounts</strong> to view it.</p>
+            <p>The <strong>Chart of Accounts</strong> is the complete list of accounts used to categorise every transaction. Go to <strong>Settings → Chart of Accounts</strong> to view or manage it.</p>
             <p>Accounts are grouped by type:</p>
             <table class="w-full text-xs border-collapse">
                 <thead>

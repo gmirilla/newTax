@@ -28,6 +28,7 @@
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                    <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">VAT</th>
                     <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th class="px-4 py-2.5"></th>
                 </tr>
@@ -40,6 +41,13 @@
                     <td class="px-4 py-3 text-sm text-gray-600">₦{{ number_format((float) $item->selling_price, 2) }}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">{{ rtrim(rtrim(number_format((float) $item->current_stock, 2), '0'), '.') }}</td>
                     <td class="px-4 py-3 text-sm text-gray-500">{{ $product?->category?->name ?? '—' }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        @if(!$product || $product->vat_applicable)
+                            <span class="text-gray-500">7.5%</span>
+                        @else
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Exempt</span>
+                        @endif
+                    </td>
                     <td class="px-4 py-3">
                         @if($product?->is_published)
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Published</span>
@@ -65,7 +73,7 @@
                 </tr>
                 @if($product)
                 <tr>
-                    <td colspan="6" class="px-4 pb-4 bg-gray-50">
+                    <td colspan="7" class="px-4 pb-4 bg-gray-50">
                         <div class="grid sm:grid-cols-2 gap-4 pt-3">
                             <form method="POST" action="{{ route('storefront.products.update', $product) }}" class="space-y-2">
                                 @csrf @method('PATCH')
@@ -82,10 +90,16 @@
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Shop description (optional — falls back to the item description)</label>
                                     <textarea name="web_description" rows="2" class="w-full rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">{{ old('web_description', $product->web_description) }}</textarea>
                                 </div>
+                                <label class="flex items-center gap-2 text-xs text-gray-600">
+                                    <input type="hidden" name="vat_applicable" value="0">
+                                    <input type="checkbox" name="vat_applicable" value="1" {{ old('vat_applicable', $product->vat_applicable) ? 'checked' : '' }}
+                                           class="h-3.5 w-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                                    Charge VAT on this product
+                                </label>
                                 <button type="submit" class="text-xs font-medium text-green-700 hover:text-green-900">Save changes</button>
                             </form>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Photos</label>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Photos ({{ $product->images->count() }}/{{ \App\Models\StorefrontProduct::MAX_IMAGES }})</label>
                                 <div class="flex flex-wrap gap-2 mb-2">
                                     @foreach($product->images as $image)
                                     <div class="relative">
@@ -97,11 +111,15 @@
                                     </div>
                                     @endforeach
                                 </div>
+                                @if($product->images->count() >= \App\Models\StorefrontProduct::MAX_IMAGES)
+                                <p class="text-xs text-gray-400">Maximum of {{ \App\Models\StorefrontProduct::MAX_IMAGES }} photos reached — remove one to add more.</p>
+                                @else
                                 <form method="POST" action="{{ route('storefront.products.images.upload', $product) }}" enctype="multipart/form-data" class="flex items-center gap-2">
                                     @csrf
-                                    <input type="file" name="image" accept="image/*" required class="text-xs">
-                                    <button type="submit" class="text-xs font-medium text-green-700 hover:text-green-900 whitespace-nowrap">Add photo</button>
+                                    <input type="file" name="images[]" accept="image/*" multiple required class="text-xs">
+                                    <button type="submit" class="text-xs font-medium text-green-700 hover:text-green-900 whitespace-nowrap">Add photo(s)</button>
                                 </form>
+                                @endif
                             </div>
                         </div>
                     </td>

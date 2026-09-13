@@ -53,7 +53,9 @@
         </div>
         <div class="space-y-1 pt-3 mt-3 border-t border-gray-100 text-sm">
             <div class="flex justify-between text-gray-500"><span>Subtotal</span><span>₦{{ number_format((float) $order->subtotal, 2) }}</span></div>
+            @if((float) $order->vat_amount > 0)
             <div class="flex justify-between text-gray-500"><span>VAT</span><span>₦{{ number_format((float) $order->vat_amount, 2) }}</span></div>
+            @endif
             <div class="flex justify-between font-bold text-gray-900"><span>Total</span><span>₦{{ number_format((float) $order->total_amount, 2) }}</span></div>
         </div>
     </div>

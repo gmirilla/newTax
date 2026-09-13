@@ -24,6 +24,7 @@ class StorefrontSettingsController extends Controller
 
         $validated = $request->validate([
             'is_enabled'      => 'boolean',
+            'vat_applicable'  => 'boolean',
             'whatsapp_number' => 'nullable|string|max:30',
             'description'     => 'nullable|string|max:2000',
         ]);
@@ -32,6 +33,7 @@ class StorefrontSettingsController extends Controller
             ['tenant_id' => $tenant->id],
             [
                 'is_enabled'      => $request->boolean('is_enabled'),
+                'vat_applicable'  => $request->boolean('vat_applicable'),
                 'whatsapp_number' => $validated['whatsapp_number'] ?? null,
                 'description'     => $validated['description'] ?? null,
             ]

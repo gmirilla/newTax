@@ -40,6 +40,16 @@
                 </span>
             </label>
 
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="hidden" name="vat_applicable" value="0">
+                <input type="checkbox" name="vat_applicable" value="1" {{ old('vat_applicable', $storefront->vat_applicable ?? true) ? 'checked' : '' }}
+                       class="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                <span>
+                    <span class="text-sm font-medium text-gray-700">Charge VAT on this storefront</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">When off, no VAT is charged on anything sold here, regardless of individual product/service settings.</span>
+                </span>
+            </label>
+
             <div>
                 <label class="block text-sm font-medium text-gray-700">WhatsApp Number</label>
                 <input type="text" name="whatsapp_number" value="{{ old('whatsapp_number', $storefront->whatsapp_number) }}"

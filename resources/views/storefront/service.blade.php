@@ -37,16 +37,21 @@
 
     <div>
         @php
-            $unitPrice = (float) $service->price;
-            $unitVat   = round($unitPrice * \App\Models\Invoice::VAT_RATE / 100, 2);
+            $unitPrice     = (float) $service->price;
+            $vatApplicable = ($tenant->storefront?->vat_applicable ?? true) && $service->vat_applicable;
+            $unitVat       = $vatApplicable ? round($unitPrice * \App\Models\Invoice::VAT_RATE / 100, 2) : 0;
         @endphp
         <span class="inline-block text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-900/80 text-white mb-2">Service</span>
         <h1 class="text-xl font-bold text-gray-900">{{ $service->name }}</h1>
         <p class="text-2xl font-bold text-gray-900 mt-2">
             ₦{{ number_format($unitPrice, 2) }}
-            <span class="text-sm font-normal text-gray-400">+ VAT</span>
+            @if($vatApplicable)
+                <span class="text-sm font-normal text-gray-400">+ VAT</span>
+            @endif
         </p>
+        @if($vatApplicable)
         <p class="text-xs text-gray-500 mt-0.5">₦{{ number_format($unitPrice + $unitVat, 2) }} incl. VAT (7.5%)</p>
+        @endif
 
         @if($service->description)
         <p class="mt-4 text-sm text-gray-600 leading-relaxed">{{ $service->description }}</p>

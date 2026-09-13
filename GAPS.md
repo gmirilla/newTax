@@ -1,8 +1,19 @@
 # AccountTaxNG — Known Gaps & Follow-Through Tracker
 
-Updated: 2026-05-21. Tick items off as each is completed.
+Updated: 2026-09-12 (reviewed against current codebase — see changes below).
+Tick items off as each is completed.
 
 Phase 3 (Trial Flow) completed 2026-04-30.
+
+**2026-09-12 review — what changed since 2026-05-21:** two items below were
+confirmed resolved and checked off (Audit log viewer, PDF logo fallback); the
+"Uncommitted Work" section is now obsolete (everything it described is long
+since committed and covered by the completed phases below) and marked as
+such rather than deleted. Every other open item was re-checked against the
+current code and is still accurate/open — see the note on each. This review
+did not cover the Online Storefront feature or its own follow-ups (categories,
+services, VAT toggle, image limits, search, discovery) — those are tracked
+separately in [TODO.md](TODO.md), which post-dates this file's last update.
 
 ---
 
@@ -12,7 +23,16 @@ Phase 3 (Trial Flow) completed 2026-04-30.
 
 ---
 
-## Uncommitted Work
+## Uncommitted Work — ✅ obsolete (superseded 2026-09-12)
+
+This section described a since-committed working state as of 2026-05-21;
+every item it lists (public invoice links, VAT/WHT reactivity, preview
+modals, DB-driven plans, subscription helpers, plan gating) is confirmed
+present in the current codebase and covered by the completed phases below.
+Kept for history rather than deleted.
+
+<details>
+<summary>Original note (2026-05-21)</summary>
 
 Everything since commit `251f0fb` (Added Company Logo support) is unstaged. A single commit covers:
 - Public invoice UUID links (`PublicInvoiceController`, `Invoice::public_token`, migrations)
@@ -21,6 +41,8 @@ Everything since commit `251f0fb` (Added Company Logo support) is unstaged. A si
 - Phase 1: DB-driven plans (`Plan` model, migrations, `PlanSeeder`, SuperAdmin plan CRUD)
 - Phase 1: `Tenant` subscription helpers (`planAllows`, `withinLimit`, `isOnTrial`, etc.)
 - Phase 2: `RequiresPlan` middleware, route gating, billing page, sidebar locked states
+
+</details>
 
 ---
 
@@ -111,9 +133,23 @@ Everything since commit `251f0fb` (Added Company Logo support) is unstaged. A si
 ### API Access (Public API for Tenants) 🔍
 **What:** Tenants on plans with `api_access = true` can generate API keys and access company data programmatically (invoices, customers, transactions).
 
-**Current state:** `api_access` feature flag exists on plans, `routes/api.php` exists but has no `plan:api_access` gate, no API key model or management UI.
+**Current state (re-checked 2026-09-12):** `routes/api.php` has grown further
+than last noted — real, working endpoints exist today: `POST /auth/token` /
+`DELETE /auth/token` (email+password → Sanctum personal access token, not
+tenant-generated API keys), Invoices (`index`/`store`/`summary`/`show`/`recordPayment`),
+and a Tax Engine group (`compliance-dashboard`, `vat/compute`, `vat/summary`,
+`wht/schedule`, `cit/compute`) — all behind `auth:sanctum` + `tenant`
+middleware. Still missing exactly what was true before: **no `plan:api_access`
+gate anywhere in this file**, no `api_keys` table, no tenant-facing key
+generation UI, no per-key rate limiting. The auth model today is
+"log in with your normal password to get a token," not API keys — worth
+deciding whether that's actually the intended tenant-facing auth model going
+forward, or whether real API keys are still wanted.
 
-**Needed:** `api_keys` table, key generation UI in Settings, `ApiKeyMiddleware` to authenticate bearer tokens, `plan:api_access` applied to `routes/api.php`, rate limiting per key.
+**Needed:** `api_keys` table, key generation UI in Settings, `ApiKeyMiddleware`
+to authenticate bearer tokens (or decide the existing Sanctum-token approach
+is the permanent design and just add the plan gate + rate limiting to it),
+`plan:api_access` applied to `routes/api.php`, rate limiting per key/token.
 
 ---
 
@@ -208,6 +244,17 @@ Everything since commit `251f0fb` (Added Company Logo support) is unstaged. A si
 - `POST /api/v1/sync` — batch mutations in, delta out
 - All routes gated by existing `plan:feature` middleware — no new enforcement logic needed
 
+**Partial groundwork already exists (re-checked 2026-09-12):** `routes/api.php`
+now has Sanctum token auth (`POST`/`DELETE /auth/token` — not named
+`/login`/`/logout` but functionally equivalent) and partial Invoice CRUD
+(`index`/`store`/`summary`/`show`/`recordPayment`, no `update`/`destroy`),
+plus a Tax Engine group not in the original spec. Still missing: customers
+CRUD, expenses CRUD, `GET /plans/limits`, `POST /sync`, and the
+`plan:feature` gating this section assumed would already be there (it isn't
+— see the API Access item above, same gap). Worth reusing/renaming the
+existing auth-token route rather than adding a parallel `/login` endpoint
+when this is picked up.
+
 **Key design constraints:**
 - Tenant resolved from `auth()->user()->tenant_id` on every API request — same as web; global tenant scope applies identically
 - Plan limits checked locally (UX) but enforced server-side on every API write (security)
@@ -259,6 +306,17 @@ php artisan queue:listen
 
 - [ ] **VAT due date banner** — the top bar hardcodes `VatService::VAT_FILING_DAY` as a static day-of-month. It doesn't account for weekends, public holidays, or the next month if the deadline has already passed this month.
 - [x] **Impersonation exit banner** — added 2026-04-30 in [app.blade.php](resources/views/layouts/app.blade.php). Orange banner with Exit Impersonation button shown when `session()->has('superadmin_id')`.
-- [ ] **Audit log viewer** — `AuditLogMiddleware` records all actions but there is no UI in SuperAdmin to browse them.
-- [ ] **Vendor quick-create** — `POST /vendors/quick` route exists but there is no matching AJAX call in the quote/invoice create form (vendors are not selectable as recipients there; this may be intentional).
-- [ ] **PDF logo not shown for new tenants** — `Invoice::pdf` blade references `$invoice->tenant->logo_url`. If no logo is uploaded, ensure a graceful fallback (no broken `<img>` tag). Verify the null check is in place.
+- [x] **Audit log viewer** — resolved (confirmed present 2026-09-12; exact
+  implementation date unknown). Two viewers exist: `ActivityLogController`
+  ([app/Http/Controllers/ActivityLogController.php](app/Http/Controllers/ActivityLogController.php))
+  gives each tenant a filterable, paginated view of their own audit trail
+  (by user/event/date range); `SuperAdminController::auditLogs()`
+  ([app/Http/Controllers/SuperAdmin/SuperAdminController.php:182](app/Http/Controllers/SuperAdmin/SuperAdminController.php#L182))
+  gives SuperAdmin a cross-tenant view with event-type stats.
+- [ ] **Vendor quick-create** — re-checked 2026-09-12, still open. `POST /vendors/quick`
+  (route name `vendors.quick-store`) exists ([routes/web.php:186](routes/web.php#L186))
+  but there is still no matching AJAX call in the quote/invoice create forms.
+- [x] **PDF logo not shown for new tenants** — resolved (confirmed 2026-09-12;
+  exact implementation date unknown). [resources/views/invoices/pdf.blade.php:101](resources/views/invoices/pdf.blade.php#L101)
+  guards the `<img>` tag with `@if($invoice->tenant->logo)` — no broken image
+  for tenants without one.

@@ -9,15 +9,21 @@ class StorefrontOrderItem extends Model
 {
     protected $fillable = [
         'storefront_order_id', 'inventory_item_id', 'storefront_service_id', 'description',
-        'quantity', 'unit_price', 'vat_amount', 'subtotal', 'total',
+        'quantity', 'unit_price', 'vat_applicable', 'vat_amount', 'subtotal', 'total',
     ];
 
     protected $casts = [
-        'quantity'   => 'decimal:3',
-        'unit_price' => 'decimal:2',
-        'vat_amount' => 'decimal:2',
-        'subtotal'   => 'decimal:2',
-        'total'      => 'decimal:2',
+        'quantity'       => 'decimal:3',
+        'unit_price'     => 'decimal:2',
+        'vat_applicable' => 'boolean',
+        'vat_amount'     => 'decimal:2',
+        'subtotal'       => 'decimal:2',
+        'total'          => 'decimal:2',
+    ];
+
+    /** Matches the column default — a line is VAT-applicable unless told otherwise. */
+    protected $attributes = [
+        'vat_applicable' => true,
     ];
 
     public function order(): BelongsTo
@@ -38,7 +44,9 @@ class StorefrontOrderItem extends Model
     public function calculateTotals(): void
     {
         $this->subtotal   = round((float) $this->quantity * (float) $this->unit_price, 2);
-        $this->vat_amount = round($this->subtotal * Invoice::VAT_RATE / 100, 2);
+        $this->vat_amount = $this->vat_applicable
+            ? round($this->subtotal * Invoice::VAT_RATE / 100, 2)
+            : 0;
         $this->total      = $this->subtotal + $this->vat_amount;
     }
 }

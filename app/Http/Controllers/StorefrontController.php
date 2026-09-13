@@ -18,42 +18,71 @@ use Illuminate\View\View;
 
 class StorefrontController extends Controller
 {
+    /** Matches the grid-cols-4 layout — 6 full rows at the widest breakpoint. */
+    private const CATALOG_PER_PAGE = 24;
+
     // ── Catalog ──────────────────────────────────────────────────────────────
 
     public function index(Request $request, Tenant $tenant): View
     {
         $categoryId = $request->integer('category') ?: null;
+        $search     = trim((string) $request->string('q')) ?: null;
+
+        // Category tabs must reflect the *whole* catalog, not just the active
+        // filter/page — computed from its own unfiltered, lightweight query so
+        // picking a category (or paging) never hides sibling tabs.
+        $productCategoryIds = StorefrontProduct::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('is_published', true)
+            ->whereNotNull('storefront_category_id')
+            ->whereHas('item', fn($q) => $q->where('is_active', true))
+            ->distinct()
+            ->pluck('storefront_category_id');
+
+        $serviceCategoryIds = StorefrontService::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('is_published', true)
+            ->whereNotNull('storefront_category_id')
+            ->distinct()
+            ->pluck('storefront_category_id');
+
+        $categories = StorefrontCategory::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $productCategoryIds->merge($serviceCategoryIds)->unique())
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
         $products = StorefrontProduct::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
             ->where('is_published', true)
             ->when($categoryId, fn($q) => $q->where('storefront_category_id', $categoryId))
+            ->when($search, fn($q) => $q->where(
+                fn($q) => $q->whereHas('item', fn($iq) => $iq->where('name', db_like(), "%{$search}%"))
+                            ->orWhere('web_description', db_like(), "%{$search}%")
+            ))
             ->with(['item', 'images'])
             ->whereHas('item', fn($q) => $q->where('is_active', true))
             ->orderBy('sort_order')
-            ->get();
+            ->paginate(self::CATALOG_PER_PAGE, ['*'], 'products_page')
+            ->withQueryString();
 
         $services = StorefrontService::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
             ->where('is_published', true)
             ->when($categoryId, fn($q) => $q->where('storefront_category_id', $categoryId))
+            ->when($search, fn($q) => $q->where(
+                fn($q) => $q->where('name', db_like(), "%{$search}%")
+                            ->orWhere('description', db_like(), "%{$search}%")
+            ))
             ->with('images')
             ->orderBy('sort_order')
-            ->get();
+            ->paginate(self::CATALOG_PER_PAGE, ['*'], 'services_page')
+            ->withQueryString();
 
-        $categoryIds = $products->pluck('storefront_category_id')
-            ->merge($services->pluck('storefront_category_id'))
-            ->filter()
-            ->unique();
+        $storeVatApplicable = (bool) ($tenant->storefront?->vat_applicable ?? true);
 
-        $categories = StorefrontCategory::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenant->id)
-            ->whereIn('id', $categoryIds)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        return view('storefront.index', compact('tenant', 'products', 'services', 'categories', 'categoryId'));
+        return view('storefront.index', compact('tenant', 'products', 'services', 'categories', 'categoryId', 'search', 'storeVatApplicable'));
     }
 
     public function show(Tenant $tenant, StorefrontProduct $storefrontProduct): View
@@ -204,6 +233,10 @@ class StorefrontController extends Controller
             return collect();
         }
 
+        // Store-level VAT is a master switch: if it's off, nothing on this
+        // storefront ever carries VAT regardless of the item's own setting.
+        $storeVatApplicable = (bool) ($tenant->storefront?->vat_applicable ?? true);
+
         $productIds = [];
         $serviceIds = [];
         foreach (array_keys($cart) as $key) {
@@ -223,22 +256,24 @@ class StorefrontController extends Controller
                     ->whereIn('id', $productIds)
                     ->with('item', 'images')
                     ->get()
-                    ->map(function (StorefrontProduct $product) use ($cart) {
-                        $qty       = (float) $cart[$this->cartLineKey('product', $product->id)];
-                        $unitPrice = (float) $product->item->selling_price;
-                        $subtotal  = round($qty * $unitPrice, 2);
-                        $vatAmount = round($subtotal * Invoice::VAT_RATE / 100, 2);
+                    ->map(function (StorefrontProduct $product) use ($cart, $storeVatApplicable) {
+                        $qty           = (float) $cart[$this->cartLineKey('product', $product->id)];
+                        $unitPrice     = (float) $product->item->selling_price;
+                        $subtotal      = round($qty * $unitPrice, 2);
+                        $vatApplicable = $storeVatApplicable && $product->vat_applicable;
+                        $vatAmount     = $vatApplicable ? round($subtotal * Invoice::VAT_RATE / 100, 2) : 0.0;
 
                         return (object) [
-                            'type'       => 'product',
-                            'product'    => $product,
-                            'service'    => null,
-                            'name'       => $product->item->name,
-                            'quantity'   => $qty,
-                            'unit_price' => $unitPrice,
-                            'subtotal'   => $subtotal,
-                            'vat_amount' => $vatAmount,
-                            'total'      => $subtotal + $vatAmount,
+                            'type'           => 'product',
+                            'product'        => $product,
+                            'service'        => null,
+                            'name'           => $product->item->name,
+                            'quantity'       => $qty,
+                            'unit_price'     => $unitPrice,
+                            'subtotal'       => $subtotal,
+                            'vat_applicable' => $vatApplicable,
+                            'vat_amount'     => $vatAmount,
+                            'total'          => $subtotal + $vatAmount,
                         ];
                     })
             );
@@ -251,22 +286,24 @@ class StorefrontController extends Controller
                     ->whereIn('id', $serviceIds)
                     ->with('images')
                     ->get()
-                    ->map(function (StorefrontService $service) use ($cart) {
-                        $qty       = (float) $cart[$this->cartLineKey('service', $service->id)];
-                        $unitPrice = (float) $service->price;
-                        $subtotal  = round($qty * $unitPrice, 2);
-                        $vatAmount = round($subtotal * Invoice::VAT_RATE / 100, 2);
+                    ->map(function (StorefrontService $service) use ($cart, $storeVatApplicable) {
+                        $qty           = (float) $cart[$this->cartLineKey('service', $service->id)];
+                        $unitPrice     = (float) $service->price;
+                        $subtotal      = round($qty * $unitPrice, 2);
+                        $vatApplicable = $storeVatApplicable && $service->vat_applicable;
+                        $vatAmount     = $vatApplicable ? round($subtotal * Invoice::VAT_RATE / 100, 2) : 0.0;
 
                         return (object) [
-                            'type'       => 'service',
-                            'product'    => null,
-                            'service'    => $service,
-                            'name'       => $service->name,
-                            'quantity'   => $qty,
-                            'unit_price' => $unitPrice,
-                            'subtotal'   => $subtotal,
-                            'vat_amount' => $vatAmount,
-                            'total'      => $subtotal + $vatAmount,
+                            'type'           => 'service',
+                            'product'        => null,
+                            'service'        => $service,
+                            'name'           => $service->name,
+                            'quantity'       => $qty,
+                            'unit_price'     => $unitPrice,
+                            'subtotal'       => $subtotal,
+                            'vat_applicable' => $vatApplicable,
+                            'vat_amount'     => $vatAmount,
+                            'total'          => $subtotal + $vatAmount,
                         ];
                     })
             );
@@ -312,6 +349,7 @@ class StorefrontController extends Controller
                     'description'            => $line->name,
                     'quantity'               => $line->quantity,
                     'unit_price'             => $line->unit_price,
+                    'vat_applicable'         => $line->vat_applicable,
                 ]);
                 $item->calculateTotals();
                 $item->save();

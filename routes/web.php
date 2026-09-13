@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PaystackWebhookController;
@@ -163,6 +164,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
             Route::put('/bank-accounts/{bankAccount}',    [BankAccountController::class, 'update'])->name('bank-accounts.update');
             Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
             Route::post('/bank-accounts/{bankAccount}/default', [BankAccountController::class, 'setDefault'])->name('bank-accounts.default');
+
+            // Chart of Accounts
+            Route::get('/chart-of-accounts',            [AccountController::class, 'index'])->name('chart-of-accounts.index');
+            Route::post('/chart-of-accounts',           [AccountController::class, 'store'])->name('chart-of-accounts.store');
+            Route::patch('/chart-of-accounts/{account}', [AccountController::class, 'update'])->name('chart-of-accounts.update');
+            Route::delete('/chart-of-accounts/{account}', [AccountController::class, 'destroy'])->name('chart-of-accounts.destroy');
         });
 
         // Team management
@@ -248,6 +255,7 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
                 Route::get('/compute',             [TaxController::class, 'vatCompute'])->name('compute');
                 Route::post('/{vatReturn}/filed',     [TaxController::class, 'vatFiled'])->name('filed');
                 Route::post('/{vatReturn}/paid',      [TaxController::class, 'vatPaid'])->name('paid');
+                Route::post('/{vatReturn}/amend',     [TaxController::class, 'vatAmend'])->name('amend');
             });
             Route::prefix('wht')->name('wht.')->group(function () {
                 Route::get('/',                    [TaxController::class, 'whtIndex'])->name('index');
