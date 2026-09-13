@@ -192,6 +192,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
         Route::post('/customers/quick', [CustomerController::class, 'quickStore'])->name('customers.quick-store');
         Route::post('/vendors/quick',   [VendorController::class,  'quickStore'])->name('vendors.quick-store');
 
+        // Vendors
+        Route::get('/vendors',               [VendorController::class, 'index'])->name('vendors.index');
+        Route::get('/vendors/{vendor}/edit',  [VendorController::class, 'edit'])->name('vendors.edit');
+        Route::put('/vendors/{vendor}',       [VendorController::class, 'update'])->name('vendors.update');
+        Route::delete('/vendors/{vendor}',    [VendorController::class, 'destroy'])->name('vendors.destroy');
+
         // Quotes / Proforma Invoices
         Route::prefix('quotes')->name('quotes.')->group(function () {
             Route::get('/',                [QuoteController::class, 'index'])->name('index');

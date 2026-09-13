@@ -16,6 +16,7 @@ use App\Models\MaintenanceWorkOrder;
 use App\Models\ProductionOrder;
 use App\Models\RestockRequest;
 use App\Models\SalesOrder;
+use App\Models\Vendor;
 use App\Observers\InventoryItemObserver;
 use App\Policies\AccountPolicy;
 use App\Policies\BankAccountPolicy;
@@ -31,6 +32,7 @@ use App\Policies\MaintenanceWorkOrderPolicy;
 use App\Policies\ProductionOrderPolicy;
 use App\Policies\RestockRequestPolicy;
 use App\Policies\SalesOrderPolicy;
+use App\Policies\VendorPolicy;
 use App\View\Composers\SystemNotificationComposer;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -72,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MaintenanceWorkOrder::class, MaintenanceWorkOrderPolicy::class);
         Gate::policy(MaintenanceBreakdown::class, MaintenanceBreakdownPolicy::class);
         Gate::policy(MaintenanceSchedule::class, MaintenanceWorkOrderPolicy::class);
+        Gate::policy(Vendor::class, VendorPolicy::class);
 
         // View composers
         View::composer('layouts.app', SystemNotificationComposer::class);
