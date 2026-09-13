@@ -157,7 +157,7 @@
                                 <button type="submit" class="text-xs font-medium text-green-700 hover:text-green-900">Save changes</button>
                             </form>
                             <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Photos</label>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Photos ({{ $service->images->count() }}/{{ \App\Models\StorefrontService::MAX_IMAGES }})</label>
                                 <div class="flex flex-wrap gap-2 mb-2">
                                     @foreach($service->images as $image)
                                     <div class="relative">
@@ -169,11 +169,15 @@
                                     </div>
                                     @endforeach
                                 </div>
+                                @if($service->images->count() >= \App\Models\StorefrontService::MAX_IMAGES)
+                                <p class="text-xs text-gray-400">Maximum of {{ \App\Models\StorefrontService::MAX_IMAGES }} photos reached — remove one to add more.</p>
+                                @else
                                 <form method="POST" action="{{ route('storefront.services.images.upload', $service) }}" enctype="multipart/form-data" class="flex items-center gap-2">
                                     @csrf
-                                    <input type="file" name="image" accept="image/*" required class="text-xs">
-                                    <button type="submit" class="text-xs font-medium text-green-700 hover:text-green-900 whitespace-nowrap">Add photo</button>
+                                    <input type="file" name="images[]" accept="image/*" multiple required class="text-xs">
+                                    <button type="submit" class="text-xs font-medium text-green-700 hover:text-green-900 whitespace-nowrap">Add photo(s)</button>
                                 </form>
+                                @endif
                             </div>
                         </div>
                     </td>

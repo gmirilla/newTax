@@ -63,7 +63,7 @@
                             'status'           => $statusLabel,
                         ];
                     @endphp
-                    <tr class="{{ $return->isOverdue() ? 'bg-red-50' : '' }}"
+                    <tr x-data="{ amending: false }" class="{{ $return->isOverdue() ? 'bg-red-50' : '' }}"
                         data-export="{{ json_encode([
                             $return->getMonthName() . ' ' . $return->tax_year,
                             (string) $return->output_vat,
@@ -119,6 +119,18 @@
                                            class="border rounded text-xs px-2 py-1 w-28">
                                     <button class="text-xs bg-green-600 text-white px-2 py-1 rounded">Mark Paid</button>
                                 </form>
+                                <button type="button" @click="amending = !amending"
+                                        class="text-xs text-gray-500 hover:underline font-medium text-left">
+                                    Amend Return
+                                </button>
+                                <form x-show="amending" x-cloak method="POST" action="{{ route('tax.vat.amend', $return) }}" class="flex flex-col gap-1">
+                                    @csrf
+                                    <input type="text" name="reason" placeholder="Reason for amending" required maxlength="500"
+                                           class="border rounded text-xs px-2 py-1 w-full">
+                                    <button class="text-xs bg-gray-700 text-white px-2 py-1 rounded self-start">Confirm Amend</button>
+                                </form>
+                                @elseif($return->status === 'paid')
+                                <p class="text-xs text-gray-400 italic">Contact support to amend a paid return.</p>
                                 @endif
                             </div>
                         </td>

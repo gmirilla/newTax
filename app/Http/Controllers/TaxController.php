@@ -87,6 +87,22 @@ class TaxController extends Controller
         return back()->with('success', 'VAT payment recorded.');
     }
 
+    public function vatAmend(Request $request, VatReturn $vatReturn): RedirectResponse
+    {
+        $request->validate(['reason' => 'required|string|max:500']);
+
+        if ($vatReturn->status === 'paid') {
+            return back()->with('error', 'A paid VAT return cannot be amended here — contact support for a manual correction.');
+        }
+        if ($vatReturn->status !== 'filed') {
+            return back()->with('error', 'Only filed returns can be amended.');
+        }
+
+        $this->vatService->amendReturn($vatReturn, $request->reason);
+
+        return back()->with('success', "VAT return for {$vatReturn->getMonthName()} {$vatReturn->tax_year} amended — recompute has run; re-file it with a new NRS reference when ready.");
+    }
+
     // --- WHT ---
 
     public function whtIndex(Request $request): View

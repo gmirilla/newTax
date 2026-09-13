@@ -82,19 +82,38 @@ class StorefrontProductController extends Controller
         $this->authorizeProduct($request, $storefrontProduct);
 
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images'   => 'required|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        $path = $request->file('image')->store("storefront/{$storefrontProduct->tenant_id}/{$storefrontProduct->id}", 'public');
+        $currentCount = $storefrontProduct->images()->count();
 
-        StorefrontProductImage::withoutGlobalScope('tenant')->create([
-            'tenant_id'              => $storefrontProduct->tenant_id,
-            'storefront_product_id'  => $storefrontProduct->id,
-            'image_path'             => $path,
-            'sort_order'             => $storefrontProduct->images()->count(),
-        ]);
+        if ($currentCount >= StorefrontProduct::MAX_IMAGES) {
+            return back()->with('error', 'You\'ve reached the maximum of ' . StorefrontProduct::MAX_IMAGES . ' photos. Remove one to add more.');
+        }
 
-        return back()->with('success', 'Image added.');
+        $files    = $request->file('images');
+        $slots    = StorefrontProduct::MAX_IMAGES - $currentCount;
+        $accepted = array_slice($files, 0, $slots);
+        $skipped  = count($files) - count($accepted);
+
+        foreach ($accepted as $file) {
+            $path = $file->store("storefront/{$storefrontProduct->tenant_id}/{$storefrontProduct->id}", 'public');
+
+            StorefrontProductImage::withoutGlobalScope('tenant')->create([
+                'tenant_id'              => $storefrontProduct->tenant_id,
+                'storefront_product_id'  => $storefrontProduct->id,
+                'image_path'             => $path,
+                'sort_order'             => $currentCount++,
+            ]);
+        }
+
+        $message = 'Added ' . count($accepted) . ' photo' . (count($accepted) === 1 ? '' : 's') . '.';
+        if ($skipped > 0) {
+            $message .= " {$skipped} " . ($skipped === 1 ? 'was' : 'were') . ' not added — you\'ve reached the ' . StorefrontProduct::MAX_IMAGES . '-photo limit.';
+        }
+
+        return back()->with('success', $message);
     }
 
     public function deleteImage(Request $request, StorefrontProductImage $image): RedirectResponse

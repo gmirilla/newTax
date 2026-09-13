@@ -11,6 +11,8 @@ class StorefrontService extends Model
 {
     use SoftDeletes;
 
+    public const MAX_IMAGES = 4;
+
     protected $fillable = [
         'tenant_id', 'storefront_category_id', 'name', 'description',
         'price', 'is_published', 'vat_applicable', 'sort_order',

@@ -92,19 +92,38 @@ class StorefrontServiceController extends Controller
         $this->authorizeService($request, $storefrontService);
 
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images'   => 'required|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
-        $path = $request->file('image')->store("storefront/{$storefrontService->tenant_id}/services/{$storefrontService->id}", 'public');
+        $currentCount = $storefrontService->images()->count();
 
-        StorefrontServiceImage::withoutGlobalScope('tenant')->create([
-            'tenant_id'              => $storefrontService->tenant_id,
-            'storefront_service_id'  => $storefrontService->id,
-            'image_path'             => $path,
-            'sort_order'             => $storefrontService->images()->count(),
-        ]);
+        if ($currentCount >= StorefrontService::MAX_IMAGES) {
+            return back()->with('error', 'You\'ve reached the maximum of ' . StorefrontService::MAX_IMAGES . ' photos. Remove one to add more.');
+        }
 
-        return back()->with('success', 'Image added.');
+        $files    = $request->file('images');
+        $slots    = StorefrontService::MAX_IMAGES - $currentCount;
+        $accepted = array_slice($files, 0, $slots);
+        $skipped  = count($files) - count($accepted);
+
+        foreach ($accepted as $file) {
+            $path = $file->store("storefront/{$storefrontService->tenant_id}/services/{$storefrontService->id}", 'public');
+
+            StorefrontServiceImage::withoutGlobalScope('tenant')->create([
+                'tenant_id'              => $storefrontService->tenant_id,
+                'storefront_service_id'  => $storefrontService->id,
+                'image_path'             => $path,
+                'sort_order'             => $currentCount++,
+            ]);
+        }
+
+        $message = 'Added ' . count($accepted) . ' photo' . (count($accepted) === 1 ? '' : 's') . '.';
+        if ($skipped > 0) {
+            $message .= " {$skipped} " . ($skipped === 1 ? 'was' : 'were') . ' not added — you\'ve reached the ' . StorefrontService::MAX_IMAGES . '-photo limit.';
+        }
+
+        return back()->with('success', $message);
     }
 
     public function deleteImage(Request $request, StorefrontServiceImage $image): RedirectResponse

@@ -161,6 +161,38 @@ class VatService
     }
 
     /**
+     * Recompute a filed return's figures and send it back to `pending` so
+     * the corrected amount can be re-filed with NRS under a new reference —
+     * callers must ensure $vatReturn->status === 'filed' before calling this
+     * (paid returns are not amendable here; see TODO.md).
+     */
+    public function amendReturn(VatReturn $vatReturn, string $reason): VatReturn
+    {
+        $before = $vatReturn->only(['output_vat', 'input_vat', 'net_vat_payable', 'status']);
+
+        $data = $this->computeMonthlyReturn($vatReturn->tenant, $vatReturn->tax_year, $vatReturn->tax_month);
+
+        $vatReturn->fill($data);
+        $vatReturn->status           = $data['is_nil_return'] ? 'nil_return' : 'pending';
+        $vatReturn->filing_reference = null;
+        $vatReturn->filed_date       = null;
+        $vatReturn->filed_by         = null;
+        $vatReturn->notes            = trim(($vatReturn->notes ? $vatReturn->notes . "\n" : '')
+            . 'Amended ' . now()->toDateString() . ': ' . $reason);
+        $vatReturn->save();
+
+        AuditLog::record('vat_return.amended', $vatReturn, $before, [
+            'output_vat'      => $vatReturn->output_vat,
+            'input_vat'       => $vatReturn->input_vat,
+            'net_vat_payable' => $vatReturn->net_vat_payable,
+            'status'          => $vatReturn->status,
+            'reason'          => $reason,
+        ], 'tax,approval');
+
+        return $vatReturn;
+    }
+
+    /**
      * Get all overdue VAT returns for a tenant.
      */
     public function getOverdueReturns(Tenant $tenant): Collection

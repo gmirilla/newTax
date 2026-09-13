@@ -18,44 +18,71 @@ use Illuminate\View\View;
 
 class StorefrontController extends Controller
 {
+    /** Matches the grid-cols-4 layout — 6 full rows at the widest breakpoint. */
+    private const CATALOG_PER_PAGE = 24;
+
     // ── Catalog ──────────────────────────────────────────────────────────────
 
     public function index(Request $request, Tenant $tenant): View
     {
         $categoryId = $request->integer('category') ?: null;
+        $search     = trim((string) $request->string('q')) ?: null;
+
+        // Category tabs must reflect the *whole* catalog, not just the active
+        // filter/page — computed from its own unfiltered, lightweight query so
+        // picking a category (or paging) never hides sibling tabs.
+        $productCategoryIds = StorefrontProduct::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('is_published', true)
+            ->whereNotNull('storefront_category_id')
+            ->whereHas('item', fn($q) => $q->where('is_active', true))
+            ->distinct()
+            ->pluck('storefront_category_id');
+
+        $serviceCategoryIds = StorefrontService::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->where('is_published', true)
+            ->whereNotNull('storefront_category_id')
+            ->distinct()
+            ->pluck('storefront_category_id');
+
+        $categories = StorefrontCategory::withoutGlobalScope('tenant')
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $productCategoryIds->merge($serviceCategoryIds)->unique())
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
         $products = StorefrontProduct::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
             ->where('is_published', true)
             ->when($categoryId, fn($q) => $q->where('storefront_category_id', $categoryId))
+            ->when($search, fn($q) => $q->where(
+                fn($q) => $q->whereHas('item', fn($iq) => $iq->where('name', db_like(), "%{$search}%"))
+                            ->orWhere('web_description', db_like(), "%{$search}%")
+            ))
             ->with(['item', 'images'])
             ->whereHas('item', fn($q) => $q->where('is_active', true))
             ->orderBy('sort_order')
-            ->get();
+            ->paginate(self::CATALOG_PER_PAGE, ['*'], 'products_page')
+            ->withQueryString();
 
         $services = StorefrontService::withoutGlobalScope('tenant')
             ->where('tenant_id', $tenant->id)
             ->where('is_published', true)
             ->when($categoryId, fn($q) => $q->where('storefront_category_id', $categoryId))
+            ->when($search, fn($q) => $q->where(
+                fn($q) => $q->where('name', db_like(), "%{$search}%")
+                            ->orWhere('description', db_like(), "%{$search}%")
+            ))
             ->with('images')
             ->orderBy('sort_order')
-            ->get();
-
-        $categoryIds = $products->pluck('storefront_category_id')
-            ->merge($services->pluck('storefront_category_id'))
-            ->filter()
-            ->unique();
-
-        $categories = StorefrontCategory::withoutGlobalScope('tenant')
-            ->where('tenant_id', $tenant->id)
-            ->whereIn('id', $categoryIds)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+            ->paginate(self::CATALOG_PER_PAGE, ['*'], 'services_page')
+            ->withQueryString();
 
         $storeVatApplicable = (bool) ($tenant->storefront?->vat_applicable ?? true);
 
-        return view('storefront.index', compact('tenant', 'products', 'services', 'categories', 'categoryId', 'storeVatApplicable'));
+        return view('storefront.index', compact('tenant', 'products', 'services', 'categories', 'categoryId', 'search', 'storeVatApplicable'));
     }
 
     public function show(Tenant $tenant, StorefrontProduct $storefrontProduct): View

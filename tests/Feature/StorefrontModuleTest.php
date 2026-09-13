@@ -12,13 +12,17 @@ use App\Models\Storefront;
 use App\Models\StorefrontCategory;
 use App\Models\StorefrontOrder;
 use App\Models\StorefrontProduct;
+use App\Models\StorefrontProductImage;
 use App\Models\StorefrontService;
+use App\Models\StorefrontServiceImage;
 use App\Models\StockMovement;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\BookkeepingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class StorefrontModuleTest extends TestCase
@@ -736,6 +740,277 @@ class StorefrontModuleTest extends TestCase
 
         $this->get(route('storefront.product', ['tenant' => $this->tenant->slug, 'storefrontProduct' => $this->product->id]))
             ->assertOk()->assertDontSee('+ VAT')->assertDontSee('incl. VAT');
+    }
+
+    // ── Scenario 11: Storefront catalog pagination ─────────────────────────────
+
+    public function test_catalog_paginates_products_independently_of_services(): void
+    {
+        // $this->product already exists (1) — create 24 more so there are 25
+        // published products total, one over the 24-per-page limit.
+        for ($i = 0; $i < 24; $i++) {
+            $item = InventoryItem::withoutGlobalScope('tenant')->create([
+                'tenant_id'     => $this->tenant->id,
+                'name'          => "Extra Item {$i}",
+                'sku'           => "EXTRA-{$i}",
+                'item_type'     => 'product',
+                'unit'          => 'unit',
+                'selling_price' => 1000,
+                'cost_price'    => 800,
+                'avg_cost'      => 800,
+                'current_stock' => 10,
+                'is_active'     => true,
+                'created_by'    => $this->admin->id,
+            ]);
+            StorefrontProduct::withoutGlobalScope('tenant')->create([
+                'tenant_id'         => $this->tenant->id,
+                'inventory_item_id' => $item->id,
+                'is_published'      => true,
+                'sort_order'        => $i + 1,
+            ]);
+        }
+
+        $page1 = $this->get(route('storefront.index', $this->tenant->slug));
+        $page1->assertOk();
+        $this->assertCount(24, $page1->viewData('products'));
+        $this->assertEquals(25, $page1->viewData('products')->total());
+
+        $page2 = $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'products_page' => 2]));
+        $page2->assertOk();
+        $this->assertCount(1, $page2->viewData('products'));
+
+        // Paging products must not disturb the (independent) services paginator.
+        $this->assertEquals(1, $page2->viewData('services')->currentPage());
+    }
+
+    public function test_category_tabs_are_unaffected_by_pagination_or_active_filter(): void
+    {
+        $catA = StorefrontCategory::withoutGlobalScope('tenant')->create(['tenant_id' => $this->tenant->id, 'name' => 'Category A']);
+        $catB = StorefrontCategory::withoutGlobalScope('tenant')->create(['tenant_id' => $this->tenant->id, 'name' => 'Category B']);
+
+        $this->product->update(['storefront_category_id' => $catA->id]);
+
+        // Fill page 1 with Category A items so Category B's only match falls to page 2.
+        for ($i = 0; $i < 24; $i++) {
+            $item = InventoryItem::withoutGlobalScope('tenant')->create([
+                'tenant_id'     => $this->tenant->id,
+                'name'          => "Cat A Item {$i}",
+                'sku'           => "CATA-{$i}",
+                'item_type'     => 'product',
+                'unit'          => 'unit',
+                'selling_price' => 1000,
+                'cost_price'    => 800,
+                'avg_cost'      => 800,
+                'current_stock' => 10,
+                'is_active'     => true,
+                'created_by'    => $this->admin->id,
+            ]);
+            StorefrontProduct::withoutGlobalScope('tenant')->create([
+                'tenant_id'              => $this->tenant->id,
+                'inventory_item_id'      => $item->id,
+                'is_published'           => true,
+                'storefront_category_id' => $catA->id,
+                'sort_order'             => $i + 1,
+            ]);
+        }
+
+        $itemB = InventoryItem::withoutGlobalScope('tenant')->create([
+            'tenant_id'     => $this->tenant->id,
+            'name'          => 'Cat B Item',
+            'sku'           => 'CATB-1',
+            'item_type'     => 'product',
+            'unit'          => 'unit',
+            'selling_price' => 1000,
+            'cost_price'    => 800,
+            'avg_cost'      => 800,
+            'current_stock' => 10,
+            'is_active'     => true,
+            'created_by'    => $this->admin->id,
+        ]);
+        StorefrontProduct::withoutGlobalScope('tenant')->create([
+            'tenant_id'              => $this->tenant->id,
+            'inventory_item_id'      => $itemB->id,
+            'is_published'           => true,
+            'storefront_category_id' => $catB->id,
+            'sort_order'             => 999,
+        ]);
+
+        // Viewing page 1 (Category B's item is on page 2) still shows both tabs.
+        $this->get(route('storefront.index', $this->tenant->slug))
+            ->assertOk()->assertSee('Category A')->assertSee('Category B');
+
+        // Filtering to Category A must not collapse the tab bar down to just Category A.
+        $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'category' => $catA->id]))
+            ->assertOk()->assertSee('Category A')->assertSee('Category B');
+    }
+
+    // ── Scenario 12: Storefront image cap + multi-select upload ───────────────
+
+    private function seedProductImages(int $count): void
+    {
+        for ($i = 0; $i < $count; $i++) {
+            StorefrontProductImage::withoutGlobalScope('tenant')->create([
+                'tenant_id'             => $this->tenant->id,
+                'storefront_product_id' => $this->product->id,
+                'image_path'            => "storefront/{$this->tenant->id}/{$this->product->id}/existing-{$i}.jpg",
+                'sort_order'            => $i,
+            ]);
+        }
+    }
+
+    public function test_uploading_product_images_under_the_cap_adds_all_of_them(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.products.images.upload', $this->product), [
+                'images' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg')],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Added 2 photos.');
+
+        $this->assertEquals(2, $this->product->images()->count());
+    }
+
+    public function test_uploading_a_batch_over_the_cap_adds_only_what_fits(): void
+    {
+        Storage::fake('public');
+        $this->seedProductImages(3);
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.products.images.upload', $this->product), [
+                'images' => [
+                    UploadedFile::fake()->image('a.jpg'),
+                    UploadedFile::fake()->image('b.jpg'),
+                    UploadedFile::fake()->image('c.jpg'),
+                ],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Added 1 photo. 2 were not added — you\'ve reached the 4-photo limit.');
+
+        $this->assertEquals(4, $this->product->images()->count());
+    }
+
+    public function test_uploading_when_already_at_the_cap_adds_nothing(): void
+    {
+        Storage::fake('public');
+        $this->seedProductImages(4);
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.products.images.upload', $this->product), [
+                'images' => [UploadedFile::fake()->image('a.jpg')],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertEquals(4, $this->product->images()->count());
+    }
+
+    public function test_deleting_an_image_below_the_cap_reenables_uploading(): void
+    {
+        Storage::fake('public');
+        $this->seedProductImages(4);
+        $image = $this->product->images()->first();
+
+        $this->actingAs($this->admin)
+            ->delete(route('storefront.products.images.delete', $image))
+            ->assertRedirect();
+
+        $this->assertEquals(3, $this->product->images()->count());
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.products.images.upload', $this->product), [
+                'images' => [UploadedFile::fake()->image('a.jpg')],
+            ])
+            ->assertSessionHas('success', 'Added 1 photo.');
+
+        $this->assertEquals(4, $this->product->images()->count());
+    }
+
+    public function test_admin_product_view_hides_upload_form_at_the_cap(): void
+    {
+        $this->seedProductImages(4);
+
+        $this->actingAs($this->admin)
+            ->get(route('storefront.products.index'))
+            ->assertOk()
+            ->assertSee('Maximum of 4 photos reached')
+            ->assertDontSee('name="images[]"', false);
+    }
+
+    public function test_service_image_upload_batch_over_the_cap_adds_only_what_fits(): void
+    {
+        Storage::fake('public');
+
+        $service = StorefrontService::withoutGlobalScope('tenant')->create([
+            'tenant_id'    => $this->tenant->id,
+            'name'         => 'Delivery',
+            'price'        => 2000,
+            'is_published' => true,
+        ]);
+
+        for ($i = 0; $i < 3; $i++) {
+            StorefrontServiceImage::withoutGlobalScope('tenant')->create([
+                'tenant_id'             => $this->tenant->id,
+                'storefront_service_id' => $service->id,
+                'image_path'            => "storefront/{$this->tenant->id}/services/{$service->id}/existing-{$i}.jpg",
+                'sort_order'            => $i,
+            ]);
+        }
+
+        $this->actingAs($this->admin)
+            ->post(route('storefront.services.images.upload', $service), [
+                'images' => [UploadedFile::fake()->image('a.jpg'), UploadedFile::fake()->image('b.jpg')],
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Added 1 photo. 1 was not added — you\'ve reached the 4-photo limit.');
+
+        $this->assertEquals(4, $service->images()->count());
+
+        $this->actingAs($this->admin)
+            ->get(route('storefront.services.index'))
+            ->assertOk()
+            ->assertSee('Maximum of 4 photos reached');
+    }
+
+    // ── Scenario 13: Storefront search ─────────────────────────────────────────
+
+    public function test_search_matches_products_by_name(): void
+    {
+        $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'q' => 'Rice']))
+            ->assertOk()->assertSee('Bag of Rice');
+
+        $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'q' => 'Nonexistent']))
+            ->assertOk()->assertDontSee('Bag of Rice')->assertSee('No results for');
+    }
+
+    public function test_search_matches_services_by_name(): void
+    {
+        StorefrontService::withoutGlobalScope('tenant')->create([
+            'tenant_id'    => $this->tenant->id,
+            'name'         => 'Home Cleaning',
+            'price'        => 15000,
+            'is_published' => true,
+        ]);
+
+        $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'q' => 'Cleaning']))
+            ->assertOk()->assertSee('Home Cleaning')->assertDontSee('Bag of Rice');
+    }
+
+    public function test_search_combines_with_the_active_category_filter(): void
+    {
+        $category = StorefrontCategory::withoutGlobalScope('tenant')->create(['tenant_id' => $this->tenant->id, 'name' => 'Groceries']);
+        $this->product->update(['storefront_category_id' => $category->id]);
+
+        $other = StorefrontCategory::withoutGlobalScope('tenant')->create(['tenant_id' => $this->tenant->id, 'name' => 'Other']);
+
+        // Searching "Rice" while filtered to a *different* category finds nothing.
+        $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'category' => $other->id, 'q' => 'Rice']))
+            ->assertOk()->assertDontSee('Bag of Rice');
+
+        // Searching "Rice" filtered to its own category finds it.
+        $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'category' => $category->id, 'q' => 'Rice']))
+            ->assertOk()->assertSee('Bag of Rice');
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────

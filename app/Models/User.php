@@ -46,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'payroll'       => 'Payroll',
         'reports'       => 'Reports',
         'bank_accounts' => 'Bank Accounts',
+        'chart_of_accounts' => 'Chart of Accounts',
     ];
 
     public static function moduleDefaults(string $role): array

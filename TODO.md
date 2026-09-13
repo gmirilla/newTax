@@ -6,114 +6,84 @@ shorter, actionable to-dos.
 
 ---
 
-## Paginate the storefront catalog
+## ✅ Fixed (2026-09-13): Paginate the storefront catalog
 
-**What:** Flagged 2026-09-12 while critiquing the storefront-search TODO
-below — the public storefront loads its *entire* published catalog on every
-visit, with no pagination. Fine for a handful of items; becomes a real
-problem (slow page loads, huge unbounded queries) as soon as a tenant lists
-more than a page's worth of products/services.
+`StorefrontController::index()` used to load the tenant's entire published
+catalog on every visit (`->get()`, no limit). Fixed:
 
-**Current state (confirmed 2026-09-12):**
-- `StorefrontController::index()` ([app/Http/Controllers/StorefrontController.php:23-59](app/Http/Controllers/StorefrontController.php#L23))
-  runs both the product and service queries with a plain `->get()` — no
-  `paginate()`, no limit, no offset. Every published product and service for
-  the tenant loads on a single request, every time, category filter or not.
-- This predates and is independent of the storefront-search TODO, but the two
-  are linked: adding search without also paginating just means "search the
-  same unbounded query," not a real fix — both should land together, or
-  pagination first.
-- The rest of the app already has the convention to mirror: tenant-admin list
-  pages consistently use `->paginate(25)` (e.g. `StorefrontProductController::index()`
-  and `StorefrontServiceController::index()` already do this on the admin
-  side — [app/Http/Controllers/StorefrontProductController.php:15-30](app/Http/Controllers/StorefrontProductController.php#L15),
-  [app/Http/Controllers/StorefrontServiceController.php:16-25](app/Http/Controllers/StorefrontServiceController.php#L16)).
-  The public catalog just never picked up the same pattern.
+- Products and services are now paginated independently via
+  `->paginate(24, ['*'], 'products_page')` / `...'services_page'` — distinct
+  `pageName`s so paging one doesn't collide with or reset the other.
+- Per the user's call over a combined-grid-via-SQL-UNION alternative, the
+  storefront view now splits into two clearly labeled sections ("Products" /
+  "Services"), each with its own heading, grid, and pager
+  (`resources/views/storefront/index.blade.php`) — the per-tile "Service"
+  badge was removed as redundant now that the section heading says so.
+- Found and fixed a real, pre-existing, unrelated bug in the same pass: the
+  category-tab list used to be computed from the already-category-filtered
+  product/service collections, so clicking one category tab collapsed the
+  tab bar down to just that category, hiding every sibling tab. The tab list
+  is now computed from its own separate, unfiltered, lightweight
+  `distinct()->pluck('storefront_category_id')` query — fixes both the
+  pagination independence and the tab-collapse bug at once.
+- Tests added to `tests/Feature/StorefrontModuleTest.php`: pagination
+  correctness + independence between the two paginators, and a direct
+  regression test for the tab-collapse bug.
 
-**Needed:**
-- Switch `StorefrontController::index()`'s product/service queries to
-  `paginate()` (or a combined/interleaved pagination scheme, since products
-  and services are two separate queries merged into one visual grid —
-  worth deciding whether to paginate each independently with its own page
-  link, or merge-then-slice for one unified page of "products and services").
-  A grid than mixes two separately-paginated result sets in one page is a
-  little awkward — decide the UX here before implementing.
-  ("catalog page 2" of a store with fewer products than services would look odd
-  if paginated independently.)
-- Update `resources/views/storefront/index.blade.php` to render pagination
-  links (mirroring `{{ $items->links() }}` already used on the admin side)
-  while preserving the active `?category=` (and future `?q=` search) query
-  string, the same way `StorefrontProductController::index()` already does
-  with `->withQueryString()`.
-- Test coverage per CLAUDE.md conventions: a tenant with more products than
-  one page's worth is correctly paginated, and category/search filters
-  combine correctly with pagination (no losing the filter when paging).
+Still open, tracked separately below: storefront search (once built, will
+combine with this same pagination) and the "Discover Storefronts" directory.
 
 ---
 
-## Cap storefront product/service images at 4, with proper multi-select upload
+## ✅ Fixed (2026-09-13): Cap storefront images at 4, with multi-select upload
 
-**What:** Requested 2026-09-12. Today a tenant can already attach more than
-one image to a product or service, but there's no defined maximum, and the
-upload UX only accepts one file per submission.
+`StorefrontProductController::uploadImage()` / `StorefrontServiceController::uploadImage()`
+used to accept unlimited images, one file per submission. Fixed:
 
-**Current state (confirmed 2026-09-12):**
-- `StorefrontProductController::uploadImage()` ([app/Http/Controllers/StorefrontProductController.php:80-95](app/Http/Controllers/StorefrontProductController.php#L80))
-  and `StorefrontServiceController::uploadImage()` ([app/Http/Controllers/StorefrontServiceController.php:90-104](app/Http/Controllers/StorefrontServiceController.php#L90))
-  enforce **no maximum** — a tenant can keep clicking "Add photo" indefinitely.
-- The upload forms (`resources/views/storefront_admin/products/index.blade.php:116`,
-  `resources/views/storefront_admin/services/index.blade.php:174`) are a single
-  `<input type="file" name="image">` with no `multiple` attribute — one file
-  picked and submitted at a time, even though the backend already supports
-  many (`storefront_product_images`/`storefront_service_images` are proper
-  one-to-many tables today).
-
-**Needed:**
-- Add a hard cap of 4 images per product/service — reject the upload (with a
-  clear error) once `$product->images()->count() >= 4`.
-- Support selecting multiple files in one go (`<input type="file" multiple>`)
-  rather than one-at-a-time, with the same 4-image ceiling applied to the
-  batch (e.g. reject if the batch would push the count over 4, or upload only
-  as many as fit — decide which).
-- Decide whether the cap is a hard product/plan-wide constant or eventually
-  plan-gated (e.g. higher tiers get more images) — start with a flat constant
-  unless there's a reason to gate it.
-- Test coverage per CLAUDE.md conventions: uploading a 5th image is rejected;
-  a batch upload that would exceed 4 is handled per the decision above;
-  existing images past a retroactively-applied cap (if any tenant already has
-  more than 4 today) aren't force-deleted, just blocked from adding more.
+- `StorefrontProduct::MAX_IMAGES` / `StorefrontService::MAX_IMAGES` (both
+  `= 4`) — a flat constant, not plan-gated (no reason found to gate it).
+- Upload forms now use `<input type="file" name="images[]" multiple>`,
+  processed as a batch server-side.
+- Per the user's call: a batch that would exceed the cap uploads as many as
+  fit and flashes a message naming how many were skipped ("Added 1 photo. 2
+  were not added — you've reached the 4-photo limit."), rather than
+  rejecting the whole batch. Already-at-cap uploads add nothing, with an
+  error flash.
+- The admin view now shows a running `N/4` count and hides the upload form
+  entirely once at the cap (replaced with a "remove one to add more" note),
+  rather than only handling it as a rejected submission after the fact.
+  Existing images past the cap (if any) are never force-deleted — only new
+  uploads are blocked.
+- Tests added to `tests/Feature/StorefrontModuleTest.php`: under-cap batch,
+  over-cap batch (partial accept), already-at-cap (rejects all), delete
+  re-enabling upload, and the view hiding the form at the cap (products +
+  one mirrored case for services).
 
 ---
 
-## Storefront search (find items within a store)
+## ✅ Fixed (2026-09-13): Storefront search
 
-**What:** Requested 2026-09-12. Customers can currently only browse a
-storefront by category filter — there's no way to search by name.
+`StorefrontController::index()` used to only support `?category=` — no way
+for a customer to search by name. Fixed, following the existing
+`db_like()`-based search convention already used by `InventoryItemController::index()`:
 
-**Current state (confirmed 2026-09-12):**
-- `StorefrontController::index()` ([app/Http/Controllers/StorefrontController.php:23-57](app/Http/Controllers/StorefrontController.php#L23))
-  only accepts a `?category=` query param — no `search`/`q` param, no
-  name/description matching at all.
-- The rest of the app already has an established search-filter convention to
-  mirror: `InventoryItemController::index()` ([app/Http/Controllers/Inventory/InventoryItemController.php:33-38](app/Http/Controllers/Inventory/InventoryItemController.php#L33))
-  does `->when($request->filled('search'), ...)` matching `name`/`sku`/`description`
-  via the `db_like()` helper (driver-aware `ilike`/`like`, per CLAUDE.md's
-  Postgres `ilike` rule) — the storefront search should follow the same
-  shape, matching product name (via `InventoryItem.name`) and service name,
-  plus maybe `web_description`/`description`.
-
-**Needed:**
-- Add a search box to `resources/views/storefront/index.blade.php`, submitting
-  a `?q=` (or `?search=`) param alongside the existing `?category=`, combinable
-  with it.
-- Extend `StorefrontController::index()`'s product and service queries with
-  the `db_like()`-based `when($request->filled(...))` pattern above.
-- Decide whether search should also work from the storefront layout's header
-  (visible on every page, not just the catalog) — check `resources/views/storefront/layout.blade.php`
-  when this is picked up.
-- Test coverage per CLAUDE.md conventions: search matches by name, is
-  tenant-scoped (doesn't leak another tenant's products), and combines
-  correctly with an active category filter.
+- A `?q=` param now filters products (by `InventoryItem.name` or
+  `web_description`) and services (by `name` or `description`) via
+  `db_like()` (driver-aware `ilike`/`like`).
+- Combines correctly with both the existing `?category=` filter and the
+  `products_page`/`services_page` pagination (same `->withQueryString()`
+  mechanism as the pagination fix) — searching, filtering, and paging never
+  drop each other.
+- A search box was added to `resources/views/storefront/index.blade.php`;
+  the category tabs and empty state were updated to preserve/reflect the
+  active search term ("No results for '...' — try a different search").
+- Scoped to the catalog index page only, not the storefront layout header on
+  every page (kept the change contained to where category filtering and
+  pagination already live, rather than adding a new site-wide search
+  surface in the same pass).
+- Tests added to `tests/Feature/StorefrontModuleTest.php`: matches products
+  by name, matches services by name, and combines correctly with an active
+  category filter (tenant isolation was already covered by existing tests).
 
 ---
 
@@ -234,101 +204,76 @@ worth a quick pass later).
 
 ---
 
-## Amend a filed/paid VAT Return 🔍
+## ✅ Fixed (2026-09-13): Amend a filed/paid VAT Return
 
-**What:** Now that `VatService::createOrUpdateReturn()` locks `output_vat`/`input_vat`/`net_vat_payable`
-once a return is `filed` or `paid` (see the fix above), users still need a
-deliberate way to correct a filed return
-when new information shows up — a late invoice, a corrected expense, a
-payment-allocation fix. This item is that escape hatch: an explicit,
-audited "Amend" action, distinct from the ordinary recompute/"Recalculate"
-flow, which only ever touches `pending`/`nil_return` returns.
+Since `VatService::createOrUpdateReturn()` locks figures once a return is
+`filed`/`paid`, tenants needed a deliberate way to correct one. Fixed:
 
-**Proposed approach:**
-- **Trigger:** a separate "Amend Return" action on `filed`/`paid` rows in
-  [tax/vat/index.blade.php](resources/views/tax/vat/index.blade.php), gated
-  to `admin`/`accountant` (same as the rest of Tax), requiring a short
-  free-text reason — this is compliance-sensitive, so it shouldn't be a
-  silent one-click recompute like the `pending` case.
-- **History, not new columns:** don't add `original_output_vat`-style
-  snapshot columns to `vat_returns`. This codebase already has
-  `AuditLog::record()` for before/after diffs (see the "Audit logging"
-  convention in CLAUDE.md, and e.g. `sales_order.cancelled` in
-  [SalesOrderController.php](app/Http/Controllers/Inventory/SalesOrderController.php)
-  for the pattern) — capture the amendment the same way:
-  `AuditLog::record('vat_return.amended', $vatReturn, $before, $after, 'tax,approval')`
-  with the reason in the audit payload. Called after the update, per the
-  existing convention (never inside the same `DB::transaction()`).
-- **Re-filing, not auto-reconciliation (v1 scope):** an amendment recomputes
-  the figures but does **not** try to automatically reconcile a payment
-  already recorded against the old `net_vat_payable`. Simplest v1: amending
-  a `filed` return resets its status back to `pending` and clears
-  `filing_reference`/`filed_date`, requiring the user to re-file the
-  corrected figure with NRS and re-enter a new reference — mirrors what
-  actually happens with NRS (an amended return is its own filing). Amending
-  a `paid` return should probably just be blocked in v1 (money has already
-  moved) with a message pointing at manual adjustment, rather than trying to
-  model a refund/additional-payment flow — revisit only if this turns out to
-  be a real user need.
-- **New method, not reuse:** add `VatService::amendReturn(VatReturn $vatReturn, string $reason): VatReturn`
-  rather than loosening `createOrUpdateReturn()` — keeps the ordinary
-  recompute path (used by "Compute New Return") permanently safe for
-  `pending` returns only, with amendment as a separate, explicit, audited
-  code path.
-
-**Needed:**
-- Confirm the re-filing-required behavior above is actually what a Nigerian
-  VAT filer expects (worth a quick check against FIRS/NRS guidance rather
-  than assuming) before building it.
-- `VatService::amendReturn()` + `TaxController::vatAmend()` + route.
-- UI: "Amend Return" action + reason prompt on `filed` rows (and the
-  paid-is-blocked messaging) in `tax/vat/index.blade.php`.
-- Test coverage per CLAUDE.md conventions: amending a `filed` return updates
-  figures, resets status to `pending`, clears the filing reference, and
-  writes an audit log entry with reason + before/after amounts; amending a
-  `paid` return is rejected.
+- **Confirmed against real guidance first** (the "Needed" list below asked
+  for this rather than assuming): per Taxngr's "How to Amend a Tax Return
+  Already Filed With the NRS", a self-amendment is filed as a new corrected
+  return with its own reference and explanation, not an in-place edit —
+  confirming the reset-to-pending design was the right shape.
+- `VatService::amendReturn(VatReturn, string $reason)` — recomputes the
+  period's figures, resets `status` to `pending`/`nil_return`, clears
+  `filing_reference`/`filed_date`/`filed_by`, appends the reason to the
+  existing `notes` column (no new columns needed), and writes a
+  `vat_return.amended` audit log entry with before/after figures + reason.
+  A separate method from `createOrUpdateReturn()`, which stays permanently
+  safe for the ordinary Recalculate/Compute path.
+- `TaxController::vatAmend()` + `POST /tax/vat/{vatReturn}/amend` (route
+  name `tax.vat.amend`), mirroring `vatFiled()`/`vatPaid()`'s plain-validation
+  shape. Only `filed` returns can be amended; `paid` is blocked in v1 with a
+  message pointing at manual adjustment (money's already moved — modeling a
+  refund/additional-payment flow is real extra scope, revisit only if a
+  tenant actually needs it).
+- UI: an "Amend Return" toggle + reason field on `filed` rows in
+  `tax/vat/index.blade.php`; a muted "Contact support to amend a paid
+  return" note on `paid` rows instead of a control.
+- Tests added to `tests/Feature/VatReturnCalculationTest.php`: amending a
+  filed return recomputes/resets/audits correctly; amending paid/pending
+  returns is rejected; a reason is required; an amended return re-files
+  normally afterward; the view renders the new controls correctly for both
+  `filed` and `paid` rows.
 
 ---
 
-## Chart of Accounts management 🔍
+## ✅ Fixed (2026-09-13): Chart of Accounts management
 
-**What:** Tenants currently have no way to view, create, edit, or deactivate
-their own GL accounts. The `Account` model (Chart of Accounts) is entirely
-system-managed — the full set is provisioned once, automatically, via
-`BookkeepingService::provisionDefaultAccounts()` at tenant registration, and
-nothing after that point ever creates a new `Account` row for a tenant.
+Tenants previously had no way to view, create, edit, or deactivate their own
+GL accounts — the chart was entirely system-provisioned once at
+registration. Fixed:
 
-**Current state (confirmed 2026-09-10):**
-- No `AccountController`, no route, no view exists for account CRUD — checked
-  every `Account::create()` call site in the app; the only one outside a test
-  is the registration-time provisioning call.
-- The only tenant-facing account screen is the read-only account-code filter
-  dropdown on **Reports → Ledger**.
-- [resources/views/help/topics/bookkeeping.blade.php](resources/views/help/topics/bookkeeping.blade.php#L27)
-  tells users to go to *"Bookkeeping → Chart of Accounts"* — that page/menu
-  doesn't exist anywhere in the app. Stale docs describing a feature that was
-  either never built or removed; needs fixing regardless of when this item
-  gets picked up.
-- This already bit real functionality once: `InventoryImportController` and
-  `ProductionOrderController` (Manufacturing) both depend on GL codes 1201/1202
-  existing, and those two accounts were simply missing from the default chart
-  for every tenant — fixed 2026-09-10 by adding them to
-  `Account::DEFAULT_ACCOUNTS` plus a backfill migration
-  (`2026_09_10_000007_add_raw_material_and_finished_goods_accounts.php`). That
-  fix only works because it's a code-level default; any *tenant-specific*
-  custom account (e.g. a second bank account's GL line, a custom expense
-  category) still has no way to ever exist, short of a manual DB insert.
-
-**Needed:**
-- `AccountController` (index/create/edit/deactivate) — likely under
-  `Settings → Chart of Accounts` or a new `Bookkeeping` nav section, matching
-  the existing help-doc's implied location.
-- Guard rails: `is_system` accounts (the default 29) should not be deletable
-  and probably not renamable/re-typed, only activatable/deactivatable —
-  custom tenant-added accounts get full CRUD.
-- Validate new account codes against the existing numbering convention
-  (1xxx asset / 2xxx liability / 3xxx equity / 4xxx revenue / 5xxx expense)
-  so custom accounts don't break report groupings that key off the code range.
-- Plan-gate decision: is this Free-tier or a paid-plan feature? (Everything
-  else account-adjacent — Advanced Reports, Inventory — is plan-gated.)
-- Test coverage per CLAUDE.md conventions once routes exist.
+- New **Settings → Chart of Accounts** page (`AccountController` + view),
+  gated `role:admin` only, same as Bank Accounts sits — no plan gate. This
+  was a deliberate call: every other plan-gated feature (payroll, FIRS,
+  inventory, manufacturing, maintenance, storefront, api_access,
+  advanced_reports) is operational or reporting-depth; core bookkeeping
+  (bank accounts, transactions, the ledger itself) is ungated even on Free
+  today, and there was no reason found to make this the first-ever
+  bookkeeping paywall.
+- **Guard rails for `is_system` accounts** (the 29 defaults): can be
+  renamed, re-described, re-sub-typed, and activated/deactivated, but their
+  `code`/`type` are stripped server-side on update regardless of what's
+  submitted, and delete is blocked entirely by `AccountPolicy`. This closes
+  a real hazard found during investigation: many controllers/services do a
+  direct `Account::where('code', 'XXXX')` lookup when posting GL entries
+  (some, like `TransactionController`, `firstOrFail()` on it), so renaming
+  or retyping a load-bearing code would silently break GL posting or the
+  type-based report aggregation elsewhere — `is_system` existed as a column
+  with a comment ("cannot be deleted") but had zero enforcement anywhere
+  until now.
+- **Custom accounts** get full CRUD, with the new account's `code` validated
+  against its `type`'s leading-digit convention (1xxx asset / 2xxx liability
+  / 3xxx equity / 4xxx revenue / 5xxx expense) and the existing
+  `sub_type` DB enum (invalid values now caught by validation, not a raw
+  DB error). Delete is blocked (with a message pointing at deactivation
+  instead) if the account has journal entries — mirrors
+  `BankAccountController`'s exact existing pattern for the same situation.
+- Fixed the stale help doc
+  ([resources/views/help/topics/bookkeeping.blade.php](resources/views/help/topics/bookkeeping.blade.php))
+  that pointed at a fictional "Bookkeeping → Chart of Accounts" menu.
+- Tests added: `tests/Feature/ChartOfAccountsTest.php` (12 cases — viewing,
+  role-gating, valid/invalid custom-account creation, editing a custom vs.
+  system account, delete guards for system accounts and accounts with
+  journal entries, tenant isolation).

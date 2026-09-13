@@ -226,4 +226,127 @@ class VatReturnCalculationTest extends TestCase
         // Same tenant/period, only invoice falls in the current month — figures must agree.
         $this->assertEquals($vatData['output_vat'], $dashboard['vat']['output_total']);
     }
+
+    // ── Amend a filed VAT return ────────────────────────────────────────────
+
+    private function makeFiledReturn(): VatReturn
+    {
+        $this->makeInvoice('paid', 100_000, 7_500, 107_500);
+
+        $return = $this->vatService->createOrUpdateReturn($this->tenant, now()->year, now()->month);
+        $return->update([
+            'status'           => 'filed',
+            'filing_reference' => 'NRS-ORIGINAL',
+            'filed_date'       => now(),
+            'filed_by'         => $this->admin->id,
+        ]);
+
+        return $return->fresh();
+    }
+
+    public function test_amending_a_filed_return_recomputes_resets_and_audits(): void
+    {
+        $return = $this->makeFiledReturn();
+
+        // A new qualifying invoice appears after filing — this is exactly
+        // what the amendment should now pick up.
+        $this->makeInvoice('paid', 200_000, 15_000, 215_000);
+
+        $this->actingAs($this->admin)
+            ->post(route('tax.vat.amend', $return), ['reason' => 'Late invoice discovered'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $return->refresh();
+        $this->assertEquals('pending', $return->status);
+        $this->assertNull($return->filing_reference);
+        $this->assertNull($return->filed_date);
+        $this->assertNull($return->filed_by);
+        $this->assertEquals(22_500.0, (float) $return->output_vat); // 7,500 + 15,000
+        $this->assertStringContainsString('Late invoice discovered', $return->notes);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'event'        => 'vat_return.amended',
+            'auditable_id' => $return->id,
+        ]);
+    }
+
+    public function test_amending_a_paid_return_is_rejected(): void
+    {
+        $return = $this->makeFiledReturn();
+        $return->update(['status' => 'paid', 'paid_date' => now(), 'amount_paid' => $return->net_vat_payable]);
+
+        $this->actingAs($this->admin)
+            ->post(route('tax.vat.amend', $return), ['reason' => 'Trying anyway'])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $return->refresh();
+        $this->assertEquals('paid', $return->status);
+        $this->assertEquals('NRS-ORIGINAL', $return->filing_reference);
+    }
+
+    public function test_amending_a_pending_return_is_rejected(): void
+    {
+        $this->makeInvoice('partial', 100_000, 7_500, 20_000);
+        $return = $this->vatService->createOrUpdateReturn($this->tenant, now()->year, now()->month);
+
+        $this->actingAs($this->admin)
+            ->post(route('tax.vat.amend', $return), ['reason' => 'Nothing filed yet'])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
+        $this->assertEquals('pending', $return->fresh()->status);
+    }
+
+    public function test_amend_requires_a_reason(): void
+    {
+        $return = $this->makeFiledReturn();
+
+        $this->actingAs($this->admin)
+            ->post(route('tax.vat.amend', $return), [])
+            ->assertSessionHasErrors('reason');
+
+        $this->assertEquals('filed', $return->fresh()->status);
+    }
+
+    public function test_vat_index_renders_amend_control_for_filed_and_note_for_paid(): void
+    {
+        $filed = $this->makeFiledReturn();
+
+        $this->actingAs($this->admin)
+            ->get(route('tax.vat.index'))
+            ->assertOk()
+            ->assertSee('Amend Return');
+
+        $filed->update(['status' => 'paid', 'paid_date' => now(), 'amount_paid' => $filed->net_vat_payable]);
+
+        $this->actingAs($this->admin)
+            ->get(route('tax.vat.index'))
+            ->assertOk()
+            ->assertSee('Contact support to amend a paid return');
+    }
+
+    public function test_an_amended_return_can_be_refiled_normally(): void
+    {
+        $return = $this->makeFiledReturn();
+
+        $this->actingAs($this->admin)
+            ->post(route('tax.vat.amend', $return), ['reason' => 'Correction'])
+            ->assertRedirect();
+
+        $return->refresh();
+
+        $this->actingAs($this->admin)
+            ->post(route('tax.vat.filed', $return), [
+                'filed_date'       => now()->toDateString(),
+                'filing_reference' => 'NRS-AMENDED-001',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $return->refresh();
+        $this->assertEquals('filed', $return->status);
+        $this->assertEquals('NRS-AMENDED-001', $return->filing_reference);
+    }
 }
