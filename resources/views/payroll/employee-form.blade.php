@@ -59,7 +59,7 @@
                     <label class="block text-sm font-medium text-gray-700">State of Residence <span class="text-xs text-gray-400">(PAYE remittance)</span></label>
                     <select name="state_of_residence" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
                         <option value="">— Select State —</option>
-                        @foreach(['Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno','Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo','Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa','Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba','Yobe','Zamfara'] as $state)
+                        @foreach(config('nigeria_states') as $state)
                         <option value="{{ $state }}"
                             {{ old('state_of_residence', $employee->state_of_residence ?? '') === $state ? 'selected' : '' }}>
                             {{ $state }}

@@ -13,6 +13,15 @@
     @if($tenant->storefront?->description)
     <p class="mt-3 text-gray-500 max-w-2xl leading-relaxed">{{ $tenant->storefront->description }}</p>
     @endif
+
+    @php $deliveryNotice = $tenant->storefront?->deliveryNoticeLines() ?? []; @endphp
+    @if(!empty($deliveryNotice))
+    <div class="mt-4 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 max-w-2xl">
+        @foreach($deliveryNotice as $line)
+        <p class="text-sm text-amber-800 {{ !$loop->last ? 'mb-1' : '' }}">{{ $line }}</p>
+        @endforeach
+    </div>
+    @endif
 </div>
 
 <form method="GET" action="{{ route('storefront.index', $tenant->slug) }}" class="mb-7">

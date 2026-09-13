@@ -6,6 +6,7 @@ use App\Models\Storefront;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class StorefrontSettingsController extends Controller
@@ -23,19 +24,34 @@ class StorefrontSettingsController extends Controller
         $tenant = $request->user()->tenant;
 
         $validated = $request->validate([
-            'is_enabled'      => 'boolean',
-            'vat_applicable'  => 'boolean',
-            'whatsapp_number' => 'nullable|string|max:30',
-            'description'     => 'nullable|string|max:2000',
+            'is_enabled'       => 'boolean',
+            'vat_applicable'   => 'boolean',
+            'whatsapp_number'  => 'nullable|string|max:30',
+            'description'      => 'nullable|string|max:2000',
+            'pickup_enabled'   => 'boolean',
+            'delivery_enabled' => 'boolean',
+            'pickup_address'   => 'required_if:pickup_enabled,1|nullable|string|max:1000',
+            'delivery_states'   => 'nullable|array',
+            'delivery_states.*' => [Rule::in(config('nigeria_states'))],
         ]);
+
+        if (!$request->boolean('pickup_enabled') && !$request->boolean('delivery_enabled')) {
+            return back()->withInput()->withErrors([
+                'delivery_enabled' => 'Enable at least one delivery option (pickup or delivery).',
+            ]);
+        }
 
         Storefront::withoutGlobalScope('tenant')->updateOrCreate(
             ['tenant_id' => $tenant->id],
             [
-                'is_enabled'      => $request->boolean('is_enabled'),
-                'vat_applicable'  => $request->boolean('vat_applicable'),
-                'whatsapp_number' => $validated['whatsapp_number'] ?? null,
-                'description'     => $validated['description'] ?? null,
+                'is_enabled'       => $request->boolean('is_enabled'),
+                'vat_applicable'   => $request->boolean('vat_applicable'),
+                'whatsapp_number'  => $validated['whatsapp_number'] ?? null,
+                'description'      => $validated['description'] ?? null,
+                'pickup_enabled'   => $request->boolean('pickup_enabled'),
+                'delivery_enabled' => $request->boolean('delivery_enabled'),
+                'pickup_address'   => $request->boolean('pickup_enabled') ? ($validated['pickup_address'] ?? null) : null,
+                'delivery_states'  => $validated['delivery_states'] ?? [],
             ]
         );
 

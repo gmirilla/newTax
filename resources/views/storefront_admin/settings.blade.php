@@ -21,14 +21,15 @@
     </div>
     @endif
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
-        <div>
-            <h2 class="text-base font-semibold">Storefront Settings</h2>
-            <p class="text-sm text-gray-500 mt-0.5">Turn your storefront on or off, and set how customers can order.</p>
-        </div>
+    <form method="POST" action="{{ route('storefront.settings.update') }}"
+          x-data="{ pickup: {{ old('pickup_enabled', $storefront->pickup_enabled ?? true) ? 'true' : 'false' }} }">
+        @csrf
 
-        <form method="POST" action="{{ route('storefront.settings.update') }}" class="space-y-5">
-            @csrf
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+            <div>
+                <h2 class="text-base font-semibold">Storefront Settings</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Turn your storefront on or off, and set how customers can order.</p>
+            </div>
 
             <label class="flex items-start gap-3 cursor-pointer">
                 <input type="hidden" name="is_enabled" value="0">
@@ -65,14 +66,62 @@
                           class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">{{ old('description', $storefront->description) }}</textarea>
                 @error('description')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
             </div>
+        </div>
 
-            <div class="flex justify-end pt-2">
-                <button type="submit" class="px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
-                    Save Settings
-                </button>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5 mt-6">
+            <div>
+                <h2 class="text-base font-semibold">Delivery Options</h2>
+                <p class="text-sm text-gray-500 mt-0.5">Choose how customers can receive their order. At least one option must be enabled.</p>
             </div>
-        </form>
-    </div>
+
+            @error('delivery_enabled')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="hidden" name="pickup_enabled" value="0">
+                <input type="checkbox" name="pickup_enabled" value="1" x-model="pickup"
+                       {{ old('pickup_enabled', $storefront->pickup_enabled ?? true) ? 'checked' : '' }}
+                       class="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                <span class="text-sm font-medium text-gray-700">Offer pickup</span>
+            </label>
+
+            <div x-show="pickup" x-cloak>
+                <label class="block text-sm font-medium text-gray-700">Pickup Address</label>
+                <textarea name="pickup_address" rows="2" placeholder="Where customers collect their order..."
+                          class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">{{ old('pickup_address', $storefront->pickup_address) }}</textarea>
+                @error('pickup_address')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+            </div>
+
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="hidden" name="delivery_enabled" value="0">
+                <input type="checkbox" name="delivery_enabled" value="1"
+                       {{ old('delivery_enabled', $storefront->delivery_enabled ?? true) ? 'checked' : '' }}
+                       class="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                <span class="text-sm font-medium text-gray-700">Offer delivery</span>
+            </label>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Service Area</label>
+                <p class="text-xs text-gray-400 mb-2">Leave all unchecked if you deliver anywhere in Nigeria.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-gray-100 p-3">
+                    @php $selectedStates = old('delivery_states', $storefront->delivery_states ?? []); @endphp
+                    @foreach(config('nigeria_states') as $state)
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600">
+                        <input type="checkbox" name="delivery_states[]" value="{{ $state }}"
+                               {{ in_array($state, $selectedStates ?? []) ? 'checked' : '' }}
+                               class="h-3.5 w-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+                        {{ $state }}
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+            <button type="submit" class="px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                Save Settings
+            </button>
+        </div>
+    </form>
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div class="mb-4">

@@ -196,6 +196,7 @@ class StorefrontModuleTest extends TestCase
             'customer_name'    => 'Jane Customer',
             'customer_email'   => 'jane@example.com',
             'customer_phone'   => '08011112222',
+            'delivery_method'  => 'delivery',
             'delivery_address' => '10 Test Street, Lagos',
         ]);
 
@@ -238,9 +239,11 @@ class StorefrontModuleTest extends TestCase
         ]);
 
         $response = $this->post(route('storefront.checkout.whatsapp', $this->tenant->slug), [
-            'customer_name'  => 'Wa Customer',
-            'customer_email' => 'wa@example.com',
-            'customer_phone' => '08033334444',
+            'customer_name'    => 'Wa Customer',
+            'customer_email'   => 'wa@example.com',
+            'customer_phone'   => '08033334444',
+            'delivery_method'  => 'delivery',
+            'delivery_address' => '5 Wa Street, Lagos',
         ]);
 
         $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->first();
@@ -488,9 +491,11 @@ class StorefrontModuleTest extends TestCase
             ->assertOk()->assertSee('Bag of Rice')->assertSee('Delivery');
 
         $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
-            'customer_name'  => 'Mixed Cart Customer',
-            'customer_email' => 'mixed@example.com',
-            'customer_phone' => '08099998888',
+            'customer_name'    => 'Mixed Cart Customer',
+            'customer_email'   => 'mixed@example.com',
+            'customer_phone'   => '08099998888',
+            'delivery_method'  => 'delivery',
+            'delivery_address' => '1 Mixed Street, Lagos',
         ])->assertRedirect();
 
         $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
@@ -616,9 +621,11 @@ class StorefrontModuleTest extends TestCase
 
         Mail::fake();
         $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
-            'customer_name'  => 'No VAT Customer',
-            'customer_email' => 'novat@example.com',
-            'customer_phone' => '08011110000',
+            'customer_name'    => 'No VAT Customer',
+            'customer_email'   => 'novat@example.com',
+            'customer_phone'   => '08011110000',
+            'delivery_method'  => 'delivery',
+            'delivery_address' => '2 No VAT Street, Lagos',
         ]);
 
         $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
@@ -648,9 +655,11 @@ class StorefrontModuleTest extends TestCase
         ]);
 
         $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
-            'customer_name'  => 'Mixed VAT Customer',
-            'customer_email' => 'mixedvat@example.com',
-            'customer_phone' => '08011110001',
+            'customer_name'    => 'Mixed VAT Customer',
+            'customer_email'   => 'mixedvat@example.com',
+            'customer_phone'   => '08011110001',
+            'delivery_method'  => 'delivery',
+            'delivery_address' => '3 Mixed VAT Street, Lagos',
         ]);
 
         $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
@@ -668,8 +677,10 @@ class StorefrontModuleTest extends TestCase
     {
         $this->actingAs($this->admin)
             ->post(route('storefront.settings.update'), [
-                'is_enabled'     => '1',
-                'vat_applicable' => '0',
+                'is_enabled'       => '1',
+                'vat_applicable'   => '0',
+                'pickup_enabled'   => '0',
+                'delivery_enabled' => '1',
             ])
             ->assertRedirect();
 
@@ -710,9 +721,11 @@ class StorefrontModuleTest extends TestCase
             'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
         ]);
         $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
-            'customer_name'  => 'Exempt Customer',
-            'customer_email' => 'exempt@example.com',
-            'customer_phone' => '08011110002',
+            'customer_name'    => 'Exempt Customer',
+            'customer_email'   => 'exempt@example.com',
+            'customer_phone'   => '08011110002',
+            'delivery_method'  => 'delivery',
+            'delivery_address' => '4 Exempt Street, Lagos',
         ]);
 
         $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
@@ -1011,6 +1024,120 @@ class StorefrontModuleTest extends TestCase
         // Searching "Rice" filtered to its own category finds it.
         $this->get(route('storefront.index', ['tenant' => $this->tenant->slug, 'category' => $category->id, 'q' => 'Rice']))
             ->assertOk()->assertSee('Bag of Rice');
+    }
+
+    // ── Scenario 14: Delivery options & service-area notice ───────────────────
+
+    public function test_admin_can_update_delivery_options_via_settings_form(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('storefront.settings.update'), [
+                'is_enabled'       => '1',
+                'pickup_enabled'   => '1',
+                'delivery_enabled' => '1',
+                'pickup_address'   => '12 Allen Avenue, Ikeja',
+                'delivery_states'  => ['Lagos', 'Ogun'],
+            ])
+            ->assertRedirect();
+
+        $storefront = $this->tenant->storefront->fresh();
+        $this->assertTrue($storefront->pickup_enabled);
+        $this->assertTrue($storefront->delivery_enabled);
+        $this->assertEquals('12 Allen Avenue, Ikeja', $storefront->pickup_address);
+        $this->assertEquals(['Lagos', 'Ogun'], $storefront->delivery_states);
+    }
+
+    public function test_settings_update_is_rejected_when_both_delivery_options_are_disabled(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('storefront.settings.update'), [
+                'is_enabled'       => '1',
+                'pickup_enabled'   => '0',
+                'delivery_enabled' => '0',
+            ])
+            ->assertSessionHasErrors('delivery_enabled');
+
+        // Untouched — still the defaults from setUp's Storefront::create().
+        $this->assertTrue((bool) $this->tenant->storefront->fresh()->delivery_enabled);
+    }
+
+    public function test_checkout_requires_delivery_method_when_both_options_are_enabled(): void
+    {
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
+        ]);
+
+        $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
+            'customer_name'  => 'No Method Customer',
+            'customer_email' => 'nomethod@example.com',
+            'customer_phone' => '08011119999',
+        ])->assertSessionHasErrors('delivery_method');
+
+        $this->assertDatabaseCount('storefront_orders', 0);
+    }
+
+    public function test_checkout_auto_assigns_delivery_method_when_only_one_option_is_enabled(): void
+    {
+        $this->tenant->storefront->update(['pickup_enabled' => false, 'delivery_enabled' => true]);
+
+        Mail::fake();
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
+        ]);
+
+        $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
+            'customer_name'    => 'Delivery Only Customer',
+            'customer_email'   => 'deliveryonly@example.com',
+            'customer_phone'   => '08011118888',
+            'delivery_address' => '7 Delivery Only Street, Lagos',
+        ])->assertRedirect();
+
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+        $this->assertEquals(StorefrontOrder::DELIVERY_METHOD_DELIVERY, $order->delivery_method);
+    }
+
+    public function test_checkout_succeeds_without_an_address_when_method_is_pickup_only(): void
+    {
+        $this->tenant->storefront->update(['pickup_enabled' => true, 'delivery_enabled' => false]);
+
+        Mail::fake();
+        $this->post(route('storefront.cart.add', $this->tenant->slug), [
+            'type' => 'product', 'id' => $this->product->id, 'quantity' => 1,
+        ]);
+
+        $this->post(route('storefront.checkout.submit', $this->tenant->slug), [
+            'customer_name'  => 'Pickup Only Customer',
+            'customer_email' => 'pickuponly@example.com',
+            'customer_phone' => '08011117777',
+        ])->assertRedirect();
+
+        $order = StorefrontOrder::withoutGlobalScope('tenant')->where('tenant_id', $this->tenant->id)->firstOrFail();
+        $this->assertEquals(StorefrontOrder::DELIVERY_METHOD_PICKUP, $order->delivery_method);
+        $this->assertNull($order->delivery_address);
+    }
+
+    public function test_public_shop_shows_delivery_notice_when_configured(): void
+    {
+        $this->tenant->storefront->update([
+            'delivery_states' => ['Lagos', 'Ogun', 'Oyo'],
+            'pickup_address'  => '12 Allen Avenue, Ikeja',
+        ]);
+
+        $this->get(route('storefront.index', $this->tenant->slug))
+            ->assertOk()
+            ->assertSee('Delivery to: Lagos, Ogun, Oyo')
+            ->assertSee('Pickup available at: 12 Allen Avenue, Ikeja');
+    }
+
+    public function test_admin_order_show_displays_the_chosen_delivery_method(): void
+    {
+        $order = $this->makePendingOrder();
+        $order->update(['delivery_method' => StorefrontOrder::DELIVERY_METHOD_PICKUP]);
+
+        $this->actingAs($this->admin)
+            ->get(route('storefront.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Pickup');
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
