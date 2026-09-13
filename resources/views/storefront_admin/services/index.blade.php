@@ -5,15 +5,15 @@
 @section('content')
 <div x-data="{ showForm: false }" class="max-w-5xl mx-auto space-y-4">
 
-    <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between gap-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between gap-4">
         <p class="text-sm text-gray-500">Sell services — consultations, delivery, installation — alongside your physical products.</p>
         <button @click="showForm = !showForm"
-                class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 whitespace-nowrap">
+                class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap">
             + New Service
         </button>
     </div>
 
-    <div x-show="showForm" x-cloak class="bg-white rounded-lg shadow p-5">
+    <div x-show="showForm" x-cloak class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h2 class="text-sm font-semibold text-gray-900 mb-3">Add Service</h2>
         <form method="POST" action="{{ route('storefront.services.store') }}" class="space-y-3">
             @csrf
@@ -21,19 +21,19 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Name <span class="text-red-500">*</span></label>
                     <input type="text" name="name" value="{{ old('name') }}" required maxlength="150"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500"
+                           class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-green-500 focus:border-green-500"
                            placeholder="e.g. Home Cleaning">
                     @error('name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Price (₦) <span class="text-red-500">*</span></label>
                     <input type="number" name="price" value="{{ old('price') }}" required min="0" step="0.01"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">
+                           class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">
                     @error('price')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Category</label>
-                    <select name="storefront_category_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">
+                    <select name="storefront_category_id" class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">
                         <option value="">Uncategorized</option>
                         @foreach($categories ?? [] as $category)
                             <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -44,7 +44,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700">Description</label>
                 <textarea name="description" rows="2" maxlength="3000"
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">{{ old('description') }}</textarea>
+                          class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm text-sm focus:ring-green-500 focus:border-green-500">{{ old('description') }}</textarea>
             </div>
             <label class="flex items-center gap-2 text-sm text-gray-700">
                 <input type="hidden" name="vat_applicable" value="0">
@@ -54,18 +54,18 @@
             </label>
             <div class="flex gap-2">
                 <button type="submit"
-                        class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                        class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
                     Create Service
                 </button>
                 <button type="button" @click="showForm = false"
-                        class="px-4 py-2 border border-gray-300 text-sm rounded-md text-gray-700 hover:bg-gray-50">
+                        class="px-4 py-2 border border-gray-200 text-sm rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                     Cancel
                 </button>
             </div>
         </form>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -79,7 +79,7 @@
             </thead>
             <tbody class="divide-y divide-gray-100">
                 @forelse($services as $service)
-                <tr>
+                <tr class="hover:bg-gray-50/60 transition-colors">
                     <td class="px-4 py-3 text-sm text-gray-800">{{ $service->name }}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">₦{{ number_format((float) $service->price, 2) }}</td>
                     <td class="px-4 py-3 text-sm text-gray-500">{{ $service->category?->name ?? '—' }}</td>
@@ -126,17 +126,17 @@
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Name</label>
                                     <input type="text" name="name" value="{{ $service->name }}" required maxlength="150"
-                                           class="w-full rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">
+                                           class="w-full rounded-lg border-gray-200 text-sm focus:ring-green-500 focus:border-green-500">
                                 </div>
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <label class="block text-xs font-medium text-gray-600 mb-1">Price (₦)</label>
                                         <input type="number" name="price" value="{{ $service->price }}" required min="0" step="0.01"
-                                               class="w-full rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">
+                                               class="w-full rounded-lg border-gray-200 text-sm focus:ring-green-500 focus:border-green-500">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-600 mb-1">Category</label>
-                                        <select name="storefront_category_id" class="w-full rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">
+                                        <select name="storefront_category_id" class="w-full rounded-lg border-gray-200 text-sm focus:ring-green-500 focus:border-green-500">
                                             <option value="">Uncategorized</option>
                                             @foreach($categories ?? [] as $category)
                                                 <option value="{{ $category->id }}" @selected($service->storefront_category_id === $category->id)>{{ $category->name }}</option>
@@ -146,7 +146,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                                    <textarea name="description" rows="2" class="w-full rounded-md border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">{{ $service->description }}</textarea>
+                                    <textarea name="description" rows="2" class="w-full rounded-lg border-gray-200 text-sm focus:ring-green-500 focus:border-green-500">{{ $service->description }}</textarea>
                                 </div>
                                 <label class="flex items-center gap-2 text-xs text-gray-600">
                                     <input type="hidden" name="vat_applicable" value="0">
@@ -161,7 +161,7 @@
                                 <div class="flex flex-wrap gap-2 mb-2">
                                     @foreach($service->images as $image)
                                     <div class="relative">
-                                        <img src="{{ Storage::url($image->image_path) }}" class="h-14 w-14 object-cover rounded border border-gray-200">
+                                        <img src="{{ Storage::url($image->image_path) }}" class="h-14 w-14 object-cover rounded-lg border border-gray-200">
                                         <form method="POST" action="{{ route('storefront.services.images.delete', $image) }}" class="absolute -top-1.5 -right-1.5">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="h-4 w-4 bg-red-500 text-white rounded-full text-[10px] leading-4">×</button>

@@ -16,32 +16,32 @@
     </div>
 
     @if($order->canBeActioned())
-    <div class="bg-white rounded-lg shadow p-5 flex items-center gap-3">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-3">
         <form method="POST" action="{{ route('storefront.orders.accept', $order) }}">
             @csrf
-            <button type="submit" class="px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+            <button type="submit" class="px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
                 Accept Order
             </button>
         </form>
         <button type="button" onclick="document.getElementById('reject-form').classList.toggle('hidden')"
-                class="px-5 py-2 bg-white border border-red-300 text-red-600 text-sm font-medium rounded-md hover:bg-red-50">
+                class="px-5 py-2 bg-white border border-red-300 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors">
             Decline
         </button>
     </div>
-    <form id="reject-form" method="POST" action="{{ route('storefront.orders.reject', $order) }}" class="hidden bg-white rounded-lg shadow p-5 space-y-3">
+    <form id="reject-form" method="POST" action="{{ route('storefront.orders.reject', $order) }}" class="hidden bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
         @csrf
         <label class="block text-sm font-medium text-gray-700">Reason (optional, shown to the customer)</label>
-        <textarea name="rejection_reason" rows="2" class="w-full rounded-md border-gray-300 text-sm focus:ring-red-500 focus:border-red-500"></textarea>
-        <button type="submit" class="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">Confirm Decline</button>
+        <textarea name="rejection_reason" rows="2" class="w-full rounded-lg border-gray-200 text-sm focus:ring-red-500 focus:border-red-500"></textarea>
+        <button type="submit" class="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">Confirm Decline</button>
     </form>
     @elseif($order->salesOrder)
-    <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
+    <div class="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm text-green-800">
         Accepted — converted to draft sales order
         <a href="{{ route('inventory.sales.show', $order->salesOrder) }}" class="font-semibold underline">{{ $order->salesOrder->order_number }}</a>.
     </div>
     @endif
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h2 class="text-sm font-semibold text-gray-700 mb-4">Items</h2>
         <div class="divide-y divide-gray-100">
             @foreach($order->items as $item)
@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6 text-sm space-y-1.5">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-sm space-y-1.5">
         <h2 class="text-sm font-semibold text-gray-700 mb-2">Customer</h2>
         <p class="text-gray-600"><strong class="text-gray-800">{{ $order->customer_name }}</strong></p>
         <p class="text-gray-600">{{ $order->customer_phone }} · {{ $order->customer_email }}</p>

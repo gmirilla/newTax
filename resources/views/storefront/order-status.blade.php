@@ -10,12 +10,12 @@
 @endphp
 
 <div class="max-w-lg mx-auto">
-    <div class="text-center mb-6">
-        <h1 class="text-xl font-bold text-gray-900">Order {{ $order->order_number }}</h1>
-        <span class="inline-block mt-2 text-xs font-semibold px-3 py-1 rounded-full border {{ $statusColor }}">{{ $statusLabel }}</span>
+    <div class="text-center mb-7">
+        <h1 class="font-display text-2xl font-semibold text-gray-900 tracking-tight">Order {{ $order->order_number }}</h1>
+        <span class="inline-block mt-3 text-xs font-semibold px-3 py-1 rounded-full border {{ $statusColor }}">{{ $statusLabel }}</span>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         <div class="divide-y divide-gray-100">
             @foreach($order->items as $item)
             <div class="flex justify-between py-2.5 text-sm">
@@ -34,7 +34,7 @@
     </div>
 
     @if($order->status === 'rejected' && $order->rejection_reason)
-    <div class="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+    <div class="mt-4 bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700">
         <strong>Reason:</strong> {{ $order->rejection_reason }}
     </div>
     @endif
