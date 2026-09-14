@@ -332,9 +332,10 @@ class TransactionController extends Controller
 
     /**
      * Approve an expense and post the recognition journal entry:
-     *   DR  Expense account        (full gross amount)
-     *   CR  WHT Payable  [2200]    (wht_amount, if applicable)
-     *   CR  Accounts Payable [2001] (net_payable)
+     *   DR  Expense account          (amount, net of VAT)
+     *   DR  Input VAT Control [2101] (vat_amount, if applicable)
+     *   CR  WHT Payable  [2200]      (wht_amount, if applicable)
+     *   CR  Accounts Payable [2001]  (net_payable)
      */
     public function approveExpense(Expense $expense): RedirectResponse
     {
@@ -346,14 +347,33 @@ class TransactionController extends Controller
 
         DB::transaction(function () use ($expense, $tenant) {
             $entries = [];
+            $vatAmount = (float) $expense->vat_amount;
 
-            // DR expense GL account
+            // DR expense GL account (net of input VAT, so the expense debit
+            // and the recoverable VAT debit split what was previously one line)
             $entries[] = [
                 'account_id'  => $expense->account_id,
                 'entry_type'  => 'debit',
-                'amount'      => (float) $expense->amount,
+                'amount'      => (float) $expense->amount - $vatAmount,
                 'description' => "Expense: {$expense->description}",
             ];
+
+            // DR Input VAT Control (2101) if this expense carries claimable VAT
+            if ($vatAmount > 0) {
+                $inputVatAccount = Account::where('tenant_id', $tenant->id)
+                    ->where('code', '2101')->first();
+                if ($inputVatAccount) {
+                    $entries[] = [
+                        'account_id'  => $inputVatAccount->id,
+                        'entry_type'  => 'debit',
+                        'amount'      => $vatAmount,
+                        'description' => "Input VAT: {$expense->reference}",
+                    ];
+                } else {
+                    // No Input VAT account provisioned — fold VAT back into the expense debit to keep balance
+                    $entries[0]['amount'] += $vatAmount;
+                }
+            }
 
             // CR WHT Payable (2200) if WHT applies
             if ($expense->wht_amount > 0) {

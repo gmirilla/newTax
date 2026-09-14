@@ -112,12 +112,47 @@
                                     <button class="text-xs bg-blue-600 text-white px-2 py-1 rounded">Mark Filed</button>
                                 </form>
                                 @elseif($return->status === 'filed')
-                                <form method="POST" action="{{ route('tax.vat.paid', $return) }}" class="flex gap-1">
+                                <form method="POST" action="{{ route('tax.vat.paid', $return) }}" class="flex flex-col gap-1">
                                     @csrf
                                     <input type="hidden" name="paid_date" value="{{ now()->toDateString() }}">
                                     <input type="number" name="amount_paid" value="{{ $return->net_vat_payable }}" step="0.01"
-                                           class="border rounded text-xs px-2 py-1 w-28">
-                                    <button class="text-xs bg-green-600 text-white px-2 py-1 rounded">Mark Paid</button>
+                                           class="border rounded text-xs px-2 py-1 w-full">
+                                    @php
+                                        $vatPayBankAccounts = \App\Models\BankAccount::withoutGlobalScope('tenant')
+                                            ->where('tenant_id', auth()->user()->tenant_id)
+                                            ->where('is_active', true)
+                                            ->with('glAccount')
+                                            ->orderBy('is_default', 'desc')
+                                            ->orderBy('sort_order')
+                                            ->get();
+                                        $vatPayGlAccounts = \App\Models\Account::withoutGlobalScope('tenant')
+                                            ->where('tenant_id', auth()->user()->tenant_id)
+                                            ->where('type', 'asset')
+                                            ->where('sub_type', 'cash')
+                                            ->where('is_active', true)
+                                            ->orderBy('code')
+                                            ->get(['id', 'code', 'name']);
+                                    @endphp
+                                    <select name="payment_account" required class="border rounded text-xs px-2 py-1 w-full">
+                                        <option value="">— Pay from —</option>
+                                        @if($vatPayBankAccounts->isNotEmpty())
+                                        <optgroup label="Bank Accounts">
+                                            @foreach($vatPayBankAccounts as $ba)
+                                                <option value="{{ $ba->glAccount?->id }}" {{ $ba->is_default ? 'selected' : '' }}>
+                                                    {{ $ba->name }}{{ $ba->bank_name ? ' — '.$ba->bank_name : '' }}{{ $ba->is_default ? ' (default)' : '' }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                        @endif
+                                        @if($vatPayGlAccounts->isNotEmpty())
+                                        <optgroup label="Cash">
+                                            @foreach($vatPayGlAccounts as $acct)
+                                                <option value="{{ $acct->id }}">{{ $acct->code }} – {{ $acct->name }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                        @endif
+                                    </select>
+                                    <button class="text-xs bg-green-600 text-white px-2 py-1 rounded self-start">Mark Paid</button>
                                 </form>
                                 <button type="button" @click="amending = !amending"
                                         class="text-xs text-gray-500 hover:underline font-medium text-left">
