@@ -56,7 +56,7 @@
         : 0;
 
     // Section auto-open states — true when the current page belongs to that group
-    $navInSales     = request()->routeIs('quotes.*', 'invoices.*', 'transactions.*');
+    $navInSales     = request()->routeIs('quotes.*', 'invoices.*', 'transactions.*', 'vendors.*');
     $navInTax       = request()->routeIs('tax.*');
     $navInPayroll   = request()->routeIs('payroll.*');
     $navInInventory      = request()->routeIs('inventory.*') && ! request()->routeIs('inventory.reports.*');
@@ -444,6 +444,12 @@
             && $currentTenant->plan?->slug === 'free'
             && session('upsell_dismissed_at') !== today()->toDateString())
             @include('layouts.partials._upsell-banner')
+        @endif
+
+        {{-- ── Verify-email reminder (once per day, dismissable) ────────────────── --}}
+        @if(auth()->user() && !auth()->user()->hasVerifiedEmail()
+            && session('verify_banner_dismissed_at') !== today()->toDateString())
+            @include('layouts.partials._verify-email-banner')
         @endif
 
         {{-- ── Flash messages ──────────────────────────────────────────────────── --}}

@@ -101,7 +101,7 @@ Route::prefix('{tenant:slug}/shop')->name('storefront.')->middleware('storefront
 });
 
 // ─── Authenticated + Tenant-scoped routes ───────────────────────────────────
-Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
+Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
 
     // Dashboard (all roles — DashboardController redirects staff to staff.dashboard)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -129,6 +129,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
         session(['upsell_dismissed_at' => today()->toDateString()]);
         return response()->noContent();
     })->name('upsell.dismiss');
+
+    // ── Verify-email banner dismiss (all roles) ───────────────────────────────
+    Route::post('/verify-email-banner/dismiss', function () {
+        session(['verify_banner_dismissed_at' => today()->toDateString()]);
+        return response()->noContent();
+    })->name('verification.banner.dismiss');
 
     // ── Admin-only ────────────────────────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {
@@ -191,6 +197,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
         // Customers & Vendors quick-create
         Route::post('/customers/quick', [CustomerController::class, 'quickStore'])->name('customers.quick-store');
         Route::post('/vendors/quick',   [VendorController::class,  'quickStore'])->name('vendors.quick-store');
+
+        // Vendors
+        Route::get('/vendors',               [VendorController::class, 'index'])->name('vendors.index');
+        Route::get('/vendors/{vendor}/edit',  [VendorController::class, 'edit'])->name('vendors.edit');
+        Route::put('/vendors/{vendor}',       [VendorController::class, 'update'])->name('vendors.update');
+        Route::delete('/vendors/{vendor}',    [VendorController::class, 'destroy'])->name('vendors.destroy');
 
         // Quotes / Proforma Invoices
         Route::prefix('quotes')->name('quotes.')->group(function () {

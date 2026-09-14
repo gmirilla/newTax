@@ -162,12 +162,16 @@ is the permanent design and just add the plan gate + rate limiting to it),
 
 ---
 
-### Vendor Quick-Create in Invoice / Quote Forms 🏗
-**What:** When creating an invoice or quote, users can create a new vendor inline without leaving the form.
+### Vendor Quick-Create in Invoice / Quote Forms ✅ RESOLVED (2026-09-13)
+**What was actually true:** invoices/quotes are customer-facing sales documents (`customer_id`, no `vendor_id` concept) — there's no business case for selecting a vendor there. Vendor quick-create already worked correctly where vendors are actually used: the Expense form. Confirmed with the user; this part of the gap was a mislabeling, not a real gap, and was intentionally left alone.
 
-**Current state:** `POST /vendors/quick` route exists but there is no AJAX call wired in the invoice/quote create forms.
-
-**Needed:** Connect the existing route to an Alpine.js modal on the invoice/quote create forms (same UX as customer quick-create if that exists).
+**What was built instead:** full vendor management, which was completely missing (only `quickStore` existed — no index/edit/update/destroy, no views, no policy):
+- `VendorPolicy` (`viewAny`/`update` → accountant+, `delete` → admin only)
+- `VendorController@index/edit/update/destroy` + routes under the existing `role:admin,accountant` group
+- `resources/views/vendors/index.blade.php` (list + the same quick-create modal, reused) and `edit.blade.php` (full field editor: contact info, vendor type, WHT rate/exemption + reason, active toggle)
+- Delete is blocked (guard-rail, mirrors `InventoryCategoryController`) when a vendor has existing expenses or WHT records — deactivate instead
+- "Vendors" nav link added under Sales & Finance
+- `tests/Feature/VendorManagementTest.php` (7 tests)
 
 ---
 
