@@ -18,7 +18,7 @@ class VatReturn extends Model
         'output_vat', 'input_vat', 'net_vat_payable',
         'due_date', 'filed_date', 'paid_date',
         'amount_paid', 'filing_reference',
-        'status', 'notes', 'filed_by',
+        'status', 'notes', 'filed_by', 'transaction_id',
     ];
 
     protected $casts = [
@@ -41,6 +41,11 @@ class VatReturn extends Model
     public function filer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'filed_by');
+    }
+
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(Transaction::class);
     }
 
     public function isOverdue(): bool
