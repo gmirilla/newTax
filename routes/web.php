@@ -101,7 +101,7 @@ Route::prefix('{tenant:slug}/shop')->name('storefront.')->middleware('storefront
 });
 
 // ─── Authenticated + Tenant-scoped routes ───────────────────────────────────
-Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
+Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
 
     // Dashboard (all roles — DashboardController redirects staff to staff.dashboard)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -129,6 +129,12 @@ Route::middleware(['auth', 'verified', 'tenant', 'audit'])->group(function () {
         session(['upsell_dismissed_at' => today()->toDateString()]);
         return response()->noContent();
     })->name('upsell.dismiss');
+
+    // ── Verify-email banner dismiss (all roles) ───────────────────────────────
+    Route::post('/verify-email-banner/dismiss', function () {
+        session(['verify_banner_dismissed_at' => today()->toDateString()]);
+        return response()->noContent();
+    })->name('verification.banner.dismiss');
 
     // ── Admin-only ────────────────────────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {

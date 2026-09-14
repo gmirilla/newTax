@@ -446,6 +446,12 @@
             @include('layouts.partials._upsell-banner')
         @endif
 
+        {{-- ── Verify-email reminder (once per day, dismissable) ────────────────── --}}
+        @if(auth()->user() && !auth()->user()->hasVerifiedEmail()
+            && session('verify_banner_dismissed_at') !== today()->toDateString())
+            @include('layouts.partials._verify-email-banner')
+        @endif
+
         {{-- ── Flash messages ──────────────────────────────────────────────────── --}}
         <div class="px-4 pt-4 md:px-6">
             @if(session('success'))

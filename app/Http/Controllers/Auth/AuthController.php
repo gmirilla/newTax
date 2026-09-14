@@ -137,6 +137,12 @@ class AuthController extends Controller
         Auth::login($result['admin']);
         $request->session()->regenerate();
 
+        try {
+            $result['admin']->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return redirect()->route('dashboard')
             ->with('success', "Welcome to AccountTaxNG! Your account for {$result['tenant']->name} is ready.");
     }
