@@ -88,11 +88,6 @@
             </div>
 
             <div class="pt-2 flex flex-col sm:flex-row gap-3">
-                <button type="submit"
-                        style="background-color: {{ $tenant->accentColor() }}; color: {{ $tenant->accentTextColor() }};"
-                        class="flex-1 px-6 py-3 rounded-lg text-sm font-semibold shadow-sm hover:shadow-md hover:-translate-y-px transition-all">
-                    Submit Order
-                </button>
                 @if($tenant->storefront?->whatsapp_number)
                 <button type="submit" formaction="{{ route('storefront.checkout.whatsapp', $tenant->slug) }}"
                         class="flex-1 px-6 py-3 rounded-lg text-sm font-semibold bg-green-500 text-white flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:-translate-y-px transition-all">
@@ -100,6 +95,12 @@
                     Order via WhatsApp
                 </button>
                 @endif
+                <button type="submit"
+                        style="background-color: {{ $tenant->accentColor() }}; color: {{ $tenant->accentTextColor() }};"
+                        class="flex-1 px-6 py-3 rounded-lg text-sm font-semibold shadow-sm hover:shadow-md hover:-translate-y-px transition-all">
+                    Submit Order
+                </button>
+
             </div>
             <p class="text-xs text-gray-400 pt-1">
                 We'll send this order to {{ $tenant->name }} for confirmation — no payment is collected here.
