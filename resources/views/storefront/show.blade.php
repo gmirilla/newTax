@@ -1,5 +1,9 @@
 @extends('storefront.layout')
 
+@php
+    $anchorToast = true;
+@endphp
+
 @section('title', $product->item->name . ' — ' . $tenant->name)
 
 @section('content')
@@ -70,6 +74,7 @@
                 Add to Cart
             </button>
         </form>
+        @include('storefront.partials._toast', ['anchored' => true])
     </div>
 </div>
 
