@@ -256,6 +256,7 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
             Route::post('/expenses/{expense}/approve', [TransactionController::class, 'approveExpense'])->name('expenses.approve');
             Route::post('/expenses/{expense}/reject',  [TransactionController::class, 'rejectExpense'])->name('expenses.reject');
             Route::post('/expenses/{expense}/pay',     [TransactionController::class, 'payExpense'])->name('expenses.pay');
+            Route::post('/expenses/{expense}/unpay',   [TransactionController::class, 'unpayExpense'])->name('expenses.unpay');
             Route::get('/{id}',         [TransactionController::class, 'show'])->name('show')->whereNumber('id');
         });
 
