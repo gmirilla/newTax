@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\AuditLog;
 use App\Models\Customer;
+use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Models\VatReturn;
+use App\Services\BookkeepingService;
 use App\Services\ReportService;
 use App\Services\VatService;
 use Carbon\Carbon;
@@ -68,6 +72,28 @@ class VatReturnCalculationTest extends TestCase
         ]);
 
         $this->vatService = app(VatService::class);
+
+        app(BookkeepingService::class)->provisionDefaultAccounts($this->tenant);
+    }
+
+    private function makeExpense(string $status, float $amount, float $vat, ?Vendor $vendor = null): Expense
+    {
+        $expenseAccount = Account::where('tenant_id', $this->tenant->id)->where('code', '5500')->firstOrFail();
+
+        return Expense::withoutGlobalScope('tenant')->create([
+            'tenant_id'      => $this->tenant->id,
+            'vendor_id'      => $vendor?->id,
+            'account_id'     => $expenseAccount->id,
+            'reference'      => 'EXP-' . uniqid(),
+            'expense_date'   => now()->startOfMonth()->addDays(2),
+            'category'       => 'other',
+            'description'    => 'Test expense',
+            'amount'         => $amount,
+            'vat_applicable' => true,
+            'vat_amount'     => $vat,
+            'status'         => $status,
+            'created_by'     => $this->admin->id,
+        ]);
     }
 
     private function makeInvoice(string $status, float $subtotal, float $vat, float $amountPaid): Invoice
@@ -348,5 +374,86 @@ class VatReturnCalculationTest extends TestCase
         $return->refresh();
         $this->assertEquals('filed', $return->status);
         $this->assertEquals('NRS-AMENDED-001', $return->filing_reference);
+    }
+
+    // ── Transaction review list on the Compute page ─────────────────────────
+
+    public function test_compute_page_shows_prorated_vat_for_a_partially_paid_invoice(): void
+    {
+        $this->makeInvoice('partial', 100_000, 7_500, 20_000); // 20k of 107.5k paid
+
+        $expectedCounted = round(7_500 * (20_000 / 107_500), 2); // 1,395.35
+
+        $this->actingAs($this->admin)
+            ->get(route('tax.vat.compute', ['year' => now()->year, 'month' => now()->month]))
+            ->assertOk()
+            ->assertSee('Jane Buyer')
+            ->assertSee(number_format($expectedCounted, 2))
+            ->assertSee('partially paid');
+    }
+
+    public function test_compute_page_shows_full_vat_for_a_fully_paid_invoice(): void
+    {
+        $invoice = $this->makeInvoice('paid', 100_000, 7_500, 107_500);
+
+        $this->actingAs($this->admin)
+            ->get(route('tax.vat.compute', ['year' => now()->year, 'month' => now()->month]))
+            ->assertOk()
+            ->assertSee($invoice->invoice_number)
+            ->assertSee(number_format(7_500, 2))
+            ->assertDontSee('partially paid');
+    }
+
+    public function test_compute_page_lists_input_vat_expenses_with_vendor_name(): void
+    {
+        $vendor = Vendor::withoutGlobalScope('tenant')->create([
+            'tenant_id'   => $this->tenant->id,
+            'name'        => 'Acme Supplies Ltd',
+            'vendor_type' => 'services',
+            'wht_rate'    => 5.0,
+            'is_active'   => true,
+        ]);
+        $expense = $this->makeExpense('approved', 10_750, 750, $vendor);
+
+        $this->actingAs($this->admin)
+            ->get(route('tax.vat.compute', ['year' => now()->year, 'month' => now()->month]))
+            ->assertOk()
+            ->assertSee($expense->reference)
+            ->assertSee('Acme Supplies Ltd')
+            ->assertSee(number_format(750, 2));
+    }
+
+    public function test_compute_page_labels_a_vendorless_expense_as_direct_expense(): void
+    {
+        $this->makeExpense('paid', 5_000, 0, null);
+
+        $this->actingAs($this->admin)
+            ->get(route('tax.vat.compute', ['year' => now()->year, 'month' => now()->month]))
+            ->assertOk()
+            ->assertSee('Direct expense');
+    }
+
+    public function test_compute_page_rows_carry_csv_exportable_data(): void
+    {
+        $invoice = $this->makeInvoice('paid', 100_000, 7_500, 107_500);
+        $vendor  = Vendor::withoutGlobalScope('tenant')->create([
+            'tenant_id'   => $this->tenant->id,
+            'name'        => 'Bolt Logistics',
+            'vendor_type' => 'services',
+            'wht_rate'    => 5.0,
+            'is_active'   => true,
+        ]);
+        $expense = $this->makeExpense('approved', 10_750, 750, $vendor);
+
+        $html = $this->actingAs($this->admin)
+            ->get(route('tax.vat.compute', ['year' => now()->year, 'month' => now()->month]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('data-export=', $html);
+        $this->assertStringContainsString($invoice->invoice_number, $html);
+        $this->assertStringContainsString('Output VAT', $html);
+        $this->assertStringContainsString($expense->reference, $html);
+        $this->assertStringContainsString('Input VAT', $html);
     }
 }

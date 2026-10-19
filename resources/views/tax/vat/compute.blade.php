@@ -106,6 +106,120 @@
         </div>
     </div>
 
+    {{-- Underlying transactions ───────────────────────────────────────────── --}}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-semibold">Transactions in This Period</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Review what makes up the figures above before filing.</p>
+            </div>
+            @if($report['output_vat']['items']->isNotEmpty() || $report['input_vat']['items']->isNotEmpty())
+            <button onclick="downloadVatTransactionsCsv()"
+                    class="px-3 py-1.5 border border-gray-300 text-gray-700 text-xs font-medium rounded-md hover:bg-gray-50 flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Download CSV
+            </button>
+            @endif
+        </div>
+
+        <div class="px-6 pt-4">
+            <h4 class="text-xs font-semibold text-blue-800 uppercase tracking-wide mb-2">Output VAT — Sales Invoices</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="vat-output-items" class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Invoice #</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Customer</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Subtotal</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Amount Paid</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">VAT Counted</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($report['output_vat']['items'] as $inv)
+                    @php $counted = $vatService->proratedOutputVat($inv); @endphp
+                    <tr data-export="{{ json_encode([
+                        'Output VAT',
+                        $inv->invoice_date->format('Y-m-d'),
+                        $inv->invoice_number,
+                        $inv->customer?->name ?? '—',
+                        (string) $inv->subtotal,
+                        (string) $counted,
+                        ucfirst($inv->status),
+                    ]) }}">
+                        <td class="px-4 py-2 font-mono text-xs text-green-700">{{ $inv->invoice_number }}</td>
+                        <td class="px-4 py-2">{{ $inv->customer?->name ?? '—' }}</td>
+                        <td class="px-4 py-2 text-xs text-gray-500">{{ $inv->invoice_date->format('d M Y') }}</td>
+                        <td class="px-4 py-2 text-right">₦{{ number_format($inv->subtotal, 2) }}</td>
+                        <td class="px-4 py-2 text-right">₦{{ number_format($inv->amount_paid, 2) }}</td>
+                        <td class="px-4 py-2 text-right font-medium text-blue-600">
+                            ₦{{ number_format($counted, 2) }}
+                            @if($counted < (float) $inv->vat_amount)
+                                <span class="block text-[10px] text-gray-400 font-normal">of ₦{{ number_format($inv->vat_amount, 2) }} — partially paid</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-2 text-xs capitalize">{{ $inv->status }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="7" class="px-4 py-4 text-center text-gray-400">No output VAT this period</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="px-6 pt-5">
+            <h4 class="text-xs font-semibold text-green-800 uppercase tracking-wide mb-2">Input VAT — Expenses</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="vat-input-items" class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Ref</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Vendor</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">Amount</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">VAT Claimed</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($report['input_vat']['items'] as $exp)
+                    <tr data-export="{{ json_encode([
+                        'Input VAT',
+                        $exp->expense_date->format('Y-m-d'),
+                        $exp->reference,
+                        $exp->vendor->name ?? 'Direct expense',
+                        (string) $exp->amount,
+                        (string) $exp->vat_amount,
+                        ucfirst($exp->status),
+                    ]) }}">
+                        <td class="px-4 py-2 font-mono text-xs">{{ $exp->reference }}</td>
+                        <td class="px-4 py-2">{{ $exp->vendor->name ?? 'Direct expense' }}</td>
+                        <td class="px-4 py-2 text-xs text-gray-500">{{ $exp->expense_date->format('d M Y') }}</td>
+                        <td class="px-4 py-2 text-right">₦{{ number_format($exp->amount, 2) }}</td>
+                        <td class="px-4 py-2 text-right font-medium text-green-600">₦{{ number_format($exp->vat_amount, 2) }}</td>
+                        <td class="px-4 py-2 text-xs capitalize">{{ $exp->status }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="6" class="px-4 py-4 text-center text-gray-400">No input VAT this period</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <p class="px-6 py-4 text-xs text-gray-400 border-t">
+            Reflects {{ date('F Y', mktime(0,0,0,$month,1,$year)) }} invoices/expenses as of today
+            @if(in_array($vatReturn->status, ['filed', 'paid']))
+                — this return was already filed, so the figures above stay locked even if transactions in this period change later.
+            @endif
+        </p>
+    </div>
+
     {{-- File Return --}}
     @if($vatReturn->status === 'pending' || $vatReturn->status === 'overdue')
     <div class="bg-white rounded-lg shadow p-6">
@@ -147,4 +261,28 @@
         Businesses with annual turnover ≥ ₦25M must register for VAT with FIRS.
     </div>
 </div>
+
+@push('scripts')
+<script>
+function downloadVatTransactionsCsv() {
+    var headers = ['Type', 'Date', 'Reference', 'Party', 'Amount', 'VAT Counted', 'Status'];
+    var rows = [headers];
+    document.querySelectorAll('#vat-output-items tbody tr[data-export], #vat-input-items tbody tr[data-export]').forEach(function (tr) {
+        try { rows.push(JSON.parse(tr.dataset.export)); } catch (e) {}
+    });
+    var csv = rows.map(function (r) {
+        return r.map(function (v) { return '"' + String(v ?? '').replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\n');
+    var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'vat-transactions-{{ $year }}-{{ str_pad($month, 2, "0", STR_PAD_LEFT) }}.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+@endpush
 @endsection
