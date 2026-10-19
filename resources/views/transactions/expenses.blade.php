@@ -365,6 +365,16 @@
                                             class="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 font-medium">
                                         Mark Paid
                                     </button>
+                                @elseif($expense->status === 'paid')
+                                    {{-- Reverse Payment --}}
+                                    <form method="POST" action="{{ route('transactions.expenses.unpay', $expense) }}">
+                                        @csrf
+                                        <button type="submit"
+                                                onclick="return confirm('Reverse this payment? The expense goes back to Approved and the settlement entry is reversed in the ledger.')"
+                                                class="px-2 py-0.5 text-xs bg-orange-50 text-orange-700 rounded hover:bg-orange-100 font-medium">
+                                            Reverse Payment
+                                        </button>
+                                    </form>
                                 @else
                                     <span class="text-xs text-gray-300">—</span>
                                 @endif

@@ -12,7 +12,7 @@ class Expense extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'tenant_id', 'vendor_id', 'account_id', 'transaction_id',
+        'tenant_id', 'vendor_id', 'account_id', 'transaction_id', 'payment_transaction_id',
         'reference', 'expense_date', 'category', 'description',
         'amount', 'vat_applicable', 'vat_amount',
         'wht_applicable', 'wht_rate', 'wht_amount', 'net_payable',

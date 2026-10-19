@@ -6,6 +6,7 @@ use App\Exports\TransactionExport;
 use App\Models\Account;
 use App\Models\AuditLog;
 use App\Models\Expense;
+use App\Models\JournalEntry;
 use App\Repositories\TransactionRepository;
 use App\Services\BookkeepingService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -488,11 +489,11 @@ class TransactionController extends Controller
             $apAccount = Account::where('tenant_id', $tenant->id)
                 ->where('code', '2001')->firstOrFail();
 
-            $this->bookkeepingService->postJournalEntry($tenant, [
+            $transaction = $this->bookkeepingService->postJournalEntry($tenant, [
                 'transaction_date' => $request->payment_date,
                 'type'             => 'payment',
                 'description'      => "Expense paid: {$expense->reference} — {$expense->description}",
-                'reference'        => 'PAY-' . $expense->reference,
+                'reference'        => 'PAY-' . $expense->reference . '-' . strtoupper(substr(uniqid(), -4)),
             ], [
                 [
                     'account_id'  => $apAccount->id,
@@ -508,9 +509,55 @@ class TransactionController extends Controller
                 ],
             ]);
 
-            $expense->update(['status' => 'paid']);
+            $expense->update(['status' => 'paid', 'payment_transaction_id' => $transaction->id]);
         });
 
         return back()->with('success', "Expense {$expense->reference} marked as paid.");
+    }
+
+    /**
+     * Reverse a paid expense back to approved by flipping its settlement
+     * journal's debit/credit sides — mirrors
+     * SalesOrderController::reverseConfirmedOrder()'s reversal technique.
+     */
+    public function unpayExpense(Expense $expense): RedirectResponse
+    {
+        if ($expense->status !== 'paid') {
+            return back()->with('error', 'Only a paid expense can have its payment reversed.');
+        }
+
+        if (! $expense->payment_transaction_id) {
+            return back()->with('error', 'This expense was paid before payment-reversal tracking existed — reverse it manually in the ledger.');
+        }
+
+        $tenant = Auth::user()->tenant;
+
+        DB::transaction(function () use ($expense, $tenant) {
+            $reversalEntries = JournalEntry::where('transaction_id', $expense->payment_transaction_id)
+                ->get()
+                ->map(fn (JournalEntry $entry) => [
+                    'account_id'  => $entry->account_id,
+                    'entry_type'  => $entry->entry_type === 'debit' ? 'credit' : 'debit',
+                    'amount'      => (float) $entry->amount,
+                    'description' => "Reversal: {$entry->description}",
+                ])->all();
+
+            $this->bookkeepingService->postJournalEntry($tenant, [
+                'transaction_date' => now()->toDateString(),
+                'type'             => 'reversal',
+                'description'      => "Payment reversed: {$expense->reference} — {$expense->description}",
+                'reference'        => 'REV-PAY-' . $expense->reference . '-' . strtoupper(substr(uniqid(), -4)),
+            ], $reversalEntries);
+
+            $expense->update(['status' => 'approved', 'payment_transaction_id' => null]);
+        });
+
+        AuditLog::record('expense.payment_reversed', $expense,
+            ['status' => 'paid'],
+            ['status' => 'approved'],
+            'expense,payment'
+        );
+
+        return back()->with('success', "Payment for {$expense->reference} reversed — back to Approved.");
     }
 }
