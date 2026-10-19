@@ -254,6 +254,7 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
             Route::put('/expenses/{expense}',          [TransactionController::class, 'updateExpense'])->name('expenses.update');
             Route::delete('/expenses/{expense}',       [TransactionController::class, 'destroyExpense'])->name('expenses.destroy');
             Route::post('/expenses/{expense}/approve', [TransactionController::class, 'approveExpense'])->name('expenses.approve');
+            Route::post('/expenses/{expense}/unapprove', [TransactionController::class, 'unapproveExpense'])->name('expenses.unapprove');
             Route::post('/expenses/{expense}/reject',  [TransactionController::class, 'rejectExpense'])->name('expenses.reject');
             Route::post('/expenses/{expense}/pay',     [TransactionController::class, 'payExpense'])->name('expenses.pay');
             Route::post('/expenses/{expense}/unpay',   [TransactionController::class, 'unpayExpense'])->name('expenses.unpay');
