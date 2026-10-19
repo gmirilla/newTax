@@ -43,22 +43,29 @@ class VatService
     }
 
     /**
-     * Output VAT recognized on a cash basis: each invoice's vat_amount is
-     * prorated by how much of it has actually been paid. A fully-paid
+     * One invoice's prorated contribution to Output VAT: vat_amount scaled
+     * by how much of the invoice has actually been paid. A fully-paid
      * invoice contributes its full vat_amount; an unpaid invoice (amount_paid
      * == 0, e.g. status 'sent') contributes 0. Overpayment is clamped so a
      * single invoice never contributes more than its own vat_amount.
      */
+    public function proratedOutputVat(Invoice $invoice): float
+    {
+        $total = (float) $invoice->total_amount;
+        if ($total <= 0) {
+            return 0.0;
+        }
+        $ratio = min(1.0, (float) $invoice->amount_paid / $total);
+        return round((float) $invoice->vat_amount * $ratio, 2);
+    }
+
+    /**
+     * Output VAT recognized on a cash basis across a set of invoices —
+     * see proratedOutputVat() for the per-invoice formula.
+     */
     public function sumOutputVatReceived(Collection $invoices): float
     {
-        return round($invoices->sum(function (Invoice $invoice) {
-            $total = (float) $invoice->total_amount;
-            if ($total <= 0) {
-                return 0.0;
-            }
-            $ratio = min(1.0, (float) $invoice->amount_paid / $total);
-            return round((float) $invoice->vat_amount * $ratio, 2);
-        }), 2);
+        return round($invoices->sum(fn (Invoice $invoice) => $this->proratedOutputVat($invoice)), 2);
     }
 
     /**

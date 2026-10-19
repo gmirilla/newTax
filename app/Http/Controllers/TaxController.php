@@ -55,8 +55,9 @@ class TaxController extends Controller
 
         $vatReturn = $this->vatService->createOrUpdateReturn($tenant, $year, $month);
         $report    = $this->reportService->getVatReport($tenant, $year, $month);
+        $vatService = $this->vatService;
 
-        return view('tax.vat.compute', compact('vatReturn', 'report', 'year', 'month'));
+        return view('tax.vat.compute', compact('vatReturn', 'report', 'year', 'month', 'vatService'));
     }
 
     public function vatFiled(Request $request, VatReturn $vatReturn)
