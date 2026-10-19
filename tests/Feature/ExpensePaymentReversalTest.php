@@ -9,6 +9,7 @@ use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\BookkeepingService;
+use App\Services\VatService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -80,6 +81,26 @@ class ExpensePaymentReversalTest extends TestCase
         $this->actingAs($this->admin)->post(route('transactions.expenses.approve', $expense));
 
         return $expense->fresh();
+    }
+
+    private function makePendingExpense(float $amount, bool $vatApplicable = false, float $vatAmount = 0): Expense
+    {
+        $expenseAccount = Account::where('tenant_id', $this->tenant->id)->where('code', '5500')->firstOrFail();
+
+        return Expense::withoutGlobalScope('tenant')->create([
+            'tenant_id'      => $this->tenant->id,
+            'account_id'     => $expenseAccount->id,
+            'reference'      => 'EXP-' . uniqid(),
+            'expense_date'   => now(),
+            'category'       => 'other',
+            'description'    => 'Test expense',
+            'amount'         => $amount,
+            'vat_applicable' => $vatApplicable,
+            'vat_amount'     => $vatAmount,
+            'net_payable'    => $amount,
+            'status'         => 'pending',
+            'created_by'     => $this->admin->id,
+        ]);
     }
 
     private function payExpense(Expense $expense, ?Account $cashAccount = null)
@@ -170,5 +191,95 @@ class ExpensePaymentReversalTest extends TestCase
         $this->assertEquals('paid', $expense->status);
         $this->assertNotNull($expense->payment_transaction_id);
         $this->assertNotEquals($firstTransactionId, $expense->payment_transaction_id);
+    }
+
+    // ── Approval reversal ("unapprove") ─────────────────────────────────────
+
+    public function test_reversing_an_approved_expense_restores_pending_and_balances(): void
+    {
+        $expense = $this->makePendingExpense(10_750, vatApplicable: true, vatAmount: 750);
+        $this->actingAs($this->admin)->post(route('transactions.expenses.approve', $expense));
+        $expense->refresh();
+
+        $expenseAccount = Account::find($expense->account_id);
+        $inputVat = Account::where('tenant_id', $this->tenant->id)->where('code', '2101')->firstOrFail();
+        $ap       = Account::where('tenant_id', $this->tenant->id)->where('code', '2001')->firstOrFail();
+
+        // Input VAT Control (2101) is a liability-type account that only ever
+        // gets debited here (contra-liability), so its balance moves negative.
+        $this->assertEquals(10_000.0, (float) $expenseAccount->fresh()->current_balance);
+        $this->assertEquals(-750.0, (float) $inputVat->fresh()->current_balance);
+        $this->assertEquals(10_750.0, (float) $ap->fresh()->current_balance);
+
+        $this->actingAs($this->admin)
+            ->post(route('transactions.expenses.unapprove', $expense))
+            ->assertRedirect();
+
+        $expense->refresh();
+        $this->assertEquals('pending', $expense->status);
+        $this->assertNull($expense->approved_by);
+        $this->assertNull($expense->transaction_id);
+
+        $this->assertEquals(0.0, (float) $expenseAccount->fresh()->current_balance);
+        $this->assertEquals(0.0, (float) $inputVat->fresh()->current_balance);
+        $this->assertEquals(0.0, (float) $ap->fresh()->current_balance);
+
+        $entries = JournalEntry::where('description', 'like', 'Reversal:%')->get();
+        $this->assertEquals(
+            $entries->where('entry_type', 'debit')->sum('amount'),
+            $entries->where('entry_type', 'credit')->sum('amount')
+        );
+    }
+
+    public function test_reversing_approval_is_rejected_unless_status_is_approved(): void
+    {
+        $pending = $this->makePendingExpense(10_000);
+        $this->actingAs($this->admin)
+            ->post(route('transactions.expenses.unapprove', $pending))
+            ->assertRedirect();
+        $this->assertEquals('pending', $pending->fresh()->status);
+
+        $paid = $this->makeApprovedExpense(10_000);
+        $this->payExpense($paid);
+        $this->actingAs($this->admin)
+            ->post(route('transactions.expenses.unapprove', $paid))
+            ->assertRedirect();
+        $this->assertEquals('paid', $paid->fresh()->status);
+    }
+
+    public function test_unapproving_an_expense_removes_it_from_input_vat_recompute(): void
+    {
+        $expense = $this->makePendingExpense(10_750, vatApplicable: true, vatAmount: 750);
+        $this->actingAs($this->admin)->post(route('transactions.expenses.approve', $expense));
+        $expense->refresh();
+
+        $vatService = app(VatService::class);
+        $before = $vatService->computeMonthlyReturn($this->tenant, now()->year, now()->month);
+        $this->assertEquals(750.0, $before['input_vat']);
+
+        $this->actingAs($this->admin)->post(route('transactions.expenses.unapprove', $expense));
+
+        $after = $vatService->computeMonthlyReturn($this->tenant, now()->year, now()->month);
+        $this->assertEquals(0.0, $after['input_vat']);
+    }
+
+    public function test_an_expense_can_be_approved_again_after_its_approval_is_reversed(): void
+    {
+        $expense = $this->makePendingExpense(10_000);
+        $this->actingAs($this->admin)->post(route('transactions.expenses.approve', $expense));
+        $expense->refresh();
+        $firstTransactionId = $expense->transaction_id;
+
+        $this->actingAs($this->admin)->post(route('transactions.expenses.unapprove', $expense));
+        $expense->refresh();
+
+        $this->actingAs($this->admin)
+            ->post(route('transactions.expenses.approve', $expense))
+            ->assertRedirect();
+        $expense->refresh();
+
+        $this->assertEquals('approved', $expense->status);
+        $this->assertNotNull($expense->transaction_id);
+        $this->assertNotEquals($firstTransactionId, $expense->transaction_id);
     }
 }

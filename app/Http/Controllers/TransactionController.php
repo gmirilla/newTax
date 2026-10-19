@@ -409,7 +409,7 @@ class TransactionController extends Controller
                 'transaction_date' => $expense->expense_date->toDateString(),
                 'type'             => 'expense',
                 'description'      => "Expense approved: {$expense->reference} — {$expense->description}",
-                'reference'        => $expense->reference,
+                'reference'        => $expense->reference . '-' . strtoupper(substr(uniqid(), -4)),
             ], $entries);
 
             $expense->update([
@@ -433,6 +433,55 @@ class TransactionController extends Controller
         );
 
         return back()->with('success', "Expense {$expense->reference} approved and posted to ledger.");
+    }
+
+    /**
+     * Reverse an approved (unpaid) expense back to pending by flipping its
+     * approval journal's debit/credit sides — mirrors unpayExpense()'s
+     * technique, applied to the approval transaction instead of the
+     * settlement transaction. This is also what actually removes the
+     * expense from VatService::computeMonthlyReturn()'s Input VAT total,
+     * since that query filters on Expense.status, not the ledger.
+     */
+    public function unapproveExpense(Expense $expense): RedirectResponse
+    {
+        if ($expense->status !== 'approved') {
+            return back()->with('error', 'Only an approved (unpaid) expense can have its approval reversed.');
+        }
+
+        if (! $expense->transaction_id) {
+            return back()->with('error', 'This expense was approved before approval-reversal tracking existed — reverse it manually in the ledger.');
+        }
+
+        $tenant = Auth::user()->tenant;
+
+        DB::transaction(function () use ($expense, $tenant) {
+            $reversalEntries = JournalEntry::where('transaction_id', $expense->transaction_id)
+                ->get()
+                ->map(fn (JournalEntry $entry) => [
+                    'account_id'  => $entry->account_id,
+                    'entry_type'  => $entry->entry_type === 'debit' ? 'credit' : 'debit',
+                    'amount'      => (float) $entry->amount,
+                    'description' => "Reversal: {$entry->description}",
+                ])->all();
+
+            $this->bookkeepingService->postJournalEntry($tenant, [
+                'transaction_date' => now()->toDateString(),
+                'type'             => 'reversal',
+                'description'      => "Approval reversed: {$expense->reference} — {$expense->description}",
+                'reference'        => 'REV-' . $expense->reference . '-' . strtoupper(substr(uniqid(), -4)),
+            ], $reversalEntries);
+
+            $expense->update(['status' => 'pending', 'approved_by' => null, 'transaction_id' => null]);
+        });
+
+        AuditLog::record('expense.approval_reversed', $expense,
+            ['status' => 'approved'],
+            ['status' => 'pending'],
+            'expense,approval'
+        );
+
+        return back()->with('success', "Approval for {$expense->reference} reversed — back to Pending. VAT figures will reflect this on the next recompute.");
     }
 
     public function rejectExpense(Request $request, Expense $expense): RedirectResponse

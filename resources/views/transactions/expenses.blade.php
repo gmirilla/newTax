@@ -365,6 +365,15 @@
                                             class="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 font-medium">
                                         Mark Paid
                                     </button>
+                                    {{-- Reverse Approval --}}
+                                    <form method="POST" action="{{ route('transactions.expenses.unapprove', $expense) }}">
+                                        @csrf
+                                        <button type="submit"
+                                                onclick="return confirm('Reverse this approval? The expense goes back to Pending, is excluded from VAT again, and the approval entry is reversed in the ledger.')"
+                                                class="px-2 py-0.5 text-xs bg-orange-50 text-orange-700 rounded hover:bg-orange-100 font-medium">
+                                            Reverse Approval
+                                        </button>
+                                    </form>
                                 @elseif($expense->status === 'paid')
                                     {{-- Reverse Payment --}}
                                     <form method="POST" action="{{ route('transactions.expenses.unpay', $expense) }}">
