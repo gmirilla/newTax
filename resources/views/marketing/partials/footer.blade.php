@@ -66,11 +66,11 @@
             <div>
                 <h4 class="text-xs font-700 text-white uppercase tracking-widest mb-4">Legal</h4>
                 <ul class="space-y-3 text-sm">
-                    <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Cookie Policy</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">Security</a></li>
-                    <li><a href="#" class="hover:text-white transition-colors">NDPR Compliance</a></li>
+                    <li><a href="{{ route('marketing.privacy') }}" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    <li><a href="{{ route('marketing.terms') }}" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    <li><a href="{{ route('marketing.privacy') }}#cookies" class="hover:text-white transition-colors">Cookie Policy</a></li>
+                    <li><a href="{{ route('marketing.privacy') }}#security" class="hover:text-white transition-colors">Security</a></li>
+                    <li><a href="{{ route('marketing.privacy') }}#ndpr" class="hover:text-white transition-colors">NDPR Compliance</a></li>
                 </ul>
             </div>
         </div>
@@ -83,7 +83,7 @@
                 </div>
                 <div>
                     <p class="text-[11px] font-semibold text-white">Secure & Encrypted</p>
-                    <p class="text-[10px] text-slate-500">256-bit SSL</p>
+                    <p class="text-[10px] text-slate-500">TLS Encrypted</p>
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
@@ -101,7 +101,7 @@
                 </div>
                 <div>
                     <p class="text-[11px] font-semibold text-white">Data hosted in secure cloud infrastructure</p>
-                    <p class="text-[10px] text-slate-500">NDPR Compliant</p>
+                    <a href="{{ route('marketing.privacy') }}#ndpr" class="text-[10px] text-slate-500 hover:text-[#D4AF37] transition-colors">NDPA Aligned</a>
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
@@ -109,8 +109,8 @@
                     <svg class="w-4 h-4 text-[#D4AF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 15.75V21h5.25M3 15.75L12 6.75l3.375 3.375M3 15.75l3.375-3.375M21 8.25V3h-5.25M21 8.25L12 17.25l-3.375-3.375M21 8.25l-3.375 3.375"/></svg>
                 </div>
                 <div>
-                    <p class="text-[11px] font-semibold text-white">99.9% Uptime SLA</p>
-                    <p class="text-[10px] text-slate-500">Always available</p>
+                    <p class="text-[11px] font-semibold text-white">Cloud-Hosted</p>
+                    <p class="text-[10px] text-slate-500">Access anywhere, anytime</p>
                 </div>
             </div>
         </div>

@@ -369,7 +369,7 @@
                 <h3 class="font-display text-2xl font-800 text-[#0A1A2F] mb-4">Cloud-Based. Secure. Always Available.</h3>
                 <p class="text-[#64748B] leading-relaxed mb-6">AccountTaxNG runs entirely in the cloud — no installation, no local backups, no IT headaches. Access your full accounting system from any device, anywhere in Nigeria.</p>
                 <div class="grid grid-cols-2 gap-4">
-                    @foreach([['99.9% Uptime','Enterprise-grade infrastructure with SLA'],['256-bit Encryption','Data encrypted in transit and at rest'],['NDPR Compliant','Nigerian Data Protection Regulation adherence'],['Automatic Backups','Your data backed up every hour, never lost'],['Role-based Access','Granular permissions per user role'],['Audit Trail','Every action logged with user, date, and time']] as [$title,$desc])
+                    @foreach([['Cloud Hosted','Always-on infrastructure, accessible from anywhere'],['TLS Encryption','Data encrypted in transit between you and our servers'],['NDPA Aligned','Built around the Nigeria Data Protection Act — see our Privacy Policy'],['Automatic Backups','Your data backed up daily, automatically'],['Role-based Access','Granular permissions per user role'],['Audit Trail','Every action logged with user, date, and time']] as [$title,$desc])
                     <div>
                         <p class="text-sm font-600 text-[#1E293B]">{{ $title }}</p>
                         <p class="text-xs text-[#64748B] mt-0.5">{{ $desc }}</p>

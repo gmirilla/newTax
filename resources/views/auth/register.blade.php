@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account — AccountTaxNG</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
     tailwind.config = {
@@ -199,13 +198,19 @@
                     </div>
 
                     <div class="pt-2">
+                        <label class="flex items-start gap-2.5 mb-4 cursor-pointer">
+                            <input type="checkbox" name="terms_accepted" value="1" required
+                                   {{ old('terms_accepted') ? 'checked' : '' }}
+                                   class="mt-0.5 h-4 w-4 rounded border-[#CBD5E1] text-[#D4AF37] focus:ring-[#D4AF37]">
+                            <span class="text-xs text-slate-500">
+                                I agree to AccountTaxNG's <a href="{{ route('marketing.terms') }}" target="_blank" class="underline hover:text-[#D4AF37]">Terms of Service</a> and <a href="{{ route('marketing.privacy') }}" target="_blank" class="underline hover:text-[#D4AF37]">Privacy Policy</a>.
+                            </span>
+                        </label>
+                        @error('terms_accepted')<p class="text-xs text-red-600 mb-3">{{ $message }}</p>@enderror
                         <button type="submit" class="btn-gold w-full py-3.5 rounded-xl text-sm flex items-center justify-center gap-2">
                             Create Free Account
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
                         </button>
-                        <p class="text-xs text-center text-slate-400 mt-3">
-                            By registering, you agree to our <a href="#" class="underline">Terms of Service</a> and <a href="#" class="underline">Privacy Policy</a>.
-                        </p>
                     </div>
                 </form>
             </div>

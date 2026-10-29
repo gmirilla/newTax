@@ -16,10 +16,8 @@
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:site_name" content="AccountTaxNG">
 
-    {{-- Fonts --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    {{-- Fonts — self-hosted (see public/fonts/fonts.css); no request to Google on this page --}}
+    <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
 
     {{-- Tailwind CSS --}}
     <script src="https://cdn.tailwindcss.com"></script>
