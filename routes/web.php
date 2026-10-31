@@ -77,7 +77,7 @@ Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
     ->name('webhooks.paystack');
 
 // ─── Team invite acceptance (no auth required) ───────────────────────────────
-Route::prefix('invite')->name('invite.')->group(function () {
+Route::prefix('invite')->name('invite.')->middleware('throttle:20,1')->group(function () {
     Route::get('/{token}',  [InviteController::class, 'show'])->name('show');
     Route::post('/{token}', [InviteController::class, 'accept'])->name('accept');
 });
@@ -109,7 +109,7 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ── Profile (all roles) ───────────────────────────────────────────────────
-    Route::prefix('profile')->name('profile.')->group(function () {
+    Route::prefix('profile')->name('profile.')->middleware('throttle:30,1')->group(function () {
         Route::get('/',         [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/',       [ProfileController::class, 'update'])->name('update');
         Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password');
@@ -181,7 +181,7 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
         });
 
         // Team management
-        Route::prefix('team')->name('team.')->group(function () {
+        Route::prefix('team')->name('team.')->middleware('throttle:30,1')->group(function () {
             Route::get('/',                      [TeamController::class, 'index'])->name('index');
             Route::post('/invite',               [TeamController::class, 'invite'])->name('invite');
             Route::patch('/{user}/role',         [TeamController::class, 'updateRole'])->name('role');
