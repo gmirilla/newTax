@@ -75,7 +75,7 @@
                 @foreach([
                     ['🇳🇬', 'Nigerian Company', 'Registered in Nigeria, built by Nigerians, for Nigeria'],
                     ['🏗️', 'SME-Focused', 'Purpose-built for the Nigerian SME market'],
-                    ['🔒', 'NDPR Compliant', 'Full compliance with Nigerian data protection laws'],
+                    ['🔒', 'NDPA Aligned', 'Built around the Nigeria Data Protection Act — see our Privacy Policy'],
                     ['⚡', 'Continuously Updated', 'Tax law changes reflected automatically in the platform'],
                 ] as [$emoji, $title, $desc])
                 <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm text-center">

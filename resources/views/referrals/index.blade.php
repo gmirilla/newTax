@@ -45,6 +45,20 @@
         </div>
     </div>
 
+    {{-- Successful-use stats --}}
+    <div class="grid grid-cols-3 gap-4">
+        @foreach([
+            ['Total Referrals', $stats['total'], 'indigo'],
+            ['Successful',      $stats['rewarded'], 'green'],
+            ['Pending',         $stats['pending'], 'yellow'],
+        ] as [$label, $value, $color])
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <p class="text-xs text-gray-500 uppercase tracking-wide">{{ $label }}</p>
+            <p class="text-2xl font-bold text-{{ $color }}-600 mt-1">{{ $value }}</p>
+        </div>
+        @endforeach
+    </div>
+
     {{-- Referral list --}}
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-100">

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -22,6 +23,7 @@ class RegistrationTest extends TestCase
             'email'                 => 'jane@acmetrading.ng',
             'password'              => 'password123',
             'password_confirmation' => 'password123',
+            'terms_accepted'        => '1',
         ], $overrides);
     }
 
@@ -98,5 +100,29 @@ class RegistrationTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertDontSee('Verify your email');
+    }
+
+    public function test_registration_requires_accepting_terms(): void
+    {
+        $payload = $this->registerPayload(['terms_accepted' => null]);
+        unset($payload['terms_accepted']);
+
+        $this->post(route('register'), $payload)
+            ->assertSessionHasErrors('terms_accepted');
+
+        $this->assertDatabaseMissing('users', ['email' => 'jane@acmetrading.ng']);
+    }
+
+    public function test_accepting_terms_is_recorded_in_the_audit_log(): void
+    {
+        $this->post(route('register'), $this->registerPayload());
+
+        $user = User::where('email', 'jane@acmetrading.ng')->firstOrFail();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'event'          => 'terms_accepted',
+            'auditable_type' => User::class,
+            'auditable_id'   => $user->id,
+        ]);
     }
 }

@@ -69,6 +69,8 @@ Route::get('/faq',       [MarketingController::class, 'faq'])->name('marketing.f
 Route::get('/tax-rules', [MarketingController::class, 'taxRules'])->name('marketing.tax-rules');
 Route::get('/contact',   [MarketingController::class, 'contact'])->name('marketing.contact');
 Route::post('/contact',  [MarketingController::class, 'contactSubmit'])->name('marketing.contact.submit');
+Route::get('/privacy',   [MarketingController::class, 'privacy'])->name('marketing.privacy');
+Route::get('/terms',     [MarketingController::class, 'terms'])->name('marketing.terms');
 
 // ─── Paystack Webhook (no auth, CSRF excluded — see bootstrap/app.php) ───────
 Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])

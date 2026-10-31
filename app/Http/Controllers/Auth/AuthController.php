@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\CaptureUtmParams;
+use App\Models\AuditLog;
 use App\Models\Tenant;
 use App\Services\TenancyService;
 use Illuminate\Http\RedirectResponse;
@@ -107,6 +108,7 @@ class AuthController extends Controller
             'password'          => 'required|min:8|confirmed',
             'acquisition_source'=> 'nullable|string|max:50',
             'referral_code'     => 'nullable|string|max:12',
+            'terms_accepted'    => 'accepted',
         ]);
 
         // Read UTM params captured in cookie by CaptureUtmParams middleware
@@ -136,6 +138,12 @@ class AuthController extends Controller
 
         Auth::login($result['admin']);
         $request->session()->regenerate();
+
+        AuditLog::record('terms_accepted', $result['admin'], [], [
+            'terms_url'   => route('marketing.terms'),
+            'privacy_url' => route('marketing.privacy'),
+            'accepted_at' => now()->toDateTimeString(),
+        ], 'compliance');
 
         try {
             $result['admin']->sendEmailVerificationNotification();
