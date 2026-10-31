@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Middleware\CaptureUtmParams;
 use App\Models\AuditLog;
 use App\Models\Tenant;
+use App\Rules\NotDisposableEmail;
 use App\Services\TenancyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,12 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        if ($this->isBot($request)) {
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->onlyInput('email');
+        }
+
         $credentials = $request->validate([
             'email'    => 'required|email',
             'password' => 'required',
@@ -60,6 +67,12 @@ class AuthController extends Controller
     public function tenantLogin(Request $request, Tenant $tenant): RedirectResponse
     {
         abort_unless($tenant->is_active, 404);
+
+        if ($this->isBot($request)) {
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->onlyInput('email');
+        }
 
         $credentials = $request->validate([
             'email'    => 'required|email',
@@ -98,13 +111,19 @@ class AuthController extends Controller
 
     public function register(Request $request): RedirectResponse
     {
+        if ($this->isBot($request)) {
+            return back()
+                ->withErrors(['email' => 'Something went wrong. Please try again.'])
+                ->withInput($request->except('password', 'password_confirmation'));
+        }
+
         $request->validate([
             'company_name'      => 'required|string|max:255',
-            'company_email'     => 'required|email|unique:tenants,email',
+            'company_email'     => ['required', 'email', 'unique:tenants,email', new NotDisposableEmail],
             'tin'               => 'nullable|string|max:20',
             'annual_turnover'   => 'nullable|numeric|min:0',
             'name'              => 'required|string|max:255',
-            'email'             => 'required|email|unique:users,email',
+            'email'             => ['required', 'email', 'unique:users,email', new NotDisposableEmail],
             'password'          => 'required|min:8|confirmed',
             'acquisition_source'=> 'nullable|string|max:50',
             'referral_code'     => 'nullable|string|max:12',
@@ -153,6 +172,12 @@ class AuthController extends Controller
 
         return redirect()->route('dashboard')
             ->with('success', "Welcome to AccountTaxNG! Your account for {$result['tenant']->name} is ready.");
+    }
+
+    /** Honeypot check: a hidden "website" field that only an automated submission would fill in. */
+    private function isBot(Request $request): bool
+    {
+        return $request->filled('website');
     }
 
     public function logout(Request $request): RedirectResponse
