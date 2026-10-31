@@ -98,6 +98,11 @@
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-7">
                 <form method="POST" action="{{ route('register') }}" class="space-y-4">
                     @csrf
+                    {{-- Honeypot: left blank by humans, hidden off-screen so it's invisible to real users --}}
+                    <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+                        <label for="website">Website</label>
+                        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
 
                     <span class="section-label">Company Information</span>
 

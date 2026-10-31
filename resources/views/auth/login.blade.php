@@ -112,6 +112,11 @@
 
             <form method="POST" action="{{ isset($tenant) ? route('login.tenant.submit', $tenant->slug) : route('login') }}" class="space-y-4">
                 @csrf
+                {{-- Honeypot: left blank by humans, hidden off-screen so it's invisible to real users --}}
+                <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+                    <label for="website">Website</label>
+                    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                </div>
                 <div>
                     <label class="block text-sm font-600 text-[#1E293B] mb-1.5">Email address</label>
                     <input type="email" name="email" value="{{ old('email') }}" placeholder="you@company.com"
