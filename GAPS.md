@@ -285,6 +285,46 @@ when this is picked up.
 
 ---
 
+## Referral Program
+
+Reviewed 2026-10-31. Tenant referral codes, ₦2,000/₦20,000 credit
+rewards, and superadmin reporting are real and working (`app/Models/Referral.php`,
+`app/Services/ReferralService.php`, `app/Http/Controllers/ReferralController.php`,
+`app/Http/Controllers/SuperAdmin/ReferralReportController.php`). Test
+coverage and a referrer-earned-credit notification were added this pass
+(see `tests/Feature/Referral*Test.php` and `app/Notifications/ReferralRewardedNotification.php`).
+The items below are still open:
+
+- [ ] **Dead `qualified` referral status** — `Referral::STATUS_QUALIFIED`
+  is defined, present in the DB enum, and rendered as a badge in both
+  [referrals/index.blade.php:86](resources/views/referrals/index.blade.php#L86)
+  and [superadmin/referrals/index.blade.php:53](resources/views/superadmin/referrals/index.blade.php#L53),
+  but no code path ever sets it — `ReferralService::qualifyFirstPayment()`
+  jumps straight `pending → rewarded`. Either implement a real two-stage
+  qualification flow or remove the dead enum value/badges.
+- [ ] **Referral reward only wired to the Paystack webhook** —
+  `ReferralService::qualifyFirstPayment()` is called from
+  [PaystackWebhookController::handleChargeSuccess()](app/Http/Controllers/PaystackWebhookController.php#L132)
+  but never from [BillingController::callback()](app/Http/Controllers/BillingController.php),
+  even though both can record a `subscription_payments` row for the same
+  real-world transaction. Worth confirming the webhook is guaranteed to
+  fire in every environment, or calling `qualifyFirstPayment()` from both
+  paths (idempotently, since it already guards on "first payment").
+- [ ] **Acquisition/UTM columns are write-only** — `acquisition_source`,
+  `utm_source`, `utm_medium`, `utm_campaign` on `tenants` are captured at
+  registration (`TenancyService::registerTenant()`) but never displayed
+  or queried anywhere, including the superadmin tenant detail page. Dead
+  weight unless a reporting feature is planned.
+- [ ] **Self-referral guard is Postgres-only** — the `CHECK` constraint
+  added in migration `2026_05_25_100001_create_referrals_table.php` is
+  skipped on SQLite, so it's silently absent for any test environment
+  that doesn't run on Postgres.
+- [ ] **No credit expiry and no admin override tool** — `referral_credit_ngn`
+  never decays, and there's no superadmin control to manually adjust or
+  revoke a tenant's balance/ledger if a reward was granted in error.
+
+---
+
 ## Email Delivery
 
 - [x] **Invoice email not wired** — implemented 2026-05-13. `InvoiceEmail` Mailable (PDF attached via DomPDF), `SendInvoiceEmail` queued Job (3 tries, 120s backoff), dispatched from `InvoiceController::sendEmail()` when customer has an email on file. Flash message adapts: confirms email address, warns if no email on file, silent for walk-in customers.

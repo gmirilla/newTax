@@ -6,6 +6,8 @@ use App\Models\Referral;
 use App\Models\ReferralCreditLedger;
 use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
+use App\Models\User;
+use App\Notifications\ReferralRewardedNotification;
 use Illuminate\Support\Facades\DB;
 
 class ReferralService
@@ -31,35 +33,52 @@ class ReferralService
 
         if (!$referral) return;
 
-        DB::transaction(function () use ($referral, $payment) {
+        $rewardNgn = 0.0;
+
+        DB::transaction(function () use ($referral, $payment, &$rewardNgn) {
             $referrer = $referral->referrer;
 
-            $rewardNgn = Referral::REWARD_NGN;
+            $reward = Referral::REWARD_NGN;
 
             // Clamp reward so referrer's balance doesn't exceed the cap
-            $headroom  = max(0, Referral::MAX_CREDIT_NGN - (float) $referrer->referral_credit_ngn);
-            $rewardNgn = min($rewardNgn, $headroom);
+            $headroom = max(0, Referral::MAX_CREDIT_NGN - (float) $referrer->referral_credit_ngn);
+            $reward   = min($reward, $headroom);
 
             $referral->update([
                 'status'       => Referral::STATUS_REWARDED,
-                'reward_ngn'   => $rewardNgn,
+                'reward_ngn'   => $reward,
                 'qualified_at' => now(),
                 'rewarded_at'  => now(),
             ]);
 
-            if ($rewardNgn > 0) {
-                $referrer->increment('referral_credit_ngn', $rewardNgn);
+            if ($reward > 0) {
+                $referrer->increment('referral_credit_ngn', $reward);
 
                 ReferralCreditLedger::create([
                     'tenant_id'               => $referrer->id,
                     'referral_id'             => $referral->id,
                     'subscription_payment_id' => $payment->id,
                     'type'                    => ReferralCreditLedger::TYPE_CREDIT,
-                    'amount_ngn'              => $rewardNgn,
+                    'amount_ngn'              => $reward,
                     'description'             => "Referral reward — {$referral->referee->name} subscribed",
                 ]);
             }
+
+            $rewardNgn = $reward;
         });
+
+        if ($rewardNgn > 0) {
+            $referral->refresh();
+
+            $admins = User::where('tenant_id', $referral->referrer_tenant_id)
+                ->where('role', User::ROLE_ADMIN)
+                ->where('is_active', true)
+                ->get();
+
+            foreach ($admins as $admin) {
+                $admin->notify(new ReferralRewardedNotification($referral));
+            }
+        }
     }
 
     /**
