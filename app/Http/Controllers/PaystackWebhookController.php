@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\SubscriptionPayment;
 use App\Models\Tenant;
 use App\Models\WebhookEvent;
+use App\Services\PaymentCredentialResolver;
 use App\Services\ReferralService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,10 +16,10 @@ use Illuminate\Support\Facades\Mail;
 
 class PaystackWebhookController extends Controller
 {
-    public function handle(Request $request): JsonResponse
+    public function handle(Request $request, PaymentCredentialResolver $credentials): JsonResponse
     {
         // ── 1. Verify HMAC-SHA512 signature ──────────────────────────────────
-        $secretKey = config('paystack.secret_key');
+        $secretKey = $credentials->secretKey();
         if (empty($secretKey)) {
             Log::error('Paystack webhook: PAYSTACK_SECRET_KEY not configured');
             return response()->json(['error' => 'Webhook not configured'], 500);

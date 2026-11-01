@@ -18,6 +18,9 @@ use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\SuperAdmin\EnterpriseAgreementController;
 use App\Http\Controllers\SuperAdmin\EnterpriseController;
 use App\Http\Controllers\SuperAdmin\PlanController;
+use App\Http\Controllers\SuperAdmin\PaymentGatewayController;
+use App\Http\Controllers\SuperAdmin\NotificationLogController;
+use App\Http\Controllers\SuperAdmin\QueueMonitorController;
 use App\Http\Controllers\SuperAdmin\PlatformInvoiceController;
 use App\Http\Controllers\SuperAdmin\BackupController;
 use App\Http\Controllers\SuperAdmin\DatabaseExportController;
@@ -558,6 +561,27 @@ Route::middleware(['auth', 'superadmin'])
             Route::get('/{plan}/edit', [PlanController::class, 'edit'])->name('edit');
             Route::put('/{plan}',      [PlanController::class, 'update'])->name('update');
             Route::delete('/{plan}',   [PlanController::class, 'destroy'])->name('destroy');
+        });
+
+        // Payment gateway credentials
+        Route::prefix('payment-gateway')->name('payment-gateway.')->group(function () {
+            Route::get('/',  [PaymentGatewayController::class, 'index'])->name('index');
+            Route::post('/', [PaymentGatewayController::class, 'store'])->name('store');
+        });
+
+        // Notification delivery log
+        Route::prefix('notification-logs')->name('notification-logs.')->group(function () {
+            Route::get('/', [NotificationLogController::class, 'index'])->name('index');
+            Route::post('/{notificationLog}/resend', [NotificationLogController::class, 'resend'])->name('resend');
+        });
+
+        // Queue health / failed job management
+        Route::prefix('queue')->name('queue.')->group(function () {
+            Route::get('/',                 [QueueMonitorController::class, 'index'])->name('index');
+            Route::post('/retry-all',       [QueueMonitorController::class, 'retryAll'])->name('retry-all');
+            Route::post('/{uuid}/retry',    [QueueMonitorController::class, 'retry'])->name('retry');
+            Route::delete('/{uuid}',        [QueueMonitorController::class, 'destroy'])->name('destroy');
+            Route::post('/restart-workers', [QueueMonitorController::class, 'restartWorkers'])->name('restart-workers');
         });
 
         Route::prefix('companies/{tenant}')->name('companies.')->group(function () {

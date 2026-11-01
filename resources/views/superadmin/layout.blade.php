@@ -55,6 +55,9 @@
             {!! $navItem('superadmin.audit-logs', 'Audit Logs', '📋') !!}
             {!! $navItem('superadmin.backups.index', 'Backups', '💾') !!}
             {!! $navItem('superadmin.database.export', 'DB Export', '📦') !!}
+            {!! $navItem('superadmin.payment-gateway.index', 'Payment Gateway', '🔑') !!}
+            {!! $navItem('superadmin.notification-logs.index', 'Notification Logs', '✉️') !!}
+            {!! $navItem('superadmin.queue.index', 'Queue & Jobs', '⚙️') !!}
             <a href="{{ route('superadmin.referrals.index') }}"
                class="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors
                       {{ request()->routeIs('superadmin.referrals*') ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
