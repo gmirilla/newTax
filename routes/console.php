@@ -35,6 +35,10 @@ Schedule::command('maintenance:generate-pm-work-orders')
     ->withoutOverlapping()
     ->description('Generate PM work orders for due schedules');
 
+Schedule::job(new \App\Jobs\QueueHeartbeatJob)
+    ->everyMinute()
+    ->description('Heartbeat: confirms the queue worker is alive and processing jobs');
+
 // ─── Backups ──────────────────────────────────────────────────────────────────
 // Staggered: run → clean → monitor, 30 minutes apart to avoid overlap.
 // backup:run uses pg_dump which must be available on the server PATH.

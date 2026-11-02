@@ -9,9 +9,9 @@ class PaystackService
     private readonly string $secretKey;
     private readonly string $baseUrl;
 
-    public function __construct()
+    public function __construct(PaymentCredentialResolver $credentials)
     {
-        $this->secretKey = config('paystack.secret_key');
+        $this->secretKey = $credentials->secretKey();
         $this->baseUrl   = config('paystack.payment_url');
     }
 

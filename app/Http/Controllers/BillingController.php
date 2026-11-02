@@ -149,6 +149,7 @@ class BillingController extends Controller
             ]);
 
             $this->referralService->linkPaymentToDebit($tenant, $payment);
+            $this->referralService->qualifyFirstPayment($tenant, $payment);
 
             return redirect()->route('billing')
                 ->with('success', "Plan activated using ₦" . number_format($creditApplied, 2) . " referral credit.");
@@ -261,6 +262,8 @@ class BillingController extends Controller
         if ($creditApplied > 0) {
             $this->referralService->linkPaymentToDebit($tenant, $payment);
         }
+
+        $this->referralService->qualifyFirstPayment($tenant, $payment);
 
         try {
             Mail::to($tenant->email)->send(new SubscriptionActivated($tenant, $plan, $isUpgrade ? 'upgrade_proration' : 'subscription'));

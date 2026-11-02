@@ -115,4 +115,58 @@ class AuthAntiAbuseTest extends TestCase
 
         $response->assertStatus(429);
     }
+
+    public function test_rapid_repeated_invite_acceptance_attempts_are_throttled(): void
+    {
+        for ($i = 0; $i < 20; $i++) {
+            $this->post(route('invite.accept', 'not-a-real-token'), []);
+        }
+
+        $response = $this->post(route('invite.accept', 'not-a-real-token'), []);
+
+        $response->assertStatus(429);
+    }
+
+    // ── Authenticated mutation surface (profile, team) ─────────────────────────
+
+    private function createAdmin(): User
+    {
+        $tenant = Tenant::create([
+            'name' => 'Throttle Co', 'slug' => 'throttle-co', 'email' => 'throttle@test.ng',
+            'tax_category' => 'small', 'annual_turnover' => 1_000_000, 'currency' => 'NGN', 'is_active' => true,
+        ]);
+
+        return User::forceCreate([
+            'tenant_id' => $tenant->id, 'name' => 'Throttle Admin', 'email' => 'admin@throttle.ng',
+            'password' => bcrypt('password'), 'role' => 'admin', 'is_active' => true, 'email_verified_at' => now(),
+        ]);
+    }
+
+    public function test_rapid_repeated_profile_updates_are_throttled(): void
+    {
+        $admin = $this->createAdmin();
+        $this->actingAs($admin);
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->patch(route('profile.update'), ['name' => $admin->name, 'email' => $admin->email]);
+        }
+
+        $response = $this->patch(route('profile.update'), ['name' => $admin->name, 'email' => $admin->email]);
+
+        $response->assertStatus(429);
+    }
+
+    public function test_rapid_repeated_team_invites_are_throttled(): void
+    {
+        $admin = $this->createAdmin();
+        $this->actingAs($admin);
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->post(route('team.invite'), ['email' => "invitee{$i}@throttle.ng", 'role' => 'accountant']);
+        }
+
+        $response = $this->post(route('team.invite'), ['email' => 'oneTooMany@throttle.ng', 'role' => 'accountant']);
+
+        $response->assertStatus(429);
+    }
 }
