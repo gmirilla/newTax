@@ -330,6 +330,10 @@ class Tenant extends Model
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count(),
+            'quotes_per_month' => \App\Models\Quote::where('tenant_id', $this->id)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->count(),
             'users'         => $this->users()->count(),
             'payroll_staff' => \App\Models\Employee::where('tenant_id', $this->id)->where('is_active', true)->count(),
             'customers'     => $this->customers()->count(),

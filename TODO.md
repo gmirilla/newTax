@@ -127,7 +127,7 @@ storefronts.
 
 ---
 
-## Storefront gives no notice when it goes dark on subscription lapse 🔍
+## ✅ Fixed (2026-11-02): Storefront gives no notice when it goes dark on subscription lapse
 
 **What:** When a tenant's subscription lapses (past the 7-day grace period —
 see `Tenant::subscriptionActive()`) or they're downgraded off a storefront-
@@ -136,37 +136,40 @@ entire public storefront 404s with zero explanation — no "this store is
 temporarily unavailable" messaging, nothing. Confirmed 2026-09-12 while
 investigating "what happens when a storefront subscription ends."
 
-**Current state:**
+**Fixed:**
 - [EnsureStorefrontEnabled](app/Http/Middleware/EnsureStorefrontEnabled.php)
-  gates the whole public route group (`{tenant:slug}/shop/*`) on
-  `$tenant->is_active && $tenant->planAllows('storefront') && $tenant->storefront->is_enabled`
-  and just `abort(404)`s if any of those fail — same bare 404 whether the
-  shop was never enabled, is deliberately disabled, or lapsed on billing.
-- This includes `storefront.order.status` — a customer with a saved
-  order-confirmation link from *before* the lapse gets a 404 too, with no way
-  to tell "this store is down" from "this link is wrong."
-- Nothing on the tenant side proactively warns them their storefront is about
-  to go dark either — no email/banner tied to the existing `TrialEndingSoon`-style
-  notification pattern ([DowngradeExpiredTrials.php](app/Console/Commands/DowngradeExpiredTrials.php)
-  already sends a "trial ending soon" email 3 days out; there's no storefront-
-  specific equivalent).
+  now distinguishes the two cases it previously treated identically: a
+  genuinely unknown tenant/slug still 404s (that's the `{tenant:slug}`
+  route binding itself failing, untouched), but once a tenant is resolved,
+  denied access (`!is_active`, plan no longer allows `storefront`, or the
+  storefront is disabled) renders a dedicated
+  [storefront.unavailable](resources/views/storefront/unavailable.blade.php)
+  view with a `503 Service Unavailable` status instead of `abort(404)`.
+- This covers the whole `{tenant:slug}/shop/*` group automatically,
+  including `storefront.order.status` — an existing customer with a saved
+  order-confirmation link now sees "Store Temporarily Unavailable" with a
+  line pointing them to contact the seller directly, instead of a bare 404.
+- The page shows the tenant's own logo/name and the seller's email/phone
+  (both `Tenant`-level fields, readable regardless of whether the
+  storefront itself is enabled) — never storefront-specific branding
+  (banner, description), since that data isn't necessarily safe/relevant
+  to show once access is denied.
 - Nothing is deleted or disabled in the data — `Storefront`/`StorefrontProduct`/`StorefrontService`/`StorefrontOrder`
   rows are untouched, and everything reappears exactly as it was once the
-  tenant resubscribes/upgrades. This item is purely about the *experience*
-  during the gap, not data safety.
-
-**Needed:**
-- Decide what a lapsed/disabled storefront should show instead of a bare 404
-  — likely a distinct "this store is temporarily unavailable" page rather
-  than reusing the generic 404, at least for the case where a `Storefront`
-  row exists but access is currently denied (vs. genuinely no such
-  tenant/slug, which should probably stay a real 404).
-- Decide whether `storefront.order.status` deserves special handling so an
-  existing customer with a valid order token isn't told nothing at all.
-- Consider a heads-up notification to the tenant before the grace period
-  expires (mirroring `TrialEndingSoon`), so they're not surprised by orders
-  going unreachable.
-- Test coverage per CLAUDE.md conventions once the approach is decided.
+  tenant resubscribes/upgrades. This was purely an *experience* fix, not a
+  data-safety one.
+- **Not built, deliberately deferred:** a heads-up notification to the
+  tenant before the grace period expires (mirroring `TrialEndingSoon`).
+  That's a separate, bigger piece (new scheduled command/notification) the
+  original TODO only said to "consider" — flagged here rather than bundled
+  into this fix. Worth a follow-up if lapses turn out to catch tenants by
+  surprise in practice.
+- Tests: two existing tests in
+  [tests/Feature/StorefrontModuleTest.php](tests/Feature/StorefrontModuleTest.php)
+  that asserted the old bare-404 behavior were updated to assert the new
+  503 unavailable page instead, plus three new tests (unknown slug still
+  404s, inactive tenant shows the unavailable page, order-status shows it
+  too).
 
 ---
 

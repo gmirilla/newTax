@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Quote extends Model
 {
@@ -17,7 +18,7 @@ class Quote extends Model
         'quote_number', 'reference', 'quote_date', 'expiry_date',
         'subtotal', 'vat_amount', 'wht_amount', 'discount_amount', 'total_amount',
         'vat_applicable', 'wht_applicable', 'wht_rate',
-        'status', 'notes', 'terms', 'currency',
+        'status', 'notes', 'terms', 'currency', 'public_token',
         'converted_invoice_id', 'created_by',
     ];
 
@@ -41,6 +42,17 @@ class Quote extends Model
                 $query->where('quotes.tenant_id', app('currentTenant')->id);
             }
         });
+
+        static::creating(function (Quote $quote) {
+            if (empty($quote->public_token)) {
+                $quote->public_token = (string) Str::uuid();
+            }
+        });
+    }
+
+    public function publicUrl(): string
+    {
+        return route('quote.public.show', ['token' => $this->public_token]);
     }
 
     public function tenant(): BelongsTo   { return $this->belongsTo(Tenant::class); }

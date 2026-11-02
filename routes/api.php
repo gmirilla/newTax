@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->middleware(['auth:sanctum', 'tenant'])->group(function () {
 
     // ── Invoices ─────────────────────────────────────────────────────────────
-    Route::prefix('invoices')->group(function () {
+    Route::prefix('invoices')->middleware('plan:api_access')->group(function () {
         Route::get('/',             [InvoiceController::class, 'index']);
         Route::post('/',            [InvoiceController::class, 'store']);
         Route::get('/summary',      [InvoiceController::class, 'summary']);
@@ -24,7 +24,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'tenant'])->group(function () {
     });
 
     // ── Tax Engine ───────────────────────────────────────────────────────────
-    Route::prefix('tax')->group(function () {
+    Route::prefix('tax')->middleware('plan:api_access')->group(function () {
         Route::get('/compliance-dashboard', [TaxController::class, 'complianceDashboard']);
         Route::post('/vat/compute',         [TaxController::class, 'vatCompute']);
         Route::get('/vat/summary',          [TaxController::class, 'vatSummary']);

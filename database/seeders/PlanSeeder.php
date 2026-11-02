@@ -26,6 +26,7 @@ class PlanSeeder extends Seeder
                 'sort_order'    => 1,
                 'limits'        => [
                     'invoices_per_month' => 5,
+                    'quotes_per_month'   => 5,
                     'users'              => 1,
                     'payroll_staff'      => 0,
                     'customers'          => 20,
@@ -53,6 +54,7 @@ class PlanSeeder extends Seeder
                 'sort_order'    => 2,
                 'limits'        => [
                     'invoices_per_month' => null,
+                    'quotes_per_month'   => null,
                     'users'              => 3,
                     'payroll_staff'      => 10,
                     'customers'          => null,
@@ -80,6 +82,7 @@ class PlanSeeder extends Seeder
                 'sort_order'    => 3,
                 'limits'        => [
                     'invoices_per_month' => null,
+                    'quotes_per_month'   => null,
                     'users'              => 10,
                     'payroll_staff'      => 50,
                     'customers'          => null,
@@ -107,6 +110,7 @@ class PlanSeeder extends Seeder
                 'sort_order'    => 4,
                 'limits'        => [
                     'invoices_per_month' => null,
+                    'quotes_per_month'   => null,
                     'users'              => null,
                     'payroll_staff'      => null,
                     'customers'          => null,

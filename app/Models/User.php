@@ -37,15 +37,18 @@ class User extends Authenticatable implements MustVerifyEmail
     public const ROLE_STAFF       = 'staff';
 
     public const MODULE_LIST = [
-        'invoices'      => 'Invoices & Quotes',
-        'expenses'      => 'Expenses',
-        'inventory'     => 'Inventory',
-        'manufacturing' => 'Manufacturing',
-        'maintenance'   => 'Maintenance',
-        'storefront'    => 'Online Storefront',
-        'payroll'       => 'Payroll',
-        'reports'       => 'Reports',
-        'bank_accounts' => 'Bank Accounts',
+        'invoices'          => 'Invoices & Quotes',
+        'expenses'          => 'Expenses',
+        'inventory'         => 'Inventory',
+        'inventory_reports' => 'Inventory Reports',
+        'manufacturing'     => 'Manufacturing',
+        'maintenance'       => 'Maintenance',
+        'storefront'        => 'Online Storefront',
+        'payroll'           => 'Payroll',
+        'reports'           => 'Reports',
+        'advanced_reports'  => 'Advanced Reports (Ledger, Balance Sheet, Trial Balance)',
+        'api_access'        => 'API Access',
+        'bank_accounts'     => 'Bank Accounts',
         'chart_of_accounts' => 'Chart of Accounts',
     ];
 
