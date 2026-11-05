@@ -410,6 +410,18 @@
         </div>
         @endif
 
+        @if(session()->has('partner_origin_user_id'))
+        <div class="bg-blue-600 text-white text-sm font-medium px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+            <span>🤝 Partner mode — managing <strong>{{ $currentTenant->name }}</strong>'s books</span>
+            <form method="POST" action="{{ route('partners.exit') }}">
+                @csrf
+                <button type="submit" class="bg-white text-blue-700 text-xs font-semibold px-3 py-1 rounded hover:bg-blue-50">
+                    Exit Client Workspace
+                </button>
+            </form>
+        </div>
+        @endif
+
         @if(isset($currentTenant))
             @if($currentTenant->isInGracePeriod())
             @php $graceDays = $currentTenant->graceDaysLeft(); @endphp

@@ -16,6 +16,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'tenant_id', 'name', 'email', 'password',
         'role', 'is_active', 'is_superadmin', 'phone', 'module_access',
+        'is_partner_proxy', 'email_verified_at',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -29,6 +30,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_superadmin'     => 'boolean',
             'tenant_id'         => 'integer',
             'module_access'     => 'array',
+            'is_partner_proxy'  => 'boolean',
         ];
     }
 

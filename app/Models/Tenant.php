@@ -23,7 +23,7 @@ class Tenant extends Model
         'is_professional_firm',
         'plan_id', 'next_plan_id', 'subscription_status', 'billing_cycle', 'trial_ends_at',
         'paystack_customer_id', 'paystack_subscription_code',
-        'referral_code', 'referred_by_code', 'referral_credit_ngn',
+        'referral_code', 'partner_code', 'referred_by_code', 'referral_credit_ngn',
         'acquisition_source', 'utm_source', 'utm_medium', 'utm_campaign',
         'invoice_accent_color', 'show_name_with_logo',
     ];
@@ -149,6 +149,18 @@ class Tenant extends Model
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);
+    }
+
+    /** Clients this tenant manages as an accounting firm. */
+    public function firmLinksAsFirm(): HasMany
+    {
+        return $this->hasMany(FirmClientLink::class, 'firm_tenant_id');
+    }
+
+    /** Accounting firms managing this tenant. */
+    public function firmLinksAsClient(): HasMany
+    {
+        return $this->hasMany(FirmClientLink::class, 'client_tenant_id');
     }
 
     public function vendors(): HasMany
@@ -334,7 +346,7 @@ class Tenant extends Model
                 ->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count(),
-            'users'         => $this->users()->count(),
+            'users'         => $this->users()->where('is_partner_proxy', false)->count(),
             'payroll_staff' => \App\Models\Employee::where('tenant_id', $this->id)->where('is_active', true)->count(),
             'customers'     => $this->customers()->count(),
             default         => 0,

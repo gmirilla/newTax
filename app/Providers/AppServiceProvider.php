@@ -75,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MaintenanceBreakdown::class, MaintenanceBreakdownPolicy::class);
         Gate::policy(MaintenanceSchedule::class, MaintenanceWorkOrderPolicy::class);
         Gate::policy(Vendor::class, VendorPolicy::class);
+        Gate::policy(\App\Models\FirmClientLink::class, \App\Policies\FirmClientLinkPolicy::class);
 
         // View composers
         View::composer('layouts.app', SystemNotificationComposer::class);

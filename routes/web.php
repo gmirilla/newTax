@@ -10,6 +10,8 @@ use App\Http\Controllers\PublicQuoteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirsOnboardingController;
+use App\Http\Controllers\FirmClientInviteController;
+use App\Http\Controllers\FirmClientLinkController;
 use App\Http\Controllers\InviteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffController;
@@ -84,6 +86,12 @@ Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])
 Route::prefix('invite')->name('invite.')->middleware('throttle:20,1')->group(function () {
     Route::get('/{token}',  [InviteController::class, 'show'])->name('show');
     Route::post('/{token}', [InviteController::class, 'accept'])->name('accept');
+});
+
+// ─── Firm-to-client partner invite acceptance (no auth required to view; accept requires login) ──
+Route::prefix('partner-invite')->name('partner-invite.')->middleware('throttle:20,1')->group(function () {
+    Route::get('/{token}',  [FirmClientInviteController::class, 'show'])->name('show');
+    Route::post('/{token}', [FirmClientInviteController::class, 'accept'])->name('accept');
 });
 
 // ─── Public invoice view (no auth required) ──────────────────────────────────
@@ -201,6 +209,29 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
             Route::post('/invites/{invite}/resend', [TeamController::class, 'resendInvite'])->name('invite.resend');
             Route::post('/{user}/modules',          [TeamController::class, 'updateModuleAccess'])->name('modules');
         });
+
+        // Manage Accounting Partners (client side)
+        Route::prefix('partners')->name('partners.')->middleware('throttle:20,1')->group(function () {
+            Route::get('/manage',                 [FirmClientLinkController::class, 'indexAsClient'])->name('manage.index');
+            Route::post('/manage/request',        [FirmClientLinkController::class, 'requestByClient'])->name('manage.request');
+            Route::post('/manage/{link}/approve', [FirmClientLinkController::class, 'approve'])->name('manage.approve');
+            Route::post('/manage/{link}/revoke',  [FirmClientLinkController::class, 'revoke'])->name('manage.revoke');
+        });
+    });
+
+    // ── Accounting Partner (firm side: viewing/entering is admin+accountant, mutating is admin only) ──
+    Route::middleware('role:admin,accountant')->prefix('partners')->name('partners.')->group(function () {
+        Route::get('/clients',               [FirmClientLinkController::class, 'indexAsFirm'])->name('clients.index');
+        Route::post('/clients/{link}/enter', [FirmClientLinkController::class, 'enter'])->name('clients.enter');
+    });
+    Route::post('/partners/exit', [FirmClientLinkController::class, 'exit'])->name('partners.exit'); // mirrors superadmin.exit-impersonate — no role gate
+
+    Route::middleware(['role:admin', 'throttle:20,1'])->prefix('partners')->name('partners.')->group(function () {
+        Route::post('/clients/request',        [FirmClientLinkController::class, 'requestByFirm'])->name('clients.request');
+        Route::post('/clients/{link}/approve', [FirmClientLinkController::class, 'approve'])->name('clients.approve');
+        Route::post('/clients/{link}/revoke',  [FirmClientLinkController::class, 'revoke'])->name('clients.revoke');
+        Route::get('/clients/new',             [FirmClientLinkController::class, 'createClientForm'])->name('clients.create');
+        Route::post('/clients/new',            [FirmClientLinkController::class, 'createClient'])->name('clients.store');
     });
 
     // ── Admin + Accountant ────────────────────────────────────────────────────

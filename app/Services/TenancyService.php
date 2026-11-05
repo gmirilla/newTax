@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FirmClientLink;
 use App\Models\Plan;
 use App\Models\Referral;
 use App\Models\Tenant;
@@ -12,7 +13,8 @@ use Illuminate\Support\Str;
 class TenancyService
 {
     public function __construct(
-        private readonly BookkeepingService $bookkeepingService
+        private readonly BookkeepingService $bookkeepingService,
+        private readonly FirmClientLinkService $firmClientLinkService
     ) {}
 
     /**
@@ -45,6 +47,7 @@ class TenancyService
                 'subscription_plan'  => 'free',
                 'subscription_status'=> 'active',
                 'referral_code'      => strtoupper(Str::random(8)),
+                'partner_code'       => strtoupper(Str::random(8)),
                 'referred_by_code'   => $referrerTenant ? $referralCode : null,
                 'acquisition_source' => $tenantData['acquisition_source'] ?? null,
                 'utm_source'         => $tenantData['utm_source'] ?? null,
@@ -97,6 +100,30 @@ class TenancyService
             $this->provisionDefaultUnits($tenant);
 
             return ['tenant' => $tenant, 'admin' => $admin];
+        });
+    }
+
+    /**
+     * An accounting firm creates a brand-new client company from scratch.
+     * Reuses registerTenant() unchanged, then auto-activates a FirmClientLink —
+     * no approval step, since nothing pre-existed to consent on behalf of.
+     */
+    public function registerClientForFirm(Tenant $firm, array $tenantData, array $adminData, User $actingFirmUser): array
+    {
+        return DB::transaction(function () use ($firm, $tenantData, $adminData, $actingFirmUser) {
+            $result = $this->registerTenant($tenantData, $adminData);
+
+            $link = FirmClientLink::create([
+                'firm_tenant_id'       => $firm->id,
+                'client_tenant_id'     => $result['tenant']->id,
+                'status'               => FirmClientLink::STATUS_ACTIVE,
+                'requested_by_user_id' => $actingFirmUser->id,
+                'approved_at'          => now(),
+            ]);
+
+            $this->firmClientLinkService->provisionProxyUser($link);
+
+            return [...$result, 'link' => $link];
         });
     }
 
