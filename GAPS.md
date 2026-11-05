@@ -20,6 +20,23 @@ separately in [TODO.md](TODO.md), which post-dates this file's last update.
 ## Critical Bugs
 
 - [x] **InvoiceController: missing `use` for Excel facade** — fixed 2026-04-30. Added `use Maatwebsite\Excel\Facades\Excel;` to [InvoiceController.php](app/Http/Controllers/InvoiceController.php).
+- [x] **No password reset flow existed at all** — fixed 2026-11-05. Found during
+  a production-readiness review of the live test deployment: no "forgot
+  password" link anywhere, no routes, no controller — a user who forgot
+  their password had zero recovery path, not even an admin-assisted one.
+  `FEATURES.md` incorrectly claimed this already existed via "standard
+  Laravel Breeze flow" (this app has never used Breeze; corrected). The
+  underlying `password_reset_tokens` table and `config/auth.php` broker
+  config were already present (standard Laravel scaffolding, just never
+  wired up) — built `PasswordResetController` + `password.*` routes in
+  [routes/auth.php](routes/auth.php), a custom
+  [ResetPasswordNotification](app/Notifications/ResetPasswordNotification.php)
+  (overriding `User::sendPasswordResetNotification()`), and
+  `forgot-password`/`reset-password` views matching the existing login/
+  register branding. Deliberately enumeration-safe (same response whether
+  or not the email exists), with the same honeypot + throttle pattern as
+  register/login. "Forgot password?" link added to the login page. Tests:
+  [tests/Feature/PasswordResetTest.php](tests/Feature/PasswordResetTest.php).
 - [x] **Invoice edit form couldn't save — wrong field name** — fixed 2026-11-02.
   [resources/views/invoices/edit.blade.php](resources/views/invoices/edit.blade.php)'s
   date input was named `issue_date` and read `$invoice->issue_date` (an
@@ -44,6 +61,37 @@ separately in [TODO.md](TODO.md), which post-dates this file's last update.
     [TODO.md](TODO.md) (`CitCalculationTest`, `PayeCalculationTest`,
     `WhtCalculationTest`). Worth a dedicated pass to sweep the whole suite
     for this pattern rather than fixing one file at a time as bugs surface it.
+
+---
+
+## Operations / Monitoring
+
+- [x] **Superadmin queue dashboard** (`/superadmin/queue`) — `QueueHeartbeatJob`
+  dispatched every minute through the queue (so it only updates when a real
+  worker, not just cron, processes it), `QueueMonitorController` showing
+  pending/failed counts and a presumed-down flag, retry/delete for failed
+  jobs, a "Restart Workers" signal. Built in an earlier pass; not previously
+  logged here.
+- [x] **Proactive queue-worker-down email alert** — fixed 2026-11-05. The
+  dashboard above was passive — someone had to go look. Added
+  `queue:check-worker-health` (scheduled every 2 minutes,
+  [routes/console.php](routes/console.php)), which emails
+  `QUEUE_ALERT_EMAIL` (falls back to `MAIL_FROM_ADDRESS`) once when the
+  worker goes stale and once when it recovers — debounced via a cache flag,
+  never one email per check. **Deliberately sent as a plain, non-queued
+  `Mailable`** ([app/Mail/QueueWorkerStatusAlert.php](app/Mail/QueueWorkerStatusAlert.php)) —
+  if this alert were itself dispatched through the queue, it would never
+  arrive during the exact failure it's reporting. Shared staleness logic
+  extracted to [app/Support/QueueHealth.php](app/Support/QueueHealth.php),
+  used by both this command and the existing dashboard controller.
+  **Known limitation, stated in the email itself**: this can only detect
+  the queue worker process specifically — if the whole server or cron goes
+  down, nothing in the app can alert you; that needs external uptime
+  monitoring. **Action needed**: `QUEUE_ALERT_EMAIL` isn't set in the real
+  `.env` yet — set it to a real monitored address, or alerts silently fall
+  back to `MAIL_FROM_ADDRESS` (`hello@example.com` today, which nobody
+  reads). Same already-true gap exists for `BACKUP_ALERT_EMAIL`. Tests:
+  [tests/Feature/CheckQueueWorkerHealthCommandTest.php](tests/Feature/CheckQueueWorkerHealthCommandTest.php).
 
 ---
 

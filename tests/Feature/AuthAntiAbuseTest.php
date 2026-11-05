@@ -169,4 +169,50 @@ class AuthAntiAbuseTest extends TestCase
 
         $response->assertStatus(429);
     }
+
+    // ── Turnstile ────────────────────────────────────────────────────────────
+
+    public function test_registration_is_rejected_when_turnstile_is_configured_and_fails(): void
+    {
+        config(['turnstile.secret_key' => 'test-secret']);
+        \Illuminate\Support\Facades\Http::fake(['challenges.cloudflare.com/*' => \Illuminate\Support\Facades\Http::response(['success' => false])]);
+
+        $payload = $this->registerPayload();
+
+        $this->post(route('register'), $payload);
+
+        $this->assertDatabaseMissing('users', ['email' => 'jane@acmetrading.ng']);
+    }
+
+    public function test_registration_succeeds_when_turnstile_is_configured_and_passes(): void
+    {
+        config(['turnstile.secret_key' => 'test-secret']);
+        \Illuminate\Support\Facades\Http::fake(['challenges.cloudflare.com/*' => \Illuminate\Support\Facades\Http::response(['success' => true])]);
+
+        $payload = $this->registerPayload(['cf-turnstile-response' => 'good-token']);
+
+        $this->post(route('register'), $payload)->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseHas('users', ['email' => 'jane@acmetrading.ng']);
+    }
+
+    public function test_login_is_rejected_when_turnstile_is_configured_and_fails(): void
+    {
+        config(['turnstile.secret_key' => 'test-secret']);
+        \Illuminate\Support\Facades\Http::fake(['challenges.cloudflare.com/*' => \Illuminate\Support\Facades\Http::response(['success' => false])]);
+
+        $tenant = Tenant::create([
+            'name' => 'Turnstile Co', 'slug' => 'turnstile-co', 'email' => 'turnstile@test.ng',
+            'tax_category' => 'small', 'annual_turnover' => 1_000_000, 'currency' => 'NGN', 'is_active' => true,
+        ]);
+        User::forceCreate([
+            'tenant_id' => $tenant->id, 'name' => 'Turnstile Admin', 'email' => 'admin@turnstile.ng',
+            'password' => bcrypt('password'), 'role' => 'admin', 'is_active' => true, 'email_verified_at' => now(),
+        ]);
+
+        $response = $this->post(route('login'), ['email' => 'admin@turnstile.ng', 'password' => 'password']);
+
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
 }

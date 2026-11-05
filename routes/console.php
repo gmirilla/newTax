@@ -39,6 +39,10 @@ Schedule::job(new \App\Jobs\QueueHeartbeatJob)
     ->everyMinute()
     ->description('Heartbeat: confirms the queue worker is alive and processing jobs');
 
+Schedule::command('queue:check-worker-health')
+    ->everyTwoMinutes()
+    ->description('Alert by email if the queue worker appears down (or has recovered)');
+
 // ─── Backups ──────────────────────────────────────────────────────────────────
 // Staggered: run → clean → monitor, 30 minutes apart to avoid overlap.
 // backup:run uses pg_dump which must be available on the server PATH.

@@ -4,9 +4,9 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Support\QueueHealth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -64,9 +64,8 @@ class QueueMonitorController extends Controller
     private function getQueueStatus(): array
     {
         try {
-            $heartbeat = Cache::get('queue.worker.heartbeat_at');
-            // diffInMinutes() returns a signed difference (negative for past timestamps) — use the absolute value.
-            $isStale   = !$heartbeat || now()->diffInMinutes($heartbeat, true) > 3;
+            $heartbeat = QueueHealth::heartbeatAt();
+            $isStale   = QueueHealth::isPresumedDown();
 
             $oldestPending = DB::table('jobs')->min('created_at');
 

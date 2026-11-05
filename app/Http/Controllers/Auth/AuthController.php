@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Tenant;
 use App\Rules\NotDisposableEmail;
 use App\Services\TenancyService;
+use App\Services\TurnstileVerifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,8 @@ use Illuminate\View\View;
 class AuthController extends Controller
 {
     public function __construct(
-        private readonly TenancyService $tenancyService
+        private readonly TenancyService $tenancyService,
+        private readonly TurnstileVerifier $turnstile,
     ) {}
 
     public function showLogin(): View
@@ -26,7 +28,7 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        if ($this->isBot($request)) {
+        if ($this->isBot($request) || !$this->passesTurnstile($request)) {
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ])->onlyInput('email');
@@ -68,7 +70,7 @@ class AuthController extends Controller
     {
         abort_unless($tenant->is_active, 404);
 
-        if ($this->isBot($request)) {
+        if ($this->isBot($request) || !$this->passesTurnstile($request)) {
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ])->onlyInput('email');
@@ -111,7 +113,7 @@ class AuthController extends Controller
 
     public function register(Request $request): RedirectResponse
     {
-        if ($this->isBot($request)) {
+        if ($this->isBot($request) || !$this->passesTurnstile($request)) {
             return back()
                 ->withErrors(['email' => 'Something went wrong. Please try again.'])
                 ->withInput($request->except('password', 'password_confirmation'));
@@ -178,6 +180,12 @@ class AuthController extends Controller
     private function isBot(Request $request): bool
     {
         return $request->filled('website');
+    }
+
+    /** Cloudflare Turnstile check. Passes automatically if no secret key is configured. */
+    private function passesTurnstile(Request $request): bool
+    {
+        return $this->turnstile->verify($request->input('cf-turnstile-response'), $request->ip());
     }
 
     public function logout(Request $request): RedirectResponse

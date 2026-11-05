@@ -6,6 +6,9 @@
     <title>Log In — {{ isset($tenant) ? $tenant->name : 'AccountTaxNG' }}</title>
     <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
+    @if(config('turnstile.site_key'))
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
     <script>
     tailwind.config = {
         theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'], display: ['Manrope','Inter','sans-serif'] } } }
@@ -132,7 +135,11 @@
                         <input type="checkbox" name="remember" class="rounded border-slate-300 text-[#D4AF37]">
                         Remember me
                     </label>
+                    <a href="{{ route('password.request') }}" class="text-sm text-[#D4AF37] font-600 hover:underline">Forgot password?</a>
                 </div>
+                @if(config('turnstile.site_key'))
+                <div class="cf-turnstile" data-sitekey="{{ config('turnstile.site_key') }}"></div>
+                @endif
                 <button type="submit"
                         class="btn-gold w-full py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 mt-2">
                     Sign In
