@@ -66,7 +66,8 @@
 | Capability | Notes |
 |---|---|
 | Registration + email verification | Required before app access (`v0.2`) |
-| Login / logout / password reset | Standard Laravel Breeze flow |
+| Login / logout | Hand-rolled auth (no Breeze/Fortify) |
+| Password reset | Email-based token flow, enumeration-safe, honeypot + throttled (`v0.6`) |
 | Role-based access: `admin`, `accountant`, `staff` | `role` middleware on all routes; staff get read-only portal |
 | Team invitations | Admin invites by email; token-based acceptance (`v0.2`) |
 | Impersonation | SuperAdmin can log in as any tenant admin (`v0.2`) |

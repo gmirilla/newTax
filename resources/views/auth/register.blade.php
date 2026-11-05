@@ -6,6 +6,9 @@
     <title>Create Account — AccountTaxNG</title>
     <link rel="stylesheet" href="{{ asset('fonts/fonts.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
+    @if(config('turnstile.site_key'))
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
     <script>
     tailwind.config = {
         theme: { extend: { fontFamily: { sans: ['Inter','system-ui','sans-serif'], display: ['Manrope','Inter','sans-serif'] } } }
@@ -212,6 +215,9 @@
                             </span>
                         </label>
                         @error('terms_accepted')<p class="text-xs text-red-600 mb-3">{{ $message }}</p>@enderror
+                        @if(config('turnstile.site_key'))
+                        <div class="cf-turnstile mb-4" data-sitekey="{{ config('turnstile.site_key') }}"></div>
+                        @endif
                         <button type="submit" class="btn-gold w-full py-3.5 rounded-xl text-sm flex items-center justify-center gap-2">
                             Create Free Account
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
