@@ -16,7 +16,9 @@ class TeamController extends Controller
     public function index(Request $request): View
     {
         $tenant  = $request->user()->tenant;
-        $users   = $tenant->users()->orderBy('name')->get();
+        // Partner-firm proxy users are managed from the "Manage Accounting Partners"
+        // page, not here — they aren't a real team member and shouldn't be editable.
+        $users   = $tenant->users()->where('is_partner_proxy', false)->orderBy('name')->get();
 
         $invites = UserInvite::where('tenant_id', $tenant->id)
             ->whereNull('accepted_at')

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class AuditLog extends Model
 {
     protected $fillable = [
-        'tenant_id', 'user_id', 'event', 'auditable_type', 'auditable_id',
+        'tenant_id', 'user_id', 'acting_on_behalf_of_user_id', 'event', 'auditable_type', 'auditable_id',
         'old_values', 'new_values', 'ip_address', 'user_agent', 'url', 'tags',
     ];
 
@@ -20,6 +20,23 @@ class AuditLog extends Model
 
     public $timestamps = true;
     const UPDATED_AT = null; // Audit logs are immutable
+
+    protected static function booted(): void
+    {
+        // A partner-firm user impersonates a shared proxy account inside the
+        // client tenant (see FirmClientLinkService::enterClientWorkspace()),
+        // so user_id alone can't identify which real firm employee acted.
+        static::creating(function (AuditLog $log) {
+            if ($log->acting_on_behalf_of_user_id === null && session()->has('partner_origin_user_id')) {
+                $log->acting_on_behalf_of_user_id = session('partner_origin_user_id');
+            }
+        });
+    }
+
+    public function actingOnBehalfOfUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'acting_on_behalf_of_user_id');
+    }
 
     public function tenant(): BelongsTo
     {

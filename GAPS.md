@@ -195,14 +195,49 @@ See the "Public Links" section below for the full writeup.
 
 ---
 
-### Accountant / Partner Programme 💡
-**What:** Accounting firms managing multiple SME clients get a single login to switch between client companies, a partner discount on billing, and bulk invoice capabilities.
+### Accountant / Partner Programme ✅ BUILT (2026-11-05, v1 — access/management only)
+**What was built:** an accounting firm (its own `Tenant`, normal signup, own
+staff/admin) can manage multiple client companies from one login. Both
+onboarding paths are supported: the firm creates a brand-new client from
+scratch (auto-linked, no approval needed), and an already-independent
+tenant and a firm can mutually link — either side can initiate (firm
+invites a client by the client admin's email; client invites a firm by its
+`partner_code`), and the other side approves.
 
-**Design considerations:**
-- `partner_firms` table with own subscription tier
-- Many-to-many between partner firm and tenants (`firm_tenant_access`)
-- Impersonation-style context switch (similar to existing superadmin impersonation)
-- Consolidated billing: firm pays one invoice covering all managed tenants
+**How it works:** reuses the existing superadmin-impersonation mechanism
+(full identity substitution via `auth()->login()`/`auth()->loginUsingId()`)
+instead of rebuilding tenant-scoping. A firm staff member "enters" a client
+workspace by logging into a shared, auto-provisioned `role=accountant`
+proxy user created inside that client tenant (`is_partner_proxy=true`,
+excluded from the client's `withinLimit('users')` seat count). Because
+Billing/Team/Company-Settings routes were already `role:admin`-only, giving
+the firm a `role=accountant` identity inside the client produces exactly
+"bookkeeping-only access" with zero new permission logic. New
+`audit_logs.acting_on_behalf_of_user_id` column (auto-filled from
+`session('partner_origin_user_id')` via a model hook) preserves per-firm-
+employee traceability even though the proxy identity is shared.
+
+**New:** `firm_client_links` table, `App\Models\FirmClientLink`,
+`App\Services\FirmClientLinkService`, `App\Policies\FirmClientLinkPolicy`,
+`FirmClientLinkController` + `FirmClientInviteController`, the
+`partners.*` routes, `resources/views/partners/*`. Tests across
+`tests/Unit/FirmClientLinkTest.php` and six `tests/Feature/FirmClientLink*Test.php` /
+`TenancyServiceRegisterClientForFirmTest.php` / `TenantWithinLimitExcludesPartnerProxyTest.php` files.
+
+**Explicitly deferred (not built in v1):**
+- Consolidated/partner billing (one invoice covering several clients, a
+  partner discount) — each client tenant keeps paying for its own plan,
+  completely unchanged. `Plan`, `Tenant::assignPlan()`, `EnterpriseAgreement`,
+  `PlatformInvoice` were not touched.
+- A `partner_access`-style plan-gating flag — available to every plan in v1.
+- Per-individual-firm-staff-member proxy identities — one shared proxy per
+  link; `acting_on_behalf_of_user_id` already gives per-employee audit
+  traceability without needing separate identities.
+- Fixing the pre-existing `BankAccount` global-scope outlier (reads
+  `auth()->user()->tenant_id` instead of `app('currentTenant')`, unlike the
+  other 27 tenant-scoped models) — irrelevant to this feature specifically
+  since full identity substitution keeps both always in sync, but still
+  worth a drive-by fix someday.
 
 ---
 
