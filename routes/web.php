@@ -6,6 +6,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\PublicInvoiceController;
+use App\Http\Controllers\PublicQuoteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FirsOnboardingController;
@@ -87,8 +88,14 @@ Route::prefix('invite')->name('invite.')->middleware('throttle:20,1')->group(fun
 
 // ─── Public invoice view (no auth required) ──────────────────────────────────
 Route::prefix('inv')->name('invoice.public.')->group(function () {
-    Route::get('/{token}',     [PublicInvoiceController::class, 'show'])->name('show');
-    Route::get('/{token}/pdf', [PublicInvoiceController::class, 'downloadPdf'])->name('pdf');
+    Route::get('/{token}',     [PublicInvoiceController::class, 'show'])->name('show')->whereUuid('token');
+    Route::get('/{token}/pdf', [PublicInvoiceController::class, 'downloadPdf'])->name('pdf')->whereUuid('token');
+});
+
+// ─── Public quote view (no auth required) ─────────────────────────────────────
+Route::prefix('q')->name('quote.public.')->group(function () {
+    Route::get('/{token}',     [PublicQuoteController::class, 'show'])->name('show')->whereUuid('token');
+    Route::get('/{token}/pdf', [PublicQuoteController::class, 'downloadPdf'])->name('pdf')->whereUuid('token');
 });
 
 // ─── Public storefront (no auth required, gated by plan + tenant toggle) ─────
@@ -521,13 +528,15 @@ Route::middleware(['auth', 'tenant', 'audit'])->group(function () {
             Route::get('/profit-loss',        [ReportController::class, 'profitAndLoss'])->name('pl');
             Route::get('/profit-loss/pdf',    [ReportController::class, 'profitAndLossPdf'])->name('pl.pdf');
             Route::get('/profit-loss/excel',  [ReportController::class, 'profitAndLossExcel'])->name('pl.excel');
-            Route::get('/balance-sheet',      [ReportController::class, 'balanceSheet'])->name('bs');
-            Route::get('/balance-sheet/pdf',  [ReportController::class, 'balanceSheetPdf'])->name('bs.pdf');
-            Route::get('/balance-sheet/excel',[ReportController::class, 'balanceSheetExcel'])->name('bs.excel');
-            Route::get('/trial-balance',      [ReportController::class, 'trialBalance'])->name('tb');
-            Route::get('/ledger',             [ReportController::class, 'ledger'])->name('ledger');
-            Route::get('/ledger/pdf',         [ReportController::class, 'ledgerPdf'])->name('ledger.pdf');
-            Route::get('/ledger/excel',       [ReportController::class, 'ledgerExcel'])->name('ledger.excel');
+            Route::middleware('plan:advanced_reports')->group(function () {
+                Route::get('/balance-sheet',      [ReportController::class, 'balanceSheet'])->name('bs');
+                Route::get('/balance-sheet/pdf',  [ReportController::class, 'balanceSheetPdf'])->name('bs.pdf');
+                Route::get('/balance-sheet/excel',[ReportController::class, 'balanceSheetExcel'])->name('bs.excel');
+                Route::get('/trial-balance',      [ReportController::class, 'trialBalance'])->name('tb');
+                Route::get('/ledger',             [ReportController::class, 'ledger'])->name('ledger');
+                Route::get('/ledger/pdf',         [ReportController::class, 'ledgerPdf'])->name('ledger.pdf');
+                Route::get('/ledger/excel',       [ReportController::class, 'ledgerExcel'])->name('ledger.excel');
+            });
             Route::get('/vat',                [ReportController::class, 'vatReport'])->name('vat');
             Route::get('/cit',                [ReportController::class, 'citReport'])->name('cit');
             Route::get('/tax-summary',        [ReportController::class, 'taxSummary'])->name('tax-summary');

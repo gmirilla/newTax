@@ -123,6 +123,13 @@
                        class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Quotes per Month</label>
+                <input type="number" name="limit_quotes" min="0"
+                       value="{{ old('limit_quotes', $lv('quotes_per_month')) }}"
+                       placeholder="blank = unlimited"
+                       class="w-full rounded-md border-gray-300 shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Users (seats)</label>
                 <input type="number" name="limit_users" min="0"
                        value="{{ old('limit_users', $lv('users')) }}"

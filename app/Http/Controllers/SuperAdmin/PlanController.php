@@ -133,6 +133,7 @@ class PlanController extends Controller
         // depending on browser; (int) null = 0 which would wrongly disable the limit
         return [
             'invoices_per_month' => $request->filled('limit_invoices')      ? (int) $request->input('limit_invoices')      : null,
+            'quotes_per_month'   => $request->filled('limit_quotes')        ? (int) $request->input('limit_quotes')        : null,
             'users'              => $request->filled('limit_users')          ? (int) $request->input('limit_users')          : null,
             'payroll_staff'      => $request->filled('limit_payroll_staff')  ? (int) $request->input('limit_payroll_staff')  : null,
             'customers'          => $request->filled('limit_customers')      ? (int) $request->input('limit_customers')      : null,

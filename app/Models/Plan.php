@@ -28,6 +28,7 @@ class Plan extends Model
     // Default limit structure — used when a key is missing from the stored JSON
     public const LIMIT_DEFAULTS = [
         'invoices_per_month' => 5,
+        'quotes_per_month'   => 5,
         'users'              => 1,
         'payroll_staff'      => 0,
         'customers'          => 50,

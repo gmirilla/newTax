@@ -74,6 +74,13 @@ class QuoteController extends Controller
 
         $tenant = $request->user()->tenant;
 
+        if (!$tenant->withinLimit('quotes_per_month')) {
+            $limit = $tenant->plan?->limit('quotes_per_month') ?? 5;
+            return back()
+                ->withInput()
+                ->with('error', "You have reached your plan limit of {$limit} quotes this month. Upgrade your plan to create more.");
+        }
+
         $quote = Quote::create([
             'tenant_id'       => $tenant->id,
             'customer_id'     => $request->customer_id,
@@ -103,6 +110,7 @@ class QuoteController extends Controller
         }
 
         $quote->recalculateTotals();
+        $tenant->invalidateLimitCache('quotes_per_month');
 
         return redirect()->route('quotes.show', $quote)
             ->with('success', "Quote {$quote->quote_number} created successfully.");

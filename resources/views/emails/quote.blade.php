@@ -49,7 +49,12 @@
         </p>
         @endif
 
-        <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+        <a href="{{ $quote->publicUrl() }}"
+           style="display: inline-block; background: #16a34a; color: #fff; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 6px; text-decoration: none;">
+            View Quotation Online →
+        </a>
+
+        <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 24px 0 0;">
             To accept this quotation or request any changes, please reply to this email or contact us directly.
         </p>
 

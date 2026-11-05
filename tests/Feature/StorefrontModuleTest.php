@@ -144,15 +144,17 @@ class StorefrontModuleTest extends TestCase
             ->assertSee('Bag of Rice');
     }
 
-    public function test_public_shop_404s_when_storefront_disabled(): void
+    public function test_public_shop_shows_unavailable_page_when_storefront_disabled(): void
     {
         $this->tenant->storefront->update(['is_enabled' => false]);
 
         $this->get(route('storefront.index', $this->tenant->slug))
-            ->assertNotFound();
+            ->assertStatus(503)
+            ->assertViewIs('storefront.unavailable')
+            ->assertSee('Store Temporarily Unavailable');
     }
 
-    public function test_public_shop_404s_when_plan_lacks_storefront(): void
+    public function test_public_shop_shows_unavailable_page_when_plan_lacks_storefront(): void
     {
         $freePlan = Plan::create([
             'name' => 'Free', 'slug' => 'free', 'price_monthly' => 0,
@@ -161,7 +163,32 @@ class StorefrontModuleTest extends TestCase
         $this->tenant->update(['plan_id' => $freePlan->id]);
 
         $this->get(route('storefront.index', $this->tenant->slug))
+            ->assertStatus(503)
+            ->assertViewIs('storefront.unavailable');
+    }
+
+    public function test_public_shop_returns_a_real_404_for_an_unknown_slug(): void
+    {
+        $this->get(route('storefront.index', 'no-such-shop'))
             ->assertNotFound();
+    }
+
+    public function test_public_shop_shows_unavailable_page_when_tenant_is_inactive(): void
+    {
+        $this->tenant->update(['is_active' => false]);
+
+        $this->get(route('storefront.index', $this->tenant->slug))
+            ->assertStatus(503)
+            ->assertViewIs('storefront.unavailable');
+    }
+
+    public function test_order_status_shows_unavailable_page_instead_of_a_bare_404_when_storefront_lapses(): void
+    {
+        $this->tenant->storefront->update(['is_enabled' => false]);
+
+        $this->get(route('storefront.order.status', [$this->tenant->slug, 'some-order-token']))
+            ->assertStatus(503)
+            ->assertViewIs('storefront.unavailable');
     }
 
     public function test_public_shop_only_shows_this_tenants_products(): void

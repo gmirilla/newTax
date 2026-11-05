@@ -36,11 +36,20 @@ class CustomerController extends Controller
             ]);
         }
 
+        if (!$tenant->withinLimit('customers')) {
+            $limit = $tenant->plan?->limit('customers') ?? 20;
+            return response()->json([
+                'message' => "You have reached your plan limit of {$limit} customers. Upgrade your plan to add more.",
+            ], 422);
+        }
+
         $customer = Customer::create(array_merge($data, [
             'tenant_id'  => $tenant->id,
             'is_active'  => true,
             'is_company' => $data['is_company'] ?? true,
         ]));
+
+        $tenant->invalidateLimitCache('customers');
 
         return response()->json([
             'id'   => $customer->id,

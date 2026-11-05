@@ -20,6 +20,30 @@ separately in [TODO.md](TODO.md), which post-dates this file's last update.
 ## Critical Bugs
 
 - [x] **InvoiceController: missing `use` for Excel facade** — fixed 2026-04-30. Added `use Maatwebsite\Excel\Facades\Excel;` to [InvoiceController.php](app/Http/Controllers/InvoiceController.php).
+- [x] **Invoice edit form couldn't save — wrong field name** — fixed 2026-11-02.
+  [resources/views/invoices/edit.blade.php](resources/views/invoices/edit.blade.php)'s
+  date input was named `issue_date` and read `$invoice->issue_date` (an
+  attribute that doesn't exist on the model), while `InvoiceRequest`
+  validates `invoice_date` (the real column). Every edit submission failed
+  with "The invoice date field is required." — reported live by a user.
+  The create form already used the correct field name; this was drift
+  specific to the edit view. Renamed to `invoice_date` in both the input
+  name and the value binding.
+  - **Found along the way**: all 6 tests in
+    [tests/Feature/InvoiceTest.php](tests/Feature/InvoiceTest.php) used the
+    old `/** @test */` docblock annotation, which PHPUnit 12 (installed
+    here) no longer recognises — confirmed via `--filter`, it reported "No
+    tests found." Every one had been silently dead, which is exactly how
+    this bug shipped untested. Renamed all 6 to `test_`-prefixed methods
+    (all now genuinely pass) and added a new HTTP-level regression test
+    (`test_editing_an_invoice_via_the_edit_form_succeeds`) that submits the
+    edit form's exact field set and would have caught this bug immediately.
+  - **Same dead-annotation pattern also found, not yet fixed, in
+    [tests/Feature/TaxComplianceTest.php](tests/Feature/TaxComplianceTest.php)** —
+    a newly-discovered instance alongside the three already documented in
+    [TODO.md](TODO.md) (`CitCalculationTest`, `PayeCalculationTest`,
+    `WhtCalculationTest`). Worth a dedicated pass to sweep the whole suite
+    for this pattern rather than fixing one file at a time as bugs surface it.
 
 ---
 
@@ -153,12 +177,8 @@ is the permanent design and just add the plan gate + rate limiting to it),
 
 ---
 
-### Quote Public Links 🔍
-**What:** Customers receive a shareable link to view and accept a quote online (same as `/inv/{token}` for invoices).
-
-**Current state:** Only invoices have `public_token` UUID and `GET /inv/{token}` public route. Quotes have no equivalent.
-
-**Needed:** `public_token` on quotes table (migration), generate on creation, `GET /q/{token}` public route + `PublicQuoteController`, view similar to `public-invoice.blade.php`.
+### Quote Public Links ✅ RESOLVED (2026-11-01)
+See the "Public Links" section below for the full writeup.
 
 ---
 
@@ -278,10 +298,12 @@ when this is picked up.
 
 ---
 
-- [ ] **Quote monthly limit** — invoices enforce `withinLimit('invoices_per_month')` in `QuoteController::store()` but quotes are not currently limited. Decide: share the same counter, or add a separate `quotes_per_month` limit key.
-- [ ] **Customer limit** — `Plan` supports a `customers` limit key and `Tenant::withinLimit` can check it, but `CustomerController::store()` has no limit enforcement.
-- [ ] **Advanced Reports gate** — the `advanced_reports` feature flag exists on plans and `RequiresPlan` middleware is available, but no report routes are gated by it. Define which reports require it (e.g., Ledger, Balance Sheet) and apply `->middleware('plan:advanced_reports')`.
-- [ ] **API Access gate** — `api_access` feature flag is in plans but `routes/api.php` has no `plan:api_access` middleware applied.
+- [x] **Quote monthly limit** — fixed 2026-11-01. Added a separate `quotes_per_month` limit key (not shared with invoices — proformas and invoices are tracked independently) to `Plan::LIMIT_DEFAULTS`, `Tenant::withinLimit()`'s count match, and `PlanSeeder`. Enforced in `QuoteController::store()`, mirroring `InvoiceController::store()`'s exact pattern. Superadmin plan form gained a "Quotes per Month" field. Tests: [tests/Feature/QuoteLimitTest.php](tests/Feature/QuoteLimitTest.php).
+- [x] **Customer limit** — fixed 2026-11-01. There's no dedicated Customers CRUD controller in this app (only `CustomerController::quickStore()`, the AJAX quick-create used from invoice/quote forms) — `withinLimit('customers')` is now checked there, returning a 422 JSON error the existing frontend already handles gracefully. Tests: [tests/Feature/CustomerLimitTest.php](tests/Feature/CustomerLimitTest.php).
+- [x] **Advanced Reports gate** — fixed 2026-11-01. `plan:advanced_reports` now wraps Ledger, Balance Sheet, and Trial Balance under `routes/web.php`'s `reports.` group; Profit & Loss, VAT, CIT, and Tax Summary stay ungated (core compliance/bookkeeping, consistent with the Chart-of-Accounts precedent in TODO.md). Tests: [tests/Feature/AdvancedReportsGateTest.php](tests/Feature/AdvancedReportsGateTest.php).
+- [x] **API Access gate** — fixed 2026-11-01. `plan:api_access` applied to the `invoices` and `tax` route groups in `routes/api.php` (not the `auth/token` issuance/revocation routes, which must stay reachable regardless of plan). Tests: [tests/Feature/ApiAccessGateTest.php](tests/Feature/ApiAccessGateTest.php).
+  - **Found and fixed a blocking bug along the way**: Sanctum's `personal_access_tokens` migration had never been published into this app — the table didn't exist in any migrated environment (confirmed on both the local dev DB and the Postgres test DB), meaning `POST /api/v1/auth/token` (`$user->createToken()`) could never have actually worked despite the API being otherwise fully wired. Published via `php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --tag=sanctum-migrations` and migrated. **Worth checking whether production has this table** — if not, the entire token-auth API has been silently broken there too.
+  - **Also found and fixed**: `RequiresPlan` middleware's `canAccess($feature)` check uses the plan-flag name as the module key, but `User::MODULE_LIST` (which drives per-staff module-access overrides) was missing `advanced_reports`, `api_access`, **and the pre-existing `inventory_reports`** — meaning any non-admin accountant hitting a route gated by one of these would've been silently denied regardless of their plan, since the missing key always defaulted to `false` for non-admins. Added all three to `MODULE_LIST`.
 
 ---
 
@@ -302,14 +324,19 @@ The items below are still open:
   but no code path ever sets it — `ReferralService::qualifyFirstPayment()`
   jumps straight `pending → rewarded`. Either implement a real two-stage
   qualification flow or remove the dead enum value/badges.
-- [ ] **Referral reward only wired to the Paystack webhook** —
-  `ReferralService::qualifyFirstPayment()` is called from
-  [PaystackWebhookController::handleChargeSuccess()](app/Http/Controllers/PaystackWebhookController.php#L132)
-  but never from [BillingController::callback()](app/Http/Controllers/BillingController.php),
-  even though both can record a `subscription_payments` row for the same
-  real-world transaction. Worth confirming the webhook is guaranteed to
-  fire in every environment, or calling `qualifyFirstPayment()` from both
-  paths (idempotently, since it already guards on "first payment").
+- [x] **Referral reward only wired to the Paystack webhook** — fixed
+  2026-11-01. A real test signup + annual payment surfaced this live:
+  `BillingController::callback()` (the synchronous browser-redirect path)
+  writes the `subscription_payments` row and activates the plan before the
+  async webhook ever arrives, so `recordPayment()` in
+  [PaystackWebhookController](app/Http/Controllers/PaystackWebhookController.php#L132)
+  found the reference already existed and skipped `qualifyFirstPayment()`
+  entirely — the referral stayed `pending` for every normal foreground
+  checkout. Fixed by calling `qualifyFirstPayment()` from both
+  `BillingController::callback()` and the referral-credit-fully-covered
+  branch of `checkout()` — safe since the method already self-guards on
+  "first successful payment" + "still-pending referral". Regression test:
+  [tests/Feature/BillingReferralQualificationTest.php](tests/Feature/BillingReferralQualificationTest.php).
 - [ ] **Acquisition/UTM columns are write-only** — `acquisition_source`,
   `utm_source`, `utm_medium`, `utm_campaign` on `tenants` are captured at
   registration (`TenancyService::registerTenant()`) but never displayed
@@ -342,7 +369,8 @@ php artisan queue:listen
 
 ## Public Links
 
-- [ ] **Quote public links** — only invoices have a `public_token` UUID and a public view route (`/inv/{token}`). Quotes have no equivalent. Add `public_token` to quotes table, generate on creation, add `GET /q/{token}` public route + view if this is a desired feature.
+- [x] **Quote public links** — fixed 2026-11-01. `public_token` (uuid, auto-generated on creation, back-filled for existing quotes) + `GET /q/{token}` and `/q/{token}/pdf` public routes, `PublicQuoteController`, `quotes/public.blade.php` (mirrors `invoices/public.blade.php`). "Copy Link" button added to `quotes/show.blade.php` (hidden for `draft`), and the quotation email now includes a "View Quotation Online →" button. Scope is view + PDF download only — no public self-service accept/decline; that stays the existing tenant-side "Accept & Generate Invoice" / "Decline" actions on the authenticated show page. Tests: [tests/Feature/QuotePublicLinkTest.php](tests/Feature/QuotePublicLinkTest.php).
+  - **Found and fixed a related bug in the existing invoice public link too**: `public_token` is a `uuid` column, but neither `/inv/{token}` nor the new `/q/{token}` route constrained the `{token}` parameter to UUID shape — a garbage/malformed link caused a raw Postgres `22P02 invalid input syntax for type uuid` 500 error instead of a clean 404. Fixed both routes with `->whereUuid('token')`.
 
 ---
 

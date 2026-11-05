@@ -53,10 +53,14 @@ class InvoiceTest extends TestCase
         // Provision chart of accounts
         app(\App\Services\BookkeepingService::class)
             ->provisionDefaultAccounts($this->tenant);
+
+        // InvoiceService::create() reads auth()->id() for created_by — these
+        // tests call the service directly, so an authenticated user must
+        // already be set before any test body runs.
+        $this->actingAs($this->admin);
     }
 
-    /** @test */
-    public function it_creates_invoice_with_correct_vat_calculation(): void
+    public function test_it_creates_invoice_with_correct_vat_calculation(): void
     {
         $service = app(InvoiceService::class);
 
@@ -87,8 +91,7 @@ class InvoiceTest extends TestCase
         $this->assertEquals('draft',   $invoice->status);
     }
 
-    /** @test */
-    public function invoice_number_is_generated_in_correct_format(): void
+    public function test_invoice_number_is_generated_in_correct_format(): void
     {
         $service = app(InvoiceService::class);
         $number  = $service->generateInvoiceNumber($this->tenant);
@@ -97,8 +100,7 @@ class InvoiceTest extends TestCase
         $this->assertMatchesRegularExpression('/^INV-\d{6}-\d{4}$/', $number);
     }
 
-    /** @test */
-    public function sequential_invoice_numbers_are_unique(): void
+    public function test_sequential_invoice_numbers_are_unique(): void
     {
         $service = app(InvoiceService::class);
 
@@ -118,8 +120,7 @@ class InvoiceTest extends TestCase
         $this->assertNotEquals($n1, $n2);
     }
 
-    /** @test */
-    public function it_calculates_wht_deduction_correctly(): void
+    public function test_it_calculates_wht_deduction_correctly(): void
     {
         $service = app(InvoiceService::class);
 
@@ -150,8 +151,7 @@ class InvoiceTest extends TestCase
         $this->assertEquals(512_500, $invoice->total_amount);
     }
 
-    /** @test */
-    public function recording_payment_updates_invoice_status_to_paid(): void
+    public function test_recording_payment_updates_invoice_status_to_paid(): void
     {
         $service = app(InvoiceService::class);
 
@@ -182,8 +182,7 @@ class InvoiceTest extends TestCase
         $this->assertEquals(0, $invoice->balance_due);
     }
 
-    /** @test */
-    public function vat_is_zero_when_not_applicable(): void
+    public function test_vat_is_zero_when_not_applicable(): void
     {
         $service = app(InvoiceService::class);
 
@@ -202,5 +201,48 @@ class InvoiceTest extends TestCase
 
         $this->assertEquals(0, $invoice->vat_amount);
         $this->assertEquals(100_000, $invoice->total_amount);
+    }
+
+    public function test_editing_an_invoice_via_the_edit_form_succeeds(): void
+    {
+        $service = app(InvoiceService::class);
+
+        $invoice = $service->create(
+            $this->tenant,
+            [
+                'customer_id'    => $this->customer->id,
+                'invoice_date'   => now()->toDateString(),
+                'due_date'       => now()->addDays(30)->toDateString(),
+                'vat_applicable' => true,
+            ],
+            [
+                ['description' => 'Original line', 'quantity' => 1, 'unit_price' => 100_000, 'vat_applicable' => true],
+            ]
+        );
+
+        $newInvoiceDate = now()->subDays(2)->toDateString();
+        $newDueDate     = now()->addDays(45)->toDateString();
+
+        // Mirrors exactly what resources/views/invoices/edit.blade.php submits —
+        // this previously used the field name "issue_date", which InvoiceRequest
+        // never recognised, so every edit failed with "The invoice date field is required."
+        $response = $this->actingAs($this->admin)->put(route('invoices.update', $invoice), [
+            'customer_id'    => $this->customer->id,
+            'invoice_date'   => $newInvoiceDate,
+            'due_date'       => $newDueDate,
+            'vat_applicable' => '1',
+            'items' => [
+                ['description' => 'Updated line', 'quantity' => 2, 'unit_price' => 50_000, 'vat_applicable' => '1'],
+            ],
+        ]);
+
+        $response->assertRedirect(route('invoices.show', $invoice));
+        $response->assertSessionDoesntHaveErrors();
+
+        $invoice->refresh();
+        $this->assertSame($newInvoiceDate, $invoice->invoice_date->toDateString());
+        $this->assertSame($newDueDate, $invoice->due_date->toDateString());
+        $this->assertCount(1, $invoice->items);
+        $this->assertSame('Updated line', $invoice->items->first()->description);
     }
 }
