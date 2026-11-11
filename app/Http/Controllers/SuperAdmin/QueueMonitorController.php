@@ -70,24 +70,22 @@ class QueueMonitorController extends Controller
             $oldestPending = DB::table('jobs')->min('created_at');
 
             return [
-                'pending_count'              => DB::table('jobs')->count(),
-                'failed_count'               => DB::table('failed_jobs')->count(),
-                'failed_jobs'                => DB::table('failed_jobs')->orderByDesc('failed_at')->limit(50)->get(),
-                'oldest_pending_age_minutes'  => $oldestPending
-                    ? now()->diffInMinutes(\Carbon\Carbon::createFromTimestamp($oldestPending), true)
-                    : null,
+                'pending_count'      => DB::table('jobs')->count(),
+                'failed_count'       => DB::table('failed_jobs')->count(),
+                'failed_jobs'        => DB::table('failed_jobs')->orderByDesc('failed_at')->limit(50)->get(),
+                'oldest_pending_at'  => $oldestPending ? \Carbon\Carbon::createFromTimestamp($oldestPending) : null,
                 'worker_heartbeat_at'   => $heartbeat,
                 'worker_presumed_down'  => $isStale,
             ];
         } catch (\Throwable $e) {
             return [
-                'error'                      => $e->getMessage(),
-                'pending_count'              => 0,
-                'failed_count'               => 0,
-                'failed_jobs'                => collect(),
-                'oldest_pending_age_minutes' => null,
-                'worker_heartbeat_at'        => null,
-                'worker_presumed_down'       => true,
+                'error'               => $e->getMessage(),
+                'pending_count'       => 0,
+                'failed_count'        => 0,
+                'failed_jobs'         => collect(),
+                'oldest_pending_at'   => null,
+                'worker_heartbeat_at' => null,
+                'worker_presumed_down' => true,
             ];
         }
     }

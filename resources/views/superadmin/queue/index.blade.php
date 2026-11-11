@@ -32,8 +32,8 @@
         <div class="bg-white rounded-lg shadow p-4">
             <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Pending jobs</p>
             <p class="text-2xl font-bold text-gray-800 mt-1">{{ number_format($status['pending_count']) }}</p>
-            @if($status['oldest_pending_age_minutes'] !== null)
-            <p class="text-xs text-gray-400 mt-0.5">Oldest: {{ $status['oldest_pending_age_minutes'] }} min</p>
+            @if($status['oldest_pending_at'])
+            <p class="text-xs text-gray-400 mt-0.5">Oldest: {{ $status['oldest_pending_at']->diffForHumans(null, true) }}</p>
             @endif
         </div>
         <div class="bg-white rounded-lg shadow p-4">

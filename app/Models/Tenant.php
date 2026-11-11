@@ -21,7 +21,7 @@ class Tenant extends Model
         'annual_turnover', 'vat_registered', 'vat_number', 'logo',
         'currency', 'subscription_plan', 'subscription_expires_at', 'is_active',
         'is_professional_firm',
-        'plan_id', 'next_plan_id', 'subscription_status', 'billing_cycle', 'trial_ends_at',
+        'plan_id', 'next_plan_id', 'subscription_status', 'billing_cycle', 'trial_ends_at', 'limit_window_start',
         'paystack_customer_id', 'paystack_subscription_code',
         'referral_code', 'partner_code', 'referred_by_code', 'referral_credit_ngn',
         'acquisition_source', 'utm_source', 'utm_medium', 'utm_campaign',
@@ -36,6 +36,7 @@ class Tenant extends Model
         'show_name_with_logo'    => 'boolean',
         'subscription_expires_at' => 'datetime',
         'trial_ends_at'           => 'datetime',
+        'limit_window_start'      => 'datetime',
         'referral_credit_ngn'     => 'decimal:2',
     ];
 
@@ -339,12 +340,10 @@ class Tenant extends Model
         $cacheKey = "tenant.{$this->id}.limit.{$resource}.{$month}";
         $current  = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, fn() => match ($resource) {
             'invoices_per_month' => $this->invoices()
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
+                ->where('created_at', '>=', $this->monthlyLimitWindowStart())
                 ->count(),
             'quotes_per_month' => \App\Models\Quote::where('tenant_id', $this->id)
-                ->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year)
+                ->where('created_at', '>=', $this->monthlyLimitWindowStart())
                 ->count(),
             'users'         => $this->users()->where('is_partner_proxy', false)->count(),
             'payroll_staff' => \App\Models\Employee::where('tenant_id', $this->id)->where('is_active', true)->count(),
@@ -353,6 +352,21 @@ class Tenant extends Model
         });
 
         return $current < $limit;
+    }
+
+    /**
+     * Start of the window used for per-month limits: the 1st of the current month,
+     * or later if the trial ended this month (so trial-plan usage isn't counted
+     * against the Free quota). Resets automatically each month.
+     */
+    public function monthlyLimitWindowStart(): \Carbon\Carbon
+    {
+        $start = now()->startOfMonth();
+
+        // Trial has lapsed but the downgrade job hasn't run yet
+        $trialEnd = $this->trialExpired() ? $this->trial_ends_at : $this->limit_window_start;
+
+        return ($trialEnd && $trialEnd->greaterThan($start)) ? $trialEnd->copy() : $start;
     }
 
     /** Invalidate withinLimit cache for a resource after a record is created. */
@@ -364,12 +378,21 @@ class Tenant extends Model
     /** Assign a plan and sync the legacy subscription_plan slug. */
     public function assignPlan(Plan $plan, ?string $status = 'active', ?\Carbon\Carbon $expiresAt = null, ?\Carbon\Carbon $trialEndsAt = null): void
     {
+        // Leaving a trial: restart the monthly usage window and drop stale cached counts
+        $leavingTrial = $this->subscription_status === 'trialing' && $status !== 'trialing';
+
         $this->update([
+            'limit_window_start'      => $leavingTrial ? ($this->trial_ends_at?->isPast() ? $this->trial_ends_at : now()) : $this->limit_window_start,
             'plan_id'                 => $plan->id,
             'subscription_plan'       => $plan->slug,
             'subscription_status'     => $status,
             'subscription_expires_at' => $expiresAt,
             'trial_ends_at'           => $trialEndsAt,
         ]);
+
+        if ($leavingTrial) {
+            $this->invalidateLimitCache('invoices_per_month');
+            $this->invalidateLimitCache('quotes_per_month');
+        }
     }
 }
