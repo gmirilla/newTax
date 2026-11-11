@@ -40,7 +40,7 @@ Schedule::job(new \App\Jobs\QueueHeartbeatJob)
     ->description('Heartbeat: confirms the queue worker is alive and processing jobs');
 
 Schedule::command('queue:check-worker-health')
-    ->everyTwoMinutes()
+    ->everyFiveMinutes()
     ->description('Alert by email if the queue worker appears down (or has recovered)');
 
 // ─── Backups ──────────────────────────────────────────────────────────────────

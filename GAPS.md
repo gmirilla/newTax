@@ -92,6 +92,42 @@ separately in [TODO.md](TODO.md), which post-dates this file's last update.
   back to `MAIL_FROM_ADDRESS` (`hello@example.com` today, which nobody
   reads). Same already-true gap exists for `BACKUP_ALERT_EMAIL`. Tests:
   [tests/Feature/CheckQueueWorkerHealthCommandTest.php](tests/Feature/CheckQueueWorkerHealthCommandTest.php).
+  - **2026-11-06 deployment findings**: the live test environment's cron
+    had neither `schedule:run` nor a queue worker configured at all —
+    confirmed by zero heartbeat jobs ever reaching the `jobs` table after
+    24+ hours (if the scheduler were firing, dispatch alone would have
+    produced 1,440+ pending rows regardless of whether anything processed
+    them). This meant **every** scheduled task in `routes/console.php` was
+    silently inert on that environment, not just the heartbeat. Fixed on
+    the server (not in code) by adding two crontab entries: `schedule:run`
+    and, since this is shared/cPanel-style hosting with no persistent
+    process support (`deploy.sh` rsyncs into `public_html`), a
+    `queue:work --stop-when-empty --tries=3 --max-time=590` entry guarded
+    with `flock` to prevent overlap, both on a 5-minute cadence.
+  - **That deployment exposed a real threshold bug, fixed in code**:
+    `QueueHealth::STALE_AFTER_MINUTES` was `3`, assuming a near-continuous
+    worker. With `queue:work` only draining every 5 minutes, a perfectly
+    healthy heartbeat can legitimately age past 3 minutes, which would have
+    made every check falsely report "down." Bumped to `8` (comfortably
+    covers the 5-minute worker cron interval plus jitter/execution time;
+    documented in the class so it can be tightened if this ever moves to a
+    continuously running worker) and the `queue:check-worker-health`
+    schedule interval dropped from every 2 minutes to every 5, matching the
+    worker's own cadence instead of checking faster than the worker can
+    possibly refresh.
+  - **Still recommended, not yet confirmed done**: the `schedule:run`
+    crontab entry is currently `*/5 * * * *`. Laravel's own convention is
+    `* * * * *` (every minute) — the scheduler itself decides each task's
+    real frequency (`->everyMinute()`, `->dailyAt(...)`, etc.) based on
+    when it's invoked, so cron-ing it at 5-minute granularity means every
+    scheduled task only gets evaluated on a 5-minute cycle, not just the
+    heartbeat. Worth tightening `schedule:run`'s cron entry to every minute
+    (the `queue:work` entry is fine to stay at 5 minutes — that one's a
+    deliberate shared-hosting tradeoff).
+  - Also fixed in the same pass: the dashboard's "Oldest: 24303.55854045
+    min" was an unrounded raw float (`Carbon::diffInMinutes()` returns a
+    float, not an int, as of Carbon 3) — now shows a human-readable
+    duration via `diffForHumans()` instead.
 
 ---
 
