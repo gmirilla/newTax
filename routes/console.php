@@ -35,6 +35,17 @@ Schedule::command('maintenance:generate-pm-work-orders')
     ->withoutOverlapping()
     ->description('Generate PM work orders for due schedules');
 
+// Drain the queue from the scheduler itself so a single `schedule:run` cron line is
+// enough on shared hosting (no separate queue:work cron entry to go missing).
+// --max-time keeps each run under a minute; runInBackground stops it delaying other
+// scheduled tasks; the short overlap expiry avoids a stuck mutex if a run is killed.
+// Place before the heartbeat so it is picked up by the same run's worker.
+Schedule::command('queue:work --stop-when-empty --tries=3 --backoff=120 --max-time=50')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->runInBackground()
+    ->description('Process queued jobs (emails, notifications, FIRS) without a separate worker daemon');
+
 Schedule::job(new \App\Jobs\QueueHeartbeatJob)
     ->everyMinute()
     ->description('Heartbeat: confirms the queue worker is alive and processing jobs');
