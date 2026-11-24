@@ -11,11 +11,18 @@ use App\Services\PaymentCredentialResolver;
 use App\Services\ReferralService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class PaystackWebhookController extends Controller
 {
+    /** A failed event is re-run on redelivery up to this many times in total. */
+    private const MAX_ATTEMPTS = 5;
+
+    /** A row left in 'processing' longer than this is assumed to belong to a crashed request. */
+    private const STUCK_AFTER_MINUTES = 5;
+
     public function handle(Request $request, PaymentCredentialResolver $credentials): JsonResponse
     {
         // ── 1. Verify HMAC-SHA512 signature ──────────────────────────────────
@@ -37,25 +44,51 @@ class PaystackWebhookController extends Controller
         $eventType = $payload['event'] ?? 'unknown';
         $eventId   = (string) ($payload['data']['id'] ?? '');
 
-        // ── 2. Idempotency check ──────────────────────────────────────────────
-        if ($eventId && WebhookEvent::where('source', 'paystack')
-                ->where('event_id', $eventId)
-                ->where('status', 'processed')
-                ->exists()) {
-            return response()->json(['status' => 'already_processed']);
+        // ── 2. Idempotency / retry check ──────────────────────────────────────
+        $log = null;
+
+        if ($eventId && ($existing = WebhookEvent::where('source', 'paystack')->where('event_id', $eventId)->first())) {
+            if ($existing->status === 'processed') {
+                return response()->json(['status' => 'already_processed']);
+            }
+
+            $stuck = $existing->status === 'processing'
+                && $existing->updated_at->lt(now()->subMinutes(self::STUCK_AFTER_MINUTES));
+
+            // Another delivery is genuinely running right now.
+            if ($existing->status === 'processing' && ! $stuck) {
+                return response()->json(['status' => 'already_processing']);
+            }
+
+            // Retry budget exhausted — stop asking Paystack to resend; needs manual attention.
+            if ($existing->attempts >= self::MAX_ATTEMPTS) {
+                return response()->json(['status' => 'gave_up']);
+            }
+
+            // A previously failed (or crashed mid-flight) event: run it again.
+            $existing->update([
+                'status'        => 'processing',
+                'attempts'      => $existing->attempts + 1,
+                'error_message' => null,
+            ]);
+            $log = $existing;
         }
 
         // ── 3. Log the incoming event ─────────────────────────────────────────
-        try {
-            $log = WebhookEvent::create([
-                'source'     => 'paystack',
-                'event_type' => $eventType,
-                'event_id'   => $eventId ?: null,
-                'payload'    => $payload,
-                'status'     => 'processing',
-            ]);
-        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
-            return response()->json(['status' => 'already_processing']);
+        if (! $log) {
+            try {
+                $log = WebhookEvent::create([
+                    'source'     => 'paystack',
+                    'event_type' => $eventType,
+                    'event_id'   => $eventId ?: null,
+                    'payload'    => $payload,
+                    'status'     => 'processing',
+                    'attempts'   => 1,
+                ]);
+            } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+                // Lost a race with a concurrent delivery of the same event.
+                return response()->json(['status' => 'already_processing']);
+            }
         }
 
         // ── 4. Dispatch to handler ────────────────────────────────────────────
@@ -65,11 +98,17 @@ class PaystackWebhookController extends Controller
         } catch (\Throwable $e) {
             $log->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
             Log::error('Paystack webhook processing failed', [
-                'event'   => $eventType,
-                'eventId' => $eventId,
-                'error'   => $e->getMessage(),
+                'event'    => $eventType,
+                'eventId'  => $eventId,
+                'attempt'  => $log->attempts,
+                'error'    => $e->getMessage(),
             ]);
-            // Always return 200 — a non-200 causes Paystack to retry indefinitely
+
+            // Non-200 makes Paystack redeliver, but only while attempts remain; after that
+            // answer 200 so it stops retrying (handlers are idempotent, see handleChargeSuccess).
+            if ($log->attempts < self::MAX_ATTEMPTS) {
+                return response()->json(['status' => 'failed_will_retry'], 500);
+            }
         }
 
         return response()->json(['status' => 'ok']);
@@ -101,35 +140,74 @@ class PaystackWebhookController extends Controller
         $tenant = $this->resolveTenant($data);
         if (!$tenant) return;
 
-        // If a downgrade is pending, apply it on this renewal instead of extending current plan
-        if ($tenant->next_plan_id) {
-            $pendingPlan = Plan::find($tenant->next_plan_id);
-            if ($pendingPlan) {
-                $tenant->assignPlan($pendingPlan, 'active', now()->addDays(31));
+        // Idempotent: if this charge was already applied (by the checkout callback or by an
+        // earlier delivery of this event) do nothing — otherwise a redelivery would extend
+        // the subscription a second time.
+        $ref = $data['reference'] ?? null;
+        if ($ref && SubscriptionPayment::where('paystack_reference', $ref)->exists()) {
+            return;
+        }
+
+        $metaCycle = in_array($data['metadata']['billing_cycle'] ?? '', ['monthly', 'yearly'], true)
+            ? $data['metadata']['billing_cycle']
+            : null;
+        // Renewals carry no metadata, so fall back to the cycle saved at checkout.
+        $cycle = $metaCycle ?? ($tenant->billing_cycle === 'yearly' ? 'yearly' : 'monthly');
+        $days  = $cycle === 'yearly' ? 365 : 31;
+
+        $payment = null;
+        $plan    = null;
+
+        // Plan change + expiry + payment record commit together so a failure part-way
+        // can be retried cleanly.
+        DB::transaction(function () use ($tenant, $data, $cycle, $metaCycle, $days, &$payment, &$plan) {
+            // If a downgrade is pending, apply it on this renewal instead of extending current plan
+            if ($tenant->next_plan_id && ($pendingPlan = Plan::find($tenant->next_plan_id))) {
+                $tenant->assignPlan($pendingPlan, 'active', now()->addDays($days));
                 $tenant->update(['next_plan_id' => null]);
-                $this->recordPayment($tenant, $pendingPlan, $data, 'subscription');
+                $this->recordPayment($tenant, $pendingPlan, $data, 'subscription', $cycle);
                 return;
             }
-        }
 
-        $plan = Plan::find($data['metadata']['plan_id'] ?? null) ?? $tenant->plan;
-        if (!$plan || $plan->price_monthly <= 0) return;
+            $plan = Plan::find($data['metadata']['plan_id'] ?? null) ?? $tenant->plan;
+            if (!$plan || $plan->price_monthly <= 0) {
+                $plan = null;
+                return;
+            }
 
-        // Extend from whichever is later: today or current expiry (handles early renewals)
-        $base      = $tenant->subscription_expires_at && $tenant->subscription_expires_at->isFuture()
-            ? $tenant->subscription_expires_at
-            : now();
-        $expiresAt = $base->copy()->addDays(31);
+            // Upgrades keep the current expiry (proration covers the gap).
+            $keepExpiry = ($data['metadata']['is_upgrade'] ?? false) ? ($data['metadata']['keep_expiry'] ?? null) : null;
 
-        $tenant->assignPlan($plan, 'active', $expiresAt);
+            if ($keepExpiry) {
+                $expiresAt = \Carbon\Carbon::parse($keepExpiry);
+            } else {
+                // Extend from whichever is later: today or current expiry (handles early renewals)
+                $base      = $tenant->subscription_expires_at && $tenant->subscription_expires_at->isFuture()
+                    ? $tenant->subscription_expires_at
+                    : now();
+                $expiresAt = $base->copy()->addDays($days);
+            }
 
-        if ($code = $data['customer']['customer_code'] ?? null) {
-            $tenant->update(['paystack_customer_id' => $code]);
-        }
+            $tenant->assignPlan($plan, 'active', $expiresAt);
 
-        $payment = $this->recordPayment($tenant, $plan, $data, 'subscription');
+            $updates = [];
+            if ($code = $data['customer']['customer_code'] ?? null) {
+                $updates['paystack_customer_id'] = $code;
+            }
+            if ($metaCycle) {
+                $updates['billing_cycle'] = $metaCycle;
+            }
+            if ($updates) {
+                $tenant->update($updates);
+            }
+
+            $payment = $this->recordPayment($tenant, $plan, $data, ($data['metadata']['is_upgrade'] ?? false) ? 'upgrade_proration' : 'subscription', $cycle);
+        });
 
         if ($payment) {
+            if ($ledgerId = (int) ($data['metadata']['credit_ledger_id'] ?? 0)) {
+                app(ReferralService::class)->linkPaymentToDebitById($ledgerId, $payment);
+            }
             app(ReferralService::class)->qualifyFirstPayment($tenant, $payment);
         }
     }
@@ -202,7 +280,7 @@ class PaystackWebhookController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function recordPayment(Tenant $tenant, Plan $plan, array $data, string $type): ?SubscriptionPayment
+    private function recordPayment(Tenant $tenant, Plan $plan, array $data, string $type, ?string $cycle = null): ?SubscriptionPayment
     {
         $ref = $data['reference'] ?? null;
 
@@ -215,6 +293,7 @@ class PaystackWebhookController extends Controller
             'amount'             => ($data['amount'] ?? 0) / 100,
             'currency'           => $data['currency'] ?? 'NGN',
             'type'               => $type,
+            'billing_cycle'      => $cycle,
             'status'             => 'success',
             'paid_at'            => now(),
         ]);

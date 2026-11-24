@@ -30,6 +30,11 @@ Schedule::command('subscriptions:downgrade-expired-trials')
     ->withoutOverlapping()
     ->description('Downgrade expired trial tenants to the Free plan');
 
+Schedule::command('referrals:release-stale-credit')
+    ->dailyAt('00:30')
+    ->withoutOverlapping()
+    ->description('Refund referral credit reserved at checkout but never paid for');
+
 Schedule::command('maintenance:generate-pm-work-orders')
     ->dailyAt('06:00')
     ->withoutOverlapping()

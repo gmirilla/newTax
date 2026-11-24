@@ -52,7 +52,7 @@ class MaintenanceBreakdownController extends Controller
         $this->authorize('create', MaintenanceBreakdown::class);
 
         $data = $request->validate([
-            'asset_id'          => 'required|exists:maintenance_assets,id',
+            'asset_id'          => ['required', \App\Support\TenantRule::exists('maintenance_assets')],
             'issue_description' => 'required|string|max:2000',
             'severity'          => 'required|in:low,medium,high,critical',
             'downtime_start'    => 'required|date',

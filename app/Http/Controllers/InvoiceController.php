@@ -228,8 +228,8 @@ class InvoiceController extends Controller
             'payment_date'       => 'required|date',
             'amount'             => 'required|numeric|min:0.01|max:' . $invoice->balance_due,
             'method'             => 'required|in:cash,bank_transfer,cheque,pos,online',
-            'payment_account_id' => 'required|exists:accounts,id',
-            'bank_account_id'    => 'nullable|exists:bank_accounts,id',
+            'payment_account_id' => ['required', \App\Support\TenantRule::exists('accounts')],
+            'bank_account_id'    => ['nullable', \App\Support\TenantRule::exists('bank_accounts')],
             'reference'          => 'nullable|string|max:100',
         ]);
 

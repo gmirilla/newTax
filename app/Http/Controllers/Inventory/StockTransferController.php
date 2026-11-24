@@ -82,7 +82,7 @@ class StockTransferController extends Controller
         $validated = $request->validate([
             'from_location_id' => ['required', 'integer', 'in:' . implode(',', $locationIds)],
             'to_location_id'   => ['required', 'integer', 'in:' . implode(',', $locationIds), 'different:from_location_id'],
-            'item_id'          => ['required', 'integer', 'exists:inventory_items,id'],
+            'item_id'          => ['required', 'integer', \App\Support\TenantRule::exists('inventory_items')],
             'quantity'         => ['required', 'numeric', 'min:0.001'],
             'notes'            => ['nullable', 'string', 'max:500'],
         ]);

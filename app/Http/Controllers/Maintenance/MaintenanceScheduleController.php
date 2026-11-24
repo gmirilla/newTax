@@ -46,7 +46,7 @@ class MaintenanceScheduleController extends Controller
         $this->authorize('create', MaintenanceSchedule::class);
 
         $data = $request->validate([
-            'asset_id'                => 'required|exists:maintenance_assets,id',
+            'asset_id'                => ['required', \App\Support\TenantRule::exists('maintenance_assets')],
             'name'                    => 'required|string|max:150',
             'maintenance_type'        => 'required|in:general,lubrication,inspection,calibration,overhaul',
             'frequency_type'          => 'required|in:daily,weekly,monthly,custom_interval',

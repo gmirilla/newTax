@@ -73,6 +73,11 @@ class MaintenanceService
         bool $createWorkOrder = true
     ): MaintenanceBreakdown {
         return DB::transaction(function () use ($tenant, $data, $createWorkOrder) {
+            // The asset must belong to this tenant (throws ModelNotFoundException otherwise).
+            MaintenanceAsset::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenant->id)
+                ->findOrFail($data['asset_id']);
+
             $breakdown = MaintenanceBreakdown::create([
                 'tenant_id'         => $tenant->id,
                 'breakdown_number'  => $this->nextBreakdownNumber($tenant),
@@ -86,6 +91,7 @@ class MaintenanceService
 
             // Mark asset unavailable
             MaintenanceAsset::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenant->id)
                 ->where('id', $data['asset_id'])
                 ->update(['status' => MaintenanceAsset::STATUS_BREAKDOWN]);
 

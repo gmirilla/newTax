@@ -582,7 +582,7 @@ class SalesOrderController extends Controller
     private function validateOrderForm(Request $request): array
     {
         return $request->validate([
-            'customer_id'            => ['nullable', 'integer', 'exists:customers,id'],
+            'customer_id'            => ['nullable', 'integer', \App\Support\TenantRule::exists('customers')],
             'customer_name'          => ['nullable', 'string', 'max:150'],
             'sale_date'              => ['required', 'date'],
             'payment_method'         => ['required', 'in:cash,bank_transfer,pos,cheque,online'],

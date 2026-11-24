@@ -92,7 +92,7 @@ class TransactionController extends Controller
             'type'             => 'required|in:sale,purchase,expense,income,payment,receipt,journal',
             'description'      => 'required|string|max:500',
             'entries'          => 'required|array|min:2',
-            'entries.*.account_id' => 'required|exists:accounts,id',
+            'entries.*.account_id' => ['required', \App\Support\TenantRule::exists('accounts')],
             'entries.*.entry_type' => 'required|in:debit,credit',
             'entries.*.amount'     => 'required|numeric|min:0.01',
         ]);
@@ -112,7 +112,7 @@ class TransactionController extends Controller
     {
         $transaction = \App\Models\Transaction::with([
             'journalEntries.account', 'creator',
-        ])->findOrFail($id);
+        ])->where('tenant_id', Auth::user()->tenant_id)->findOrFail($id);
 
         return view('transactions.show', compact('transaction'));
     }
@@ -175,11 +175,11 @@ class TransactionController extends Controller
     {
         $request->validate([
             'expense_date' => 'required|date',
-            'account_id'   => 'required|exists:accounts,id',
+            'account_id'   => ['required', \App\Support\TenantRule::exists('accounts')],
             'category'     => 'required|string',
             'description'  => 'required|string',
             'amount'       => 'required|numeric|min:0.01',
-            'vendor_id'    => 'nullable|exists:vendors,id',
+            'vendor_id'    => ['nullable', \App\Support\TenantRule::exists('vendors')],
             'receipt'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:4096',
         ]);
 
@@ -262,11 +262,11 @@ class TransactionController extends Controller
 
         $request->validate([
             'expense_date'   => 'required|date',
-            'account_id'     => 'required|exists:accounts,id',
+            'account_id'     => ['required', \App\Support\TenantRule::exists('accounts')],
             'category'       => 'required|string',
             'description'    => 'required|string',
             'amount'         => 'required|numeric|min:0.01',
-            'vendor_id'      => 'nullable|exists:vendors,id',
+            'vendor_id'      => ['nullable', \App\Support\TenantRule::exists('vendors')],
             'receipt'        => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:4096',
         ]);
 
@@ -529,7 +529,7 @@ class TransactionController extends Controller
 
         $request->validate([
             'payment_date'    => 'required|date',
-            'payment_account' => 'required|exists:accounts,id',
+            'payment_account' => ['required', \App\Support\TenantRule::exists('accounts')],
         ]);
 
         $tenant = Auth::user()->tenant;

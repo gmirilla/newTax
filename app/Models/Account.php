@@ -63,6 +63,12 @@ class Account extends Model
         ['code' => '5500', 'name' => 'Other Operating Expenses','type' => 'expense', 'sub_type' => 'other_expense'],
     ];
 
+    protected static function booted(): void
+    {
+        // Confines lookups (e.g. Account::find in ledger posting) to the current tenant.
+        static::addGlobalScope('tenant', new \App\Models\Scopes\CurrentTenantScope());
+    }
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

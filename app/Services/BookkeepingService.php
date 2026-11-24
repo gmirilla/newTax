@@ -33,6 +33,19 @@ class BookkeepingService
                 );
             }
 
+            // Every account must belong to this tenant — never post to (or move the
+            // balance of) another company's ledger, whatever the caller validated.
+            $accountIds = collect($entries)->pluck('account_id')->unique()->values();
+            $accounts   = Account::withoutGlobalScope('tenant')
+                ->where('tenant_id', $tenant->id)
+                ->whereIn('id', $accountIds)
+                ->get()
+                ->keyBy('id');
+
+            if ($accounts->count() !== $accountIds->count()) {
+                throw new \InvalidArgumentException('One or more accounts do not belong to this company.');
+            }
+
             $transaction = Transaction::create([
                 'tenant_id'        => $tenant->id,
                 'reference'        => $data['reference'] ?? $this->generateReference($tenant),
@@ -57,10 +70,9 @@ class BookkeepingService
                 ]);
 
                 // Update account balance
-                $account = Account::find($entry['account_id']);
-                if ($account) {
-                    $this->updateAccountBalance($account, $entry['entry_type'], $entry['amount']);
-                }
+                // Reuse the one validated instance so several lines on the same
+                // account accumulate correctly.
+                $this->updateAccountBalance($accounts[$entry['account_id']], $entry['entry_type'], $entry['amount']);
             }
 
             return $transaction->load('journalEntries.account');

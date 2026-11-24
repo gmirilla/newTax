@@ -280,10 +280,12 @@ class ChartOfAccountsTest extends TestCase
 
         $this->actingAs($this->admin)
             ->patch(route('settings.chart-of-accounts.update', $otherAccount), ['name' => 'Hijacked'])
-            ->assertForbidden();
+            ->assertNotFound(); // tenant scope hides other tenants' accounts entirely
 
         $this->actingAs($this->admin)
             ->delete(route('settings.chart-of-accounts.destroy', $otherAccount))
-            ->assertForbidden();
+            ->assertNotFound();
+
+        $this->assertSame('Other Tenant Expense', Account::withoutGlobalScope('tenant')->find($otherAccount->id)->name);
     }
 }
