@@ -26,6 +26,6 @@ class QueueHeartbeatJob implements ShouldQueue, ShouldBeUnique
 
     public function handle(): void
     {
-        Cache::put('queue.worker.heartbeat_at', now(), now()->addMinutes(10));
+        \App\Support\QueueHealth::recordHeartbeat();
     }
 }

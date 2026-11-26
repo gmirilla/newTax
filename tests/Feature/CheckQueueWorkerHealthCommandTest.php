@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\QueueWorkerStatusAlert;
+use App\Support\QueueHealth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -35,7 +36,7 @@ class CheckQueueWorkerHealthCommandTest extends TestCase
     public function test_it_sends_a_recovery_alert_once_the_heartbeat_is_fresh_again(): void
     {
         Mail::fake();
-        Cache::put('queue.worker.heartbeat_at', now(), now()->addMinutes(10));
+        QueueHealth::recordHeartbeat();
         Cache::put('queue.worker.down_alert_sent', true, now()->addDay());
 
         $this->artisan('queue:check-worker-health')->assertSuccessful();
@@ -47,7 +48,7 @@ class CheckQueueWorkerHealthCommandTest extends TestCase
     public function test_it_sends_nothing_during_normal_healthy_operation(): void
     {
         Mail::fake();
-        Cache::put('queue.worker.heartbeat_at', now(), now()->addMinutes(10));
+        QueueHealth::recordHeartbeat();
         Cache::forget('queue.worker.down_alert_sent');
 
         $this->artisan('queue:check-worker-health')->assertSuccessful();
