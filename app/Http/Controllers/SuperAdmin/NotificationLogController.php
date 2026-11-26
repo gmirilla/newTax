@@ -48,7 +48,16 @@ class NotificationLogController extends Controller
             return back()->with('error', 'Cannot resend: a record this notification referenced no longer exists.');
         }
 
-        $notifiable->notify($notification);
+        try {
+            $notifiable->notify($notification);
+        } catch (\Throwable $e) {
+            // e.g. SMTP unreachable — show a message instead of a 500 error page.
+            \Illuminate\Support\Facades\Log::error('Notification resend failed: ' . $e->getMessage(), [
+                'notification_log_id' => $notificationLog->id,
+            ]);
+
+            return back()->with('error', 'Could not resend: the mail server could not be reached. Check the mail settings and try again.');
+        }
 
         AuditLog::create([
             'tenant_id'      => null,
