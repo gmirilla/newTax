@@ -265,18 +265,17 @@
             ]; @endphp
 
             @foreach($pricingFaqs as $i => [$q, $a])
-            <div class="bg-white border border-slate-100 rounded-xl overflow-hidden"
-                 x-data="{ id: {{ $i }} }">
-                <button @click="$root.open === id ? $root.open = null : $root.open = id"
+            <div class="bg-white border border-slate-100 rounded-xl overflow-hidden">
+                <button @click="open = (open === {{ $i }}) ? null : {{ $i }}"
                         class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-slate-50 transition-colors">
                     <span class="text-sm font-600 text-[#1E293B] pr-4">{{ $q }}</span>
                     <svg class="w-5 h-5 text-[#64748B] flex-shrink-0 transition-transform duration-200"
-                         :class="$root.open === id ? 'rotate-45' : ''"
+                         :class="open === {{ $i }} ? 'rotate-45' : ''"
                          fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                     </svg>
                 </button>
-                <div x-show="$root.open === id" x-collapse x-cloak>
+                <div x-show="open === {{ $i }}" x-collapse x-cloak>
                     <div class="px-6 pb-5 text-sm text-[#64748B] leading-relaxed border-t border-slate-100 pt-4">{{ $a }}</div>
                 </div>
             </div>
