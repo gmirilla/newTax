@@ -45,7 +45,10 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Fail fast when the mail host is unreachable. With null PHP's default socket timeout
+            // (60s+) applies, which stalls web requests and queue workers and can outlast the
+            // database queue's retry_after (90s), causing jobs to be picked up twice.
+            'timeout' => env('MAIL_TIMEOUT', 15),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 

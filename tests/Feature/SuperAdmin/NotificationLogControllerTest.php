@@ -93,6 +93,45 @@ class NotificationLogControllerTest extends TestCase
         $this->assertSame(2, NotificationLog::count());
     }
 
+    public function test_resend_shows_an_error_instead_of_crashing_when_the_mail_server_is_unreachable(): void
+    {
+        Mail::fake();
+
+        $otherTenant = Tenant::create([
+            'name' => 'Other Co', 'slug' => 'other-co', 'email' => 'other@test.ng',
+            'tax_category' => 'small', 'annual_turnover' => 1_000_000, 'currency' => 'NGN', 'is_active' => true,
+        ]);
+
+        $referral = Referral::create([
+            'referrer_tenant_id' => $this->tenant->id,
+            'referee_tenant_id'  => $otherTenant->id,
+            'status'             => 'rewarded',
+            'reward_ngn'         => 2000,
+        ]);
+
+        $this->tenantAdmin->notify(new ReferralRewardedNotification($referral));
+        $log = NotificationLog::first();
+
+        // Simulate the SMTP connection timeout seen in production.
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Notifications\Events\NotificationSending::class,
+            fn () => throw new \Symfony\Component\Mailer\Exception\TransportException('Connection could not be established with host "ssl://mail.test:465"')
+        );
+
+        $response = $this->actingAs($this->superadmin)
+            ->post(route('superadmin.notification-logs.resend', $log));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $response->assertSessionMissing('success');
+        $this->assertSame(0, \App\Models\AuditLog::where('event', 'superadmin.notification_resent')->count());
+    }
+
+    public function test_smtp_mailer_has_a_short_default_timeout(): void
+    {
+        $this->assertSame(15, config('mail.mailers.smtp.timeout'));
+    }
+
     public function test_resend_fails_gracefully_when_referenced_model_was_deleted(): void
     {
         Mail::fake();
