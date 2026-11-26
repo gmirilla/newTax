@@ -47,13 +47,13 @@ class BomController extends Controller
         $this->authorize('create', Bom::class);
 
         $validated = $request->validate([
-            'finished_item_id'      => ['required', 'integer', 'exists:inventory_items,id'],
+            'finished_item_id'      => ['required', 'integer', \App\Support\TenantRule::exists('inventory_items')],
             'name'                  => ['required', 'string', 'max:100'],
             'version'               => ['nullable', 'string', 'max:20'],
             'yield_qty'             => ['required', 'numeric', 'min:0.001'],
             'notes'                 => ['nullable', 'string', 'max:1000'],
             'lines'                 => ['required', 'array', 'min:1'],
-            'lines.*.raw_material_item_id' => ['required', 'integer', 'exists:inventory_items,id'],
+            'lines.*.raw_material_item_id' => ['required', 'integer', \App\Support\TenantRule::exists('inventory_items')],
             'lines.*.quantity_required'    => ['required', 'numeric', 'min:0.001'],
         ]);
 
@@ -95,7 +95,7 @@ class BomController extends Controller
             'is_active' => ['boolean'],
             'notes'     => ['nullable', 'string', 'max:1000'],
             'lines'     => ['required', 'array', 'min:1'],
-            'lines.*.raw_material_item_id' => ['required', 'integer', 'exists:inventory_items,id'],
+            'lines.*.raw_material_item_id' => ['required', 'integer', \App\Support\TenantRule::exists('inventory_items')],
             'lines.*.quantity_required'    => ['required', 'numeric', 'min:0.001'],
         ]);
 

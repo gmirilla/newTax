@@ -19,10 +19,12 @@ class ReferralCreditLedger extends Model
         'type',
         'amount_ngn',
         'description',
+        'reversed_at',
     ];
 
     protected $casts = [
-        'amount_ngn' => 'decimal:2',
+        'amount_ngn'  => 'decimal:2',
+        'reversed_at' => 'datetime',
     ];
 
     public function tenant(): BelongsTo

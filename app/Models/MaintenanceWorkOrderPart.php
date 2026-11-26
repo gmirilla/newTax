@@ -22,11 +22,8 @@ class MaintenanceWorkOrderPart extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope('tenant', function ($query) {
-            if (app()->bound('currentTenant')) {
-                $query->where('maintenance_work_order_parts.tenant_id', app('currentTenant')->id);
-            }
-        });
+        // Also active during route-model binding (see CurrentTenantScope).
+        static::addGlobalScope('tenant', new \App\Models\Scopes\CurrentTenantScope());
     }
 
     public function tenant(): BelongsTo

@@ -107,7 +107,7 @@ class InventoryItemController extends Controller
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:150'],
             'sku'           => ['nullable', 'string', 'max:50'],
-            'category_id'   => ['nullable', 'integer', 'exists:inventory_categories,id'],
+            'category_id'   => ['nullable', 'integer', \App\Support\TenantRule::exists('inventory_categories')],
             'item_type'     => ['required', 'string', 'in:product,raw_material,finished_good,semi_finished'],
             'description'   => ['nullable', 'string', 'max:1000'],
             'unit'          => ['required', 'string', 'max:30'],
@@ -242,7 +242,7 @@ class InventoryItemController extends Controller
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:150'],
             'sku'           => ['nullable', 'string', 'max:50'],
-            'category_id'   => ['nullable', 'integer', 'exists:inventory_categories,id'],
+            'category_id'   => ['nullable', 'integer', \App\Support\TenantRule::exists('inventory_categories')],
             'item_type'     => ['required', 'string', 'in:product,raw_material,finished_good,semi_finished'],
             'description'   => ['nullable', 'string', 'max:1000'],
             'unit'          => ['required', 'string', 'max:30'],

@@ -99,7 +99,7 @@ class ReferralService
 
         $tenant->decrement('referral_credit_ngn', $creditApplied);
 
-        ReferralCreditLedger::create([
+        $ledger = ReferralCreditLedger::create([
             'tenant_id'   => $tenant->id,
             'referral_id' => null,
             'type'        => ReferralCreditLedger::TYPE_DEBIT,
@@ -107,7 +107,78 @@ class ReferralService
             'description' => 'Credit applied to subscription renewal',
         ]);
 
-        return ['amount' => $adjustedAmount, 'credit_applied' => $creditApplied];
+        return ['amount' => $adjustedAmount, 'credit_applied' => $creditApplied, 'ledger_id' => $ledger->id];
+    }
+
+    /**
+     * Refund a checkout debit that never turned into a payment (Paystack initialisation
+     * failed, or the checkout was abandoned). Idempotent: a debit that is already linked
+     * to a payment, or already reversed, is left alone. Returns true if credit was restored.
+     */
+    public function restoreCredit(int $ledgerId): bool
+    {
+        return DB::transaction(function () use ($ledgerId) {
+            $entry = ReferralCreditLedger::whereKey($ledgerId)->lockForUpdate()->first();
+
+            if (! $entry
+                || $entry->type !== ReferralCreditLedger::TYPE_DEBIT
+                || $entry->subscription_payment_id
+                || $entry->reversed_at) {
+                return false;
+            }
+
+            Tenant::whereKey($entry->tenant_id)->increment('referral_credit_ngn', (float) $entry->amount_ngn);
+            $entry->update(['reversed_at' => now()]);
+
+            return true;
+        });
+    }
+
+    /**
+     * Attach a payment to the specific debit created at checkout. If that debit was already
+     * refunded (checkout was paid after the stale-release window), re-apply the deduction so
+     * the customer doesn't get both a discounted charge and their credit back.
+     */
+    public function linkPaymentToDebitById(int $ledgerId, SubscriptionPayment $payment): void
+    {
+        DB::transaction(function () use ($ledgerId, $payment) {
+            $entry = ReferralCreditLedger::whereKey($ledgerId)->lockForUpdate()->first();
+
+            if (! $entry || $entry->type !== ReferralCreditLedger::TYPE_DEBIT || $entry->subscription_payment_id) {
+                return;
+            }
+
+            if ($entry->reversed_at) {
+                $tenant = Tenant::whereKey($entry->tenant_id)->lockForUpdate()->first();
+                $take   = min((float) $tenant->referral_credit_ngn, (float) $entry->amount_ngn);
+                $tenant->decrement('referral_credit_ngn', $take);
+                $entry->reversed_at = null;
+            }
+
+            $entry->subscription_payment_id = $payment->id;
+            $entry->save();
+        });
+    }
+
+    /**
+     * Refund debits whose checkout never completed within $hours. Returns how many were refunded.
+     */
+    public function releaseStaleCredit(int $hours = 24): int
+    {
+        $released = 0;
+
+        ReferralCreditLedger::where('type', ReferralCreditLedger::TYPE_DEBIT)
+            ->whereNull('subscription_payment_id')
+            ->whereNull('reversed_at')
+            ->where('created_at', '<', now()->subHours($hours))
+            ->pluck('id')
+            ->each(function ($id) use (&$released) {
+                if ($this->restoreCredit((int) $id)) {
+                    $released++;
+                }
+            });
+
+        return $released;
     }
 
     /**

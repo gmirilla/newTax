@@ -14,7 +14,7 @@ class InvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id'            => 'required|exists:customers,id',
+            'customer_id'            => ['required', \App\Support\TenantRule::exists('customers')],
             'reference'              => 'nullable|string|max:100',
             'invoice_date'           => 'required|date',
             'due_date'               => 'required|date|after_or_equal:invoice_date',

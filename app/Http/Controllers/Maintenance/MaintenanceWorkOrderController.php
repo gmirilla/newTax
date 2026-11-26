@@ -73,7 +73,7 @@ class MaintenanceWorkOrderController extends Controller
 
         $data = $request->validate([
             'source_type'     => 'required|in:preventive,corrective',
-            'asset_id'        => 'required|exists:maintenance_assets,id',
+            'asset_id'        => ['required', \App\Support\TenantRule::exists('maintenance_assets')],
             'title'           => 'required|string|max:200',
             'description'     => 'nullable|string|max:3000',
             'priority'        => 'required|in:low,medium,high,critical',
@@ -175,7 +175,7 @@ class MaintenanceWorkOrderController extends Controller
         }
 
         $data = $request->validate([
-            'inventory_item_id' => 'required|exists:inventory_items,id',
+            'inventory_item_id' => ['required', \App\Support\TenantRule::exists('inventory_items')],
             'quantity_requested'=> 'required|numeric|min:0.001',
             'notes'             => 'nullable|string|max:500',
         ]);
@@ -200,6 +200,13 @@ class MaintenanceWorkOrderController extends Controller
     public function removePart(MaintenanceWorkOrder $workOrder, MaintenanceWorkOrderPart $part)
     {
         $this->authorize('update', $workOrder);
+
+        // The part must belong to THIS work order — otherwise the open/closed check
+        // above and the authorization would be validated against a different order.
+        abort_unless(
+            $part->work_order_id === $workOrder->id && $part->tenant_id == $workOrder->tenant_id,
+            404
+        );
 
         if ($workOrder->isClosed()) {
             return back()->with('error', 'Cannot modify a closed work order.');

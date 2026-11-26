@@ -24,6 +24,12 @@ class Transaction extends Model
         'attachments'      => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        // Confines route-model binding and lookups to the current tenant (prevents IDOR).
+        static::addGlobalScope('tenant', new \App\Models\Scopes\CurrentTenantScope());
+    }
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

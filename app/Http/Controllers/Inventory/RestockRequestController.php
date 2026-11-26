@@ -82,7 +82,7 @@ class RestockRequestController extends Controller
         $this->authorize('create', RestockRequest::class);
 
         $validated = $request->validate([
-            'item_id'           => ['required', 'integer', 'exists:inventory_items,id'],
+            'item_id'           => ['required', 'integer', \App\Support\TenantRule::exists('inventory_items')],
             'quantity_requested'=> ['required', 'numeric', 'min:0.001'],
             'unit_cost'         => ['required', 'numeric', 'min:0'],
             'supplier_name'     => ['nullable', 'string', 'max:150'],
@@ -379,7 +379,7 @@ class RestockRequestController extends Controller
 
         $validated = $request->validate([
             'amount'          => ['required', 'numeric', 'min:0.01', 'max:' . $bill->balance_due],
-            'bank_account_id' => ['required', 'integer', 'exists:bank_accounts,id'],
+            'bank_account_id' => ['required', 'integer', \App\Support\TenantRule::exists('bank_accounts')],
             'payment_date'    => ['required', 'date'],
             'method'          => ['required', 'string', 'in:bank_transfer,cash,cheque,other'],
             'reference'       => ['nullable', 'string', 'max:100'],

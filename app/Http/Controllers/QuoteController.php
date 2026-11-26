@@ -56,7 +56,7 @@ class QuoteController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'customer_id'   => 'required|exists:customers,id',
+            'customer_id'   => ['required', \App\Support\TenantRule::exists('customers')],
             'quote_date'    => 'required|date',
             'expiry_date'   => 'required|date|after_or_equal:quote_date',
             'reference'     => 'nullable|string|max:100',
@@ -145,7 +145,7 @@ class QuoteController extends Controller
         }
 
         $request->validate([
-            'customer_id'    => 'required|exists:customers,id',
+            'customer_id'    => ['required', \App\Support\TenantRule::exists('customers')],
             'quote_date'     => 'required|date',
             'expiry_date'    => 'required|date|after_or_equal:quote_date',
             'reference'      => 'nullable|string|max:100',

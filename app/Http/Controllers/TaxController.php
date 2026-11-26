@@ -90,7 +90,7 @@ class TaxController extends Controller
         $request->validate([
             'paid_date'       => 'required|date',
             'amount_paid'     => 'required|numeric|min:0.01',
-            'payment_account' => 'required|exists:accounts,id',
+            'payment_account' => ['required', \App\Support\TenantRule::exists('accounts')],
         ]);
 
         $tenant = auth()->user()->tenant;

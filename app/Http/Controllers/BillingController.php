@@ -127,8 +127,8 @@ class BillingController extends Controller
         }
 
         // Apply referral credit before charging Paystack
-        ['amount' => $amount, 'credit_applied' => $creditApplied] =
-            $this->referralService->applyCredit($tenant, $amount);
+        ['amount' => $amount, 'credit_applied' => $creditApplied, 'ledger_id' => $creditLedgerId] =
+            $this->referralService->applyCredit($tenant, $amount) + ['ledger_id' => null];
 
         // If credit covers the full amount, skip Paystack entirely
         if ($amount <= 0) {
@@ -148,7 +148,9 @@ class BillingController extends Controller
                 'metadata' => ['credit_applied' => $creditApplied, 'fully_covered' => true],
             ]);
 
-            $this->referralService->linkPaymentToDebit($tenant, $payment);
+            $creditLedgerId
+                ? $this->referralService->linkPaymentToDebitById($creditLedgerId, $payment)
+                : $this->referralService->linkPaymentToDebit($tenant, $payment);
             $this->referralService->qualifyFirstPayment($tenant, $payment);
 
             return redirect()->route('billing')
@@ -169,6 +171,7 @@ class BillingController extends Controller
                 'is_upgrade'     => $isUpgrade,
                 'keep_expiry'    => $isUpgrade ? $tenant->subscription_expires_at?->toISOString() : null,
                 'credit_applied' => $creditApplied,
+                'credit_ledger_id' => $creditLedgerId,
             ],
         ];
 
@@ -178,9 +181,21 @@ class BillingController extends Controller
             $payload['plan'] = $planCode;
         }
 
-        $response = $this->paystackService->initializeTransaction($payload);
+        try {
+            $response = $this->paystackService->initializeTransaction($payload);
+        } catch (\Throwable $e) {
+            // Checkout never started — give the referral credit back before surfacing the error.
+            if ($creditLedgerId) {
+                $this->referralService->restoreCredit($creditLedgerId);
+            }
+            throw $e;
+        }
 
         if (!($response['status'] ?? false)) {
+            if ($creditLedgerId) {
+                $this->referralService->restoreCredit($creditLedgerId);
+            }
+
             return redirect()->route('billing')
                 ->with('error', $response['message'] ?? 'Could not initialise payment. Please try again.');
         }
@@ -260,7 +275,9 @@ class BillingController extends Controller
         ]);
 
         if ($creditApplied > 0) {
-            $this->referralService->linkPaymentToDebit($tenant, $payment);
+            ($ledgerId = (int) ($data['metadata']['credit_ledger_id'] ?? 0))
+                ? $this->referralService->linkPaymentToDebitById($ledgerId, $payment)
+                : $this->referralService->linkPaymentToDebit($tenant, $payment);
         }
 
         $this->referralService->qualifyFirstPayment($tenant, $payment);
