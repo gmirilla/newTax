@@ -32,11 +32,16 @@ class PlatformPaymentCredential extends Model
 
     public static function cached(string $provider = 'paystack'): ?static
     {
-        return Cache::remember(
+        // Cache the raw attribute array, never the model: with cache.serializable_classes=false
+        // a cached model is read back as __PHP_Incomplete_Class and breaks the ?static return.
+        // The raw attributes keep secret_key/public_key encrypted at rest in the cache.
+        $attributes = Cache::remember(
             "platform_payment_credentials.{$provider}",
             60,
-            fn () => static::where('provider', $provider)->first()
+            fn () => static::where('provider', $provider)->first()?->getAttributes()
         );
+
+        return is_array($attributes) ? (new static)->newFromBuilder($attributes) : null;
     }
 
     public static function forgetCache(string $provider = 'paystack'): void

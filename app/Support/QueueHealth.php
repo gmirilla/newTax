@@ -24,9 +24,27 @@ class QueueHealth
 {
     public const STALE_AFTER_MINUTES = 8;
 
+    public const CACHE_KEY = 'queue.worker.heartbeat_at';
+
+    /**
+     * The heartbeat is stored as a Unix timestamp, NOT a Carbon object: with
+     * `cache.serializable_classes = false` (the default) objects read back from a
+     * serializing store such as `database` come out as __PHP_Incomplete_Class.
+     * Any value that isn't a plain timestamp (e.g. a legacy serialized Carbon left
+     * in the cache by an older release) is treated as "no heartbeat yet".
+     */
     public static function heartbeatAt(): ?Carbon
     {
-        return Cache::get('queue.worker.heartbeat_at');
+        $value = Cache::get(self::CACHE_KEY);
+
+        return is_int($value) || (is_string($value) && ctype_digit($value))
+            ? Carbon::createFromTimestamp((int) $value)
+            : null;
+    }
+
+    public static function recordHeartbeat(): void
+    {
+        Cache::put(self::CACHE_KEY, now()->getTimestamp(), now()->addMinutes(10));
     }
 
     public static function isPresumedDown(): bool
