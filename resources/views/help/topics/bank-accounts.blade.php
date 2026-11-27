@@ -25,7 +25,7 @@
                 <li>Click <strong>Add Bank Account</strong></li>
                 <li>Enter the account name (e.g. "GTBank Current"), bank name, and account number</li>
                 <li>Select the account type: Current, Savings, or Other</li>
-                <li>Enter the <strong>Opening Balance</strong> — the amount in the account on the day you started using NaijaBooks</li>
+                <li>Enter the <strong>Opening Balance</strong> — the amount in the account on the day you started using AccountTaxNG</li>
                 <li>Click <strong>Save</strong></li>
             </ol>
             <div class="bg-amber-50 border border-amber-200 rounded p-3 text-amber-800 text-xs">

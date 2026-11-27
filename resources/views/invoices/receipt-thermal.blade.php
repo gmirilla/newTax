@@ -226,7 +226,7 @@
 
 {{-- ── Footer ──────────────────────────────────────────────────── --}}
 <p class="center sm" style="margin-top:2px;">Thank you for your business!</p>
-<p class="center sm" style="margin-top:6px; color:#666;">Powered by NaijaBooks</p>
+<p class="center sm" style="margin-top:6px; color:#666;">Powered by AccountTaxNG</p>
 
 {{-- Screen controls — hidden on print --}}
 <div class="print-controls">

@@ -40,7 +40,7 @@
         <div>
             <p class="font-semibold text-red-800">Your free trial has ended</p>
             <p class="text-sm text-red-700 mt-0.5">
-                Choose a plan below to continue using NaijaBooks. Your data is safe and will be restored immediately after payment.
+                Choose a plan below to continue using AccountTaxNG. Your data is safe and will be restored immediately after payment.
             </p>
         </div>
     </div>

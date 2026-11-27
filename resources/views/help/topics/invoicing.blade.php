@@ -44,7 +44,7 @@
                 <p class="font-semibold text-gray-800 mb-1">VAT — Value Added Tax (7.5%)</p>
                 <ul class="list-disc list-inside space-y-1 pl-2 text-gray-600">
                     <li>Added to the invoice total and collected from the customer</li>
-                    <li>You remit this to FIRS on behalf of your customer</li>
+                    <li>You remit this to NRS on behalf of your customer</li>
                     <li>Only add VAT if your business is VAT-registered</li>
                     <li>You can enable VAT per line item or on the whole invoice</li>
                 </ul>
@@ -53,14 +53,14 @@
                 <p class="font-semibold text-gray-800 mb-1">WHT — Withholding Tax</p>
                 <ul class="list-disc list-inside space-y-1 pl-2 text-gray-600">
                     <li>Deducted from the amount the customer pays you</li>
-                    <li>The customer pays WHT directly to FIRS on your behalf</li>
+                    <li>The customer pays WHT directly to NRS on your behalf</li>
                     <li>Common for professional services, consulting, and contracts</li>
                     <li>Rate depends on the type of service (5% or 10%)</li>
                     <li>The WHT certificate from the customer is your proof of deduction</li>
                 </ul>
             </div>
             <div class="bg-amber-50 border border-amber-200 rounded p-3 text-amber-800 text-xs">
-                WHT reduces the amount you receive, not the amount you charge. On a ₦100,000 invoice with 5% WHT, you receive ₦95,000. The ₦5,000 is paid by the customer to FIRS.
+                WHT reduces the amount you receive, not the amount you charge. On a ₦100,000 invoice with 5% WHT, you receive ₦95,000. The ₦5,000 is paid by the customer to NRS.
             </div>
         </div>
     </div>
@@ -123,7 +123,7 @@
             <h2 class="text-sm font-semibold text-gray-800">Sharing Invoice Links</h2>
         </div>
         <div class="p-5 text-sm text-gray-700 space-y-2">
-            <p>Each invoice has a <strong>public link</strong> that you can share directly with your customer. They can view and download the invoice PDF without needing a NaijaBooks account.</p>
+            <p>Each invoice has a <strong>public link</strong> that you can share directly with your customer. They can view and download the invoice PDF without needing a AccountTaxNG account.</p>
             <p>Find the link on the invoice detail page — it's safe to share via email or WhatsApp.</p>
         </div>
     </div>

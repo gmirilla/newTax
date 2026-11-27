@@ -47,8 +47,8 @@
             <h2 class="text-sm font-semibold text-gray-800">Understanding PAYE Deductions</h2>
         </div>
         <div class="p-5 space-y-4 text-sm text-gray-700">
-            <p>Pay As You Earn (PAYE) is income tax deducted from employees' salaries and remitted to FIRS each month.</p>
-            <p>NaijaBooks calculates PAYE automatically using the Nigeria tax bands:</p>
+            <p>Pay As You Earn (PAYE) is income tax deducted from employees' salaries and remitted to the State Internal Revenue Service each month.</p>
+            <p>AccountTaxNG calculates PAYE automatically using the current annual tax bands:</p>
             <table class="w-full text-xs border-collapse">
                 <thead>
                     <tr class="bg-gray-50">
@@ -57,15 +57,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td class="p-2 border border-gray-200">First ₦300,000</td><td class="p-2 border border-gray-200">7%</td></tr>
-                    <tr class="bg-gray-50"><td class="p-2 border border-gray-200">Next ₦300,000</td><td class="p-2 border border-gray-200">11%</td></tr>
-                    <tr><td class="p-2 border border-gray-200">Next ₦500,000</td><td class="p-2 border border-gray-200">15%</td></tr>
-                    <tr class="bg-gray-50"><td class="p-2 border border-gray-200">Next ₦500,000</td><td class="p-2 border border-gray-200">19%</td></tr>
-                    <tr><td class="p-2 border border-gray-200">Next ₦1,600,000</td><td class="p-2 border border-gray-200">21%</td></tr>
-                    <tr class="bg-gray-50"><td class="p-2 border border-gray-200">Above ₦3,200,000</td><td class="p-2 border border-gray-200">24%</td></tr>
+                    <tr><td class="p-2 border border-gray-200">First ₦800,000</td><td class="p-2 border border-gray-200">0% (tax-free)</td></tr>
+                    <tr class="bg-gray-50"><td class="p-2 border border-gray-200">Next ₦2,200,000 (up to ₦3M)</td><td class="p-2 border border-gray-200">15%</td></tr>
+                    <tr><td class="p-2 border border-gray-200">Next ₦9,000,000 (up to ₦12M)</td><td class="p-2 border border-gray-200">18%</td></tr>
+                    <tr class="bg-gray-50"><td class="p-2 border border-gray-200">Next ₦13,000,000 (up to ₦25M)</td><td class="p-2 border border-gray-200">21%</td></tr>
+                    <tr><td class="p-2 border border-gray-200">Next ₦25,000,000 (up to ₦50M)</td><td class="p-2 border border-gray-200">23%</td></tr>
+                    <tr class="bg-gray-50"><td class="p-2 border border-gray-200">Above ₦50,000,000</td><td class="p-2 border border-gray-200">25%</td></tr>
                 </tbody>
             </table>
-            <p class="text-xs text-gray-500">A Consolidated Relief Allowance (CRA) of the higher of ₦200,000 or 1% of gross income, plus 20% of gross income, is deducted before applying these bands.</p>
+            <p class="text-xs text-gray-500">These are the personal income tax bands under the Nigeria Tax Act 2025 (effective 1 January 2026). The old Consolidated Relief Allowance no longer applies. Taxable income is gross pay less employee pension, NHF, NHIS and any rent relief (20% of annual rent paid, up to ₦500,000 a year).</p>
         </div>
     </div>
 
