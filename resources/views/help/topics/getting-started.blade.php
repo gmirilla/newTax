@@ -12,7 +12,7 @@
     </div>
 
     <div>
-        <h1 class="text-xl font-bold text-gray-900">Getting Started with NaijaBooks</h1>
+        <h1 class="text-xl font-bold text-gray-900">Getting Started with AccountTaxNG</h1>
         <p class="text-sm text-gray-500 mt-1">Follow these steps to set up your account and start managing your business finances.</p>
     </div>
 
@@ -27,13 +27,13 @@
             <ul class="list-disc list-inside space-y-1 pl-2">
                 <li><strong>Business Name</strong> — appears on every invoice and report</li>
                 <li><strong>RC Number</strong> — your CAC registration number</li>
-                <li><strong>TIN</strong> — your FIRS Tax Identification Number</li>
+                <li><strong>TIN</strong> — your Tax Identification Number</li>
                 <li><strong>Address, City, State</strong></li>
                 <li><strong>Email and Phone</strong> — printed on invoices</li>
                 <li><strong>Logo</strong> — upload a PNG or JPG (shown on PDFs)</li>
             </ul>
             <div class="bg-amber-50 border border-amber-200 rounded p-3 text-amber-800 text-xs">
-                Your TIN and RC number are printed on all invoices. If you do not have a TIN yet, you can add it later, but FIRS requires it for formal invoicing.
+                Your TIN and RC number are printed on all invoices. If you do not have a TIN yet, you can add it later, but NRS requires it for formal invoicing.
             </div>
         </div>
     </div>
@@ -52,7 +52,7 @@
                 <li>The first account you add becomes the default for payments</li>
             </ul>
             <div class="bg-blue-50 border border-blue-200 rounded p-3 text-blue-800 text-xs">
-                The opening balance is used to calculate your Balance Sheet correctly. Enter the exact amount in the account on the day you started using NaijaBooks.
+                The opening balance is used to calculate your Balance Sheet correctly. Enter the exact amount in the account on the day you started using AccountTaxNG.
             </div>
         </div>
     </div>

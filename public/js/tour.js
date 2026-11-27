@@ -2,12 +2,23 @@
  * SiteTour — lightweight, dependency-free spotlight tour.
  * Dims the page with four rectangles framing a gap over the target element,
  * plus a positioned tooltip card. No library, no build step.
- * Steps: [{ target: '#selector'|null, title, body }]
+ * Steps: [{ target: '#selector'|null, title, body, link?: { href, label } }]
  */
 (function () {
     if (window.SiteTour) return;
 
     const STYLE_ID = 'site-tour-styles';
+
+    // First element matching the selector that is actually visible. The app renders its
+    // sidebar twice (mobile panel + desktop), so a plain querySelector can hit a hidden copy.
+    function findTarget(selector) {
+        if (!selector) return null;
+        const all = document.querySelectorAll(selector);
+        for (let i = 0; i < all.length; i++) {
+            if (all[i].getClientRects().length > 0) return all[i];
+        }
+        return null;
+    }
 
     function injectStyles() {
         if (document.getElementById(STYLE_ID)) return;
@@ -34,7 +45,7 @@
     class SiteTour {
         constructor(steps, opts = {}) {
             this.steps = (steps || []).filter(function (s) {
-                return !s.target || document.querySelector(s.target);
+                return !s.target || findTarget(s.target);
             });
             this.index = 0;
             this.storageKey = opts.storageKey || 'site_tour_seen';
@@ -111,7 +122,7 @@
 
         _render() {
             const step = this.steps[this.index];
-            const target = step.target ? document.querySelector(step.target) : null;
+            const target = step.target ? findTarget(step.target) : null;
 
             if (target) {
                 target.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -125,6 +136,7 @@
             card.innerHTML =
                 '<h3>' + step.title + '</h3>' +
                 '<p>' + step.body + '</p>' +
+                (step.link ? '<p style="margin-top:8px"><a href="' + step.link.href + '" style="color:#0A7A4B;font-weight:600;text-decoration:underline">' + step.link.label + '</a></p>' : '') +
                 '<div class="st-footer">' +
                     '<span class="st-progress">Step ' + (this.index + 1) + ' of ' + this.steps.length + '</span>' +
                     '<div class="st-btns">' +
@@ -145,7 +157,7 @@
         _reposition() {
             const step = this.steps[this.index];
             if (!step) return;
-            const target = step.target ? document.querySelector(step.target) : null;
+            const target = step.target ? findTarget(step.target) : null;
             const vw = window.innerWidth;
             const vh = window.innerHeight;
             const { dimTop, dimBottom, dimLeft, dimRight, ring, card } = this.els;

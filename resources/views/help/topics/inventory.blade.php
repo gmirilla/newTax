@@ -92,7 +92,7 @@
             <h2 class="text-sm font-semibold text-gray-800">Restock Requests</h2>
         </div>
         <div class="p-5 space-y-3 text-sm text-gray-700">
-            <p>When stock falls to or below the reorder level, NaijaBooks flags the item. Go to <strong>Inventory → Restock Requests</strong> to:</p>
+            <p>When stock falls to or below the reorder level, AccountTaxNG flags the item. Go to <strong>Inventory → Restock Requests</strong> to:</p>
             <ul class="list-disc list-inside space-y-1 pl-2">
                 <li>Review pending restock requests</li>
                 <li>Confirm a restock delivery — entering the quantity received and unit cost</li>

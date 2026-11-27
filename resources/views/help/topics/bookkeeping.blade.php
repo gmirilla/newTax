@@ -12,11 +12,11 @@
 
     <div>
         <h1 class="text-xl font-bold text-gray-900">Bookkeeping</h1>
-        <p class="text-sm text-gray-500 mt-1">How NaijaBooks records your financial transactions and keeps your books balanced.</p>
+        <p class="text-sm text-gray-500 mt-1">How AccountTaxNG records your financial transactions and keeps your books balanced.</p>
     </div>
 
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-        NaijaBooks uses <strong>double-entry bookkeeping</strong> — the same system used by accountants worldwide. Every transaction has two sides: a debit and a credit. You don't need to enter these manually; the system does it automatically when you create invoices, record payments, and run payroll.
+        AccountTaxNG uses <strong>double-entry bookkeeping</strong> — the same system used by accountants worldwide. Every transaction has two sides: a debit and a credit. You don't need to enter these manually; the system does it automatically when you create invoices, record payments, and run payroll.
     </div>
 
     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -73,7 +73,7 @@
                 </ul>
             </div>
             <div class="bg-green-50 border border-green-200 rounded p-3 text-green-800 text-xs">
-                You never need to enter journal entries manually for invoices, payments, or payroll. NaijaBooks creates them automatically.
+                You never need to enter journal entries manually for invoices, payments, or payroll. AccountTaxNG creates them automatically.
             </div>
         </div>
     </div>
@@ -93,7 +93,7 @@
             <h2 class="text-sm font-semibold text-gray-800">Opening Balances</h2>
         </div>
         <div class="p-5 space-y-3 text-sm text-gray-700">
-            <p>When you start using NaijaBooks mid-year, you need to enter <strong>opening balances</strong> for accounts that already have values:</p>
+            <p>When you start using AccountTaxNG mid-year, you need to enter <strong>opening balances</strong> for accounts that already have values:</p>
             <ul class="list-disc list-inside space-y-1 pl-2">
                 <li><strong>Bank accounts</strong> — set when adding the account in Settings</li>
                 <li><strong>Inventory</strong> — set per item when adding stock items</li>

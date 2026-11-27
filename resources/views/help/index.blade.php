@@ -2,16 +2,19 @@
 @section('page-title', 'Help Center')
 
 @section('content')
-<div class="max-w-4xl space-y-6">
+<div class="max-w-4xl space-y-6" x-data="{ q: '' }">
 
     <div>
         <h1 class="text-lg font-semibold text-gray-900">Help Center</h1>
-        <p class="text-sm text-gray-500 mt-0.5">Step-by-step guides for every feature in NaijaBooks.</p>
+        <p class="text-sm text-gray-500 mt-0.5">Step-by-step guides for every feature in AccountTaxNG.</p>
+        <input type="search" x-model="q" placeholder="Search help topics…" aria-label="Search help topics"
+               class="mt-3 w-full sm:w-80 rounded-md border-gray-300 text-sm shadow-sm focus:ring-green-500 focus:border-green-500">
     </div>
 
     @php
         $categories = [
             'basics'     => ['label' => 'Getting Started',  'color' => 'green'],
+            'firm'       => ['label' => 'For Accounting Firms', 'color' => 'green'],
             'sales'      => ['label' => 'Sales',            'color' => 'blue'],
             'finance'    => ['label' => 'Finance',          'color' => 'purple'],
             'operations' => ['label' => 'Operations',       'color' => 'orange'],
@@ -51,6 +54,7 @@
                 @foreach($grouped[$catKey] as $slug => $topic)
                 @php $c = $catColors[$cat['color']]; @endphp
                 <a href="{{ route('help.show', $slug) }}"
+                   x-show="!q || {{ \Illuminate\Support\Js::from(strtolower($topic['title'].' '.$topic['description'])) }}.includes(q.toLowerCase())"
                    class="flex items-start gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-green-400 hover:shadow-sm transition-all group">
                     <div class="mt-0.5 w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-md {{ $c['bg'] }} {{ $c['border'] }} border">
                         <svg class="w-4 h-4 {{ $c['icon'] }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -60,7 +64,9 @@
                     <div class="min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-sm font-semibold text-gray-800 group-hover:text-green-700">{{ $topic['title'] }}</span>
-                            @if(isset($topic['plan']))
+                            @if(!empty($topic['locked']))
+                                <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded {{ $c['label'] }} uppercase tracking-wide">Upgrade</span>
+                            @elseif(isset($topic['plan']))
                                 <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded {{ $c['label'] }} uppercase tracking-wide">Pro</span>
                             @endif
                         </div>

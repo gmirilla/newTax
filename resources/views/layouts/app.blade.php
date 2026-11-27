@@ -544,17 +544,40 @@ function dismissNotification(id) {
 <script>
 function startAppTour(force) {
     if (!window.SiteTour) return;
+    // Steps whose target isn't on the page (role/plan hides it) are skipped automatically by SiteTour,
+    // but the module steps below are also gated here so the copy never promises something the user can't open.
+    var help = function (slug) { return { href: @js(url('/help')) + '/' + slug, label: 'Learn more in the Help Center' }; };
     var steps = [
         { target: '[data-tour="nav-dashboard"]', title: 'Your Dashboard', body: 'See your cash position, recent activity, and what needs attention — all at a glance.' },
-        { target: '[data-tour="nav-sales"]', title: 'Sales & Finance', body: 'Create invoices and quotes, and record transactions and expenses here.' },
-        { target: '[data-tour="nav-tax"]', title: 'Tax & Compliance', body: 'VAT, WHT, and CIT are computed automatically as you record transactions — review and file when ready.' },
-        { target: '[data-tour="nav-reports"]', title: 'Reports', body: 'Profit & Loss, Balance Sheet, and more — generated instantly, whenever you need them.' },
-        { target: '[data-tour="nav-settings"]', title: 'Settings', body: 'Manage your team, bank accounts, billing, and company details here.' },
+        @if(in_array($navRole, ['admin', 'accountant']))
+        { target: '[data-tour="nav-clients"]', title: 'Clients (for accounting firms)', body: 'If you manage the books of other companies, add them here. Switch between clients in one click, without logging out. Business owners can ignore this unless they work with an accountant.', link: help('accounting-firms') },
+        { target: '[data-tour="nav-sales"]', title: 'Sales & Finance', body: 'Create invoices and quotes, and record transactions and expenses here.', link: help('invoicing') },
+        { target: '[data-tour="nav-tax"]', title: 'Tax & Compliance', body: 'VAT, WHT, and CIT are computed automatically as you record transactions — review and file when ready.', link: help('tax-compliance') },
+        @endif
+        @if($canPayroll)
+        { target: '[data-tour="nav-payroll"]', title: 'HR & Payroll', body: 'Add employees and run payroll. PAYE and pension are worked out for you.', link: help('payroll') },
+        @endif
+        @if($canInventory)
+        { target: '[data-tour="nav-inventory"]', title: 'Inventory', body: 'Track stock, sales orders, restocking and supplier bills.', link: help('inventory') },
+        @endif
+        @if($canMaintenance)
+        { target: '[data-tour="nav-maintenance"]', title: 'Maintenance', body: 'Keep track of equipment, servicing schedules, breakdowns and repair costs.', link: help('maintenance') },
+        @endif
+        @if($canStorefront)
+        { target: '[data-tour="nav-storefront"]', title: 'Online Storefront', body: 'Run a public shop page and manage customer orders here.', link: help('storefront') },
+        @endif
+        @if($canManufacturing)
+        { target: '[data-tour="nav-manufacturing"]', title: 'Manufacturing', body: 'Define recipes and run production orders that turn raw materials into finished goods.', link: help('manufacturing') },
+        @endif
+        { target: '[data-tour="nav-reports"]', title: 'Reports', body: 'Profit & Loss, Balance Sheet, and more — generated instantly, whenever you need them.', link: help('reports') },
+        @if($navRole === 'admin')
+        { target: '[data-tour="nav-settings"]', title: 'Settings', body: 'Manage your team, bank accounts, chart of accounts, billing, and company details here.', link: help('team') },
+        @endif
         { target: '[data-tour="topbar-notifications"]', title: 'Notifications', body: 'We\'ll flag anything that needs your attention right here.' },
-        { target: '[data-tour="nav-help"]', title: 'Need help?', body: 'The Help Center has guides for every module. Replay this tour anytime from the button just above it.' },
+        { target: '[data-tour="nav-help"]', title: 'Need help?', body: 'The Help Center has searchable guides for every module. Replay this tour anytime from the “Take a Tour” link just below it.' },
         { target: null, title: 'You\'re all set!', body: 'Explore at your own pace — you can replay this tour anytime from the “Take a Tour” link in the sidebar.' },
     ];
-    new window.SiteTour(steps, { storageKey: 'nb_tour_app_v1' }).start(!!force);
+    new window.SiteTour(steps, { storageKey: 'nb_tour_app_v2' }).start(!!force);
 }
 window.startAppTour = startAppTour;
 @if(request()->routeIs('dashboard', 'staff.dashboard'))

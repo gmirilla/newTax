@@ -50,7 +50,7 @@
             <h2 class="text-sm font-semibold text-gray-800">Referral Program</h2>
         </div>
         <div class="p-5 space-y-4 text-sm text-gray-700">
-            <p>Earn <strong>₦2,000</strong> in account credit for every business you refer to NaijaBooks, up to a maximum of <strong>₦20,000</strong> in credits.</p>
+            <p>Earn <strong>₦2,000</strong> in account credit for every business you refer to AccountTaxNG, up to a maximum of <strong>₦20,000</strong> in credits.</p>
             <div>
                 <p class="font-medium mb-1">How it works:</p>
                 <ol class="list-decimal list-inside space-y-1 pl-2">
@@ -78,7 +78,7 @@
                 <li>Bank transfer</li>
                 <li>USSD (all major Nigerian banks)</li>
             </ul>
-            <p class="text-xs text-gray-500">NaijaBooks does not store your card details — Paystack handles all payment security.</p>
+            <p class="text-xs text-gray-500">AccountTaxNG does not store your card details — Paystack handles all payment security.</p>
         </div>
     </div>
 

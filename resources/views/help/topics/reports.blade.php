@@ -69,7 +69,7 @@
         </div>
         <div class="p-5 space-y-3 text-sm text-gray-700">
             <p>The Trial Balance lists every account with its total debits and credits for a period. It is used by accountants to verify that the books are balanced — total debits must equal total credits.</p>
-            <p class="text-xs text-gray-500">If you share books with an external auditor or FIRS officer, the Trial Balance is one of the first documents they will request.</p>
+            <p class="text-xs text-gray-500">If you share books with an external auditor or NRS officer, the Trial Balance is one of the first documents they will request.</p>
         </div>
     </div>
 
@@ -101,7 +101,7 @@
                 <li><strong>WHT deducted</strong> by customers on payments to you</li>
                 <li><strong>PAYE</strong> deducted from employees (if payroll is active)</li>
             </ul>
-            <p class="text-xs text-gray-500">Use this report to prepare your monthly VAT returns and quarterly WHT filings with FIRS.</p>
+            <p class="text-xs text-gray-500">Use this report to prepare your monthly VAT returns and quarterly WHT filings with NRS.</p>
         </div>
     </div>
 
