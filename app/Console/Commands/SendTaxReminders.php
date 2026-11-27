@@ -127,7 +127,7 @@ class SendTaxReminders extends Command
         $message = "📋 CIT Annual Filing Reminder for {$tenant->name}\n"
             . "Tax Year: {$taxYear}\n"
             . "Due Date: {$taxYear + 1}-06-30\n"
-            . "Rate: {$tenant->getCitRate()}% CIT + 2.5% Education Tax\n"
+            . "Rate: {$tenant->getCitRate()}% CIT + 4% Development Levy (large companies)\n"
             . "File via NRS TaxPro-Max. Penalties apply for late filing.";
 
         if ($dryRun) {

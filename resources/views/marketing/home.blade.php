@@ -391,6 +391,9 @@ function startMarketingTour() {
         { src: base + '08-payroll-employees.png', title: 'Payroll & PAYE', body: 'Manage your team and run payroll with PAYE computed per current income tax bands.' },
         { src: base + '09-reports.png', title: 'Financial Reports', body: 'P&L, Balance Sheet, Trial Balance, and tax reports — generated instantly, exportable to PDF or Excel.' },
         { src: base + '10-profit-loss.png', title: 'Profit & Loss Statement', body: 'Real profit, calculated automatically from your invoices, expenses, and payroll.' },
+        { src: base + '11-clients.png', title: 'Built for accounting firms', body: 'Accountants and bookkeepers can manage many client companies from one login, with every client\'s books kept separate.' },
+        { src: base + '12-inventory.png', title: 'Inventory & stock', body: 'Track stock levels, restock alerts, and stock value across items and locations, linked to your sales and books.' },
+        { src: base + '13-help.png', title: 'Guides for every feature', body: 'A searchable Help Center with step-by-step guides and worked examples, right inside the app.' },
     ];
     new window.ImageTour(slides, { ctaHref: '{{ route('register') }}', ctaLabel: 'Start Free Trial' }).start();
 }

@@ -98,7 +98,7 @@
 
             @if(!$report['is_exempt'])
             <p class="text-xs text-gray-400 mt-3">
-                Development Levy replaces TETFund, IT Levy, NASENI and Police Trust Fund contributions (Finance Act 2025).
+                Development Levy replaces TETFund, IT Levy, NASENI and Police Trust Fund contributions (Nigeria Tax Act 2025).
             </p>
             @endif
         </div>
@@ -125,7 +125,7 @@
             <div class="flex items-center gap-3 pt-2">
                 <button type="submit"
                         class="px-6 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700">
-                    Mark as Filed with FIRS
+                    Mark as Filed with NRS
                 </button>
                 <p class="text-xs text-gray-400">Submit the official return via your NRS TaxPro-Max account first.</p>
             </div>

@@ -10,7 +10,7 @@
             </svg>
             <span>
                 You're on the <strong>Free plan</strong> — upgrade to unlock
-                payroll, inventory management, FIRS e-invoicing, advanced reports and more.
+                payroll, inventory management, NRS e-invoicing, advanced reports and more.
             </span>
         </span>
         <div class="flex items-center gap-2 shrink-0">

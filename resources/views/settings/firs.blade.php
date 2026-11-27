@@ -120,7 +120,7 @@
             <li>Credentials are obtained from the <strong>NRS TaxPro Max portal</strong> under e-Invoicing → API Keys.</li>
             <li>The sandbox base URL is <code class="font-mono">https://sandbox.einvoice.firs.gov.ng</code>. Set <code class="font-mono">FIRS_BASE_URL</code> in your <code>.env</code> to switch to production.</li>
             <li>All credential fields are <strong>encrypted at rest</strong> using your application key.</li>
-            <li>After saving, use the <strong>Submit to FIRS</strong> button on any sent/paid invoice to initiate e-Invoicing.</li>
+            <li>After saving, use the <strong>Submit to NRS</strong> button on any sent/paid invoice to initiate e-Invoicing.</li>
         </ul>
     </div>
 

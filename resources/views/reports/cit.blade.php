@@ -79,7 +79,7 @@
                         <td class="py-3 text-right text-orange-700 text-lg">₦{{ number_format($report['cit_payable'], 2) }}</td>
                     </tr>
                     <tr class="hover:bg-gray-50">
-                        <td class="py-2 text-gray-600">Education Tax (2.5% of assessable profit)</td>
+                        <td class="py-2 text-gray-600">Development Levy (4% of assessable profit, large companies)</td>
                         <td class="py-2 text-right font-medium text-purple-700">₦{{ number_format($report['education_tax'], 2) }}</td>
                     </tr>
                     <tr class="bg-purple-50 font-bold border-t">
@@ -93,7 +93,7 @@
 
     @if($report['company_size'] === 'small')
     <div class="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-        <strong>Small Company Exemption:</strong> Companies with annual turnover of ₦25 million or less are exempt from Company Income Tax (0% rate) per the Finance Act 2019. However, Education Tax at 2.5% of assessable profit still applies.
+        <strong>Small Company Exemption:</strong> Companies with annual turnover of ₦50 million or less (and that are not professional service firms) are exempt from Company Income Tax (0% rate) and the 4% Development Levy under the Nigeria Tax Act 2025. Annual filing is still required.
     </div>
     @endif
 
@@ -104,7 +104,7 @@
     @endif
 
     <div class="p-3 bg-gray-50 border rounded text-xs text-gray-500">
-        CIT computed under the Companies Income Tax Act (CITA) Cap C21 LFN 2004 as amended by Finance Acts 2019–2023. Education Tax under Tertiary Education Trust Fund (Establishment Act) 2011.
+        CIT and Development Levy computed under the Nigeria Tax Act 2025.
         Filing deadline: 6 months after financial year-end. Due: <strong>{{ $report['filing_deadline'] }}</strong>.
     </div>
 </div>

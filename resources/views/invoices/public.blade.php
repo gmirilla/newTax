@@ -242,7 +242,7 @@
         {{-- Footer --}}
         <div class="bg-gray-50 border-t border-gray-200 px-8 py-4 text-center text-xs text-gray-400">
             <span class="font-semibold text-gray-500">{{ $invoice->tenant->name }}</span> &mdash;
-            This invoice complies with Nigerian tax regulations (FIRS).
+            This invoice complies with Nigerian tax regulations (NRS).
             @if($invoice->tenant->tin) TIN: {{ $invoice->tenant->tin }} &mdash; @endif
             Generated: {{ now()->format('d M Y') }}
         </div>

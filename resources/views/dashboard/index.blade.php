@@ -163,7 +163,7 @@
             </dl>
             @if($dashboard['cit']['summary']['is_exempt'])
             <div class="mt-3 p-2 bg-green-50 rounded text-xs text-green-700">
-                ✅ Small company (≤₦25M turnover) – 0% CIT. Filing still required.
+                ✅ Small company (≤₦50M turnover) – 0% CIT. Filing still required.
             </div>
             @endif
             <a href="{{ route('tax.cit.index') }}" class="mt-4 block text-center text-sm text-green-600 hover:text-green-800 font-medium">

@@ -223,7 +223,7 @@
                                                 <option value="foreign_income">Foreign vendor / income not earned in Nigeria</option>
                                                 <option value="diplomatic">Diplomatic mission / international organisation</option>
                                                 <option value="govt_entity">Government or public sector entity</option>
-                                                <option value="firs_exemption">FIRS-issued WHT exemption certificate</option>
+                                                <option value="firs_exemption">NRS-issued WHT exemption certificate</option>
                                                 <option value="treaty_relief">Double-taxation treaty relief</option>
                                                 <option value="other">Other</option>
                                             </select>

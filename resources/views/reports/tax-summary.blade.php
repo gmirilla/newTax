@@ -191,7 +191,7 @@
     @endif
 
     <div class="text-xs text-gray-400 text-center">
-        Compliance summary covers VAT (Finance Act 2019), WHT (CITA), CIT (CITA Cap C21), PAYE (PITA Cap P8), Pension (PRA 2014), NHF Act.
+        Compliance summary covers VAT, WHT, CIT and PAYE (Nigeria Tax Act 2025), Pension (PRA 2014), NHF Act.
     </div>
 </div>
 @endsection

@@ -161,7 +161,7 @@
             @php
                 $featureList = [
                     'feature_payroll'            => ['label' => 'Payroll Module',       'desc' => 'Access to payroll processing and payslips'],
-                    'feature_firs'               => ['label' => 'NRS e-Invoicing',      'desc' => 'Submit invoices directly to FIRS'],
+                    'feature_firs'               => ['label' => 'NRS e-Invoicing',      'desc' => 'Submit invoices directly to the NRS'],
                     'feature_advanced_reports'   => ['label' => 'Advanced Reports',     'desc' => 'General Ledger, Balance Sheet exports'],
                     'feature_inventory'          => ['label' => 'Inventory Module',     'desc' => 'Items, stock movements, sales orders, restock'],
                     'feature_inventory_reports'  => ['label' => 'Inventory Reports',    'desc' => 'Stock valuation, low stock, sales analytics'],
