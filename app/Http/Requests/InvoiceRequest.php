@@ -21,7 +21,8 @@ class InvoiceRequest extends FormRequest
             'vat_applicable'         => 'boolean',
             'wht_applicable'         => 'boolean',
             'wht_rate'               => 'nullable|numeric|min:0|max:30',
-            'discount_amount'        => 'nullable|numeric|min:0',
+            'discount_type'          => 'nullable|in:fixed,percent',
+            'discount_value'         => ['nullable', 'numeric', 'min:0', 'max:' . ($this->input('discount_type') === 'percent' ? 100 : 999999999999)],
             'notes'                  => 'nullable|string|max:1000',
             'terms'                  => 'nullable|string|max:1000',
 

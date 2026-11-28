@@ -185,7 +185,7 @@
                 @endif
                 @if($quote->discount_amount > 0)
                 <div class="flex justify-between">
-                    <span class="text-gray-500">Discount</span>
+                    <span class="text-gray-500">{{ \App\Support\DocumentTotals::label($quote->discount_type ?? null, $quote->discount_value ?? 0) }}</span>
                     <span class="text-red-600">- ₦{{ number_format($quote->discount_amount, 2) }}</span>
                 </div>
                 @endif

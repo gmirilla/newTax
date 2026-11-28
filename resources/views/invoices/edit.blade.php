@@ -110,10 +110,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Discount (₦)</label>
-                    <input type="number" name="discount_amount" value="{{ $invoice->discount_amount }}" min="0" step="0.01"
-                           x-model.number="discount" @input="calcTotals()"
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm">
+                    @include('partials.discount-field', ['recalc' => 'calcTotals'])
                 </div>
             </div>
 
@@ -122,6 +119,10 @@
                 <div class="flex justify-between">
                     <span class="text-gray-500">Subtotal</span>
                     <span x-text="'₦' + fmt(subtotal)">₦0.00</span>
+                </div>
+                <div class="flex justify-between text-orange-700" x-show="discountAmt > 0">
+                    <span x-text="discountType === 'percent' ? 'Discount (' + (parseFloat(discountValue) || 0) + '%)' : 'Discount'"></span>
+                    <span x-text="'- ₦' + fmt(discountAmt)"></span>
                 </div>
                 <div class="flex justify-between" x-show="vatApplicable">
                     <span class="text-gray-500">VAT (7.5%)</span>
@@ -164,8 +165,9 @@ function invoiceForm() {
         items: @json($invoiceItemsData),
         vatApplicable: {{ $invoice->vat_applicable ? 'true' : 'false' }},
         whtApplicable: {{ $invoice->wht_applicable ? 'true' : 'false' }},
-        discount: {{ $invoice->discount_amount }},
-        subtotal: 0, vatAmount: 0, total: 0,
+        discountType: @js($invoice->discount_type ?? 'fixed'),
+        discountValue: @js((float) ($invoice->discount_type ? $invoice->discount_value : $invoice->discount_amount)),
+        subtotal: 0, discountAmt: 0, vatAmount: 0, total: 0,
         init() { this.calcTotals(); },
         addItem() { this.items.push({ description: '', quantity: 1, unit_price: 0, amount: 0 }); },
         removeItem(i) { if (this.items.length > 1) this.items.splice(i, 1); this.calcTotals(); },
@@ -174,9 +176,15 @@ function invoiceForm() {
             this.calcTotals();
         },
         calcTotals() {
-            this.subtotal = this.items.reduce((s, i) => s + (i.amount || 0), 0) - (this.discount || 0);
-            this.vatAmount = this.vatApplicable ? Math.round(this.subtotal * 7.5) / 100 : 0;
-            this.total = this.subtotal + this.vatAmount;
+            const gross = this.items.reduce((s, i) => s + (i.amount || 0), 0);
+            const v     = Math.max(0, parseFloat(this.discountValue) || 0);
+            this.discountAmt = this.discountType === 'percent'
+                ? Math.round(gross * Math.min(v, 100)) / 100
+                : Math.min(v, gross);
+            this.subtotal  = gross;
+            const net      = gross - this.discountAmt;
+            this.vatAmount = this.vatApplicable ? Math.round(net * 7.5) / 100 : 0;
+            this.total     = net + this.vatAmount;
         },
         fmt(n) { return Number(n || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     }

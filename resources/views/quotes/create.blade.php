@@ -177,10 +177,7 @@
                 <textarea name="terms" rows="2" placeholder="Terms..."
                           class="mt-2 w-full border-gray-300 rounded-md text-sm focus:ring-green-500 focus:border-green-500">{{ old('terms', 'This quote is valid until the expiry date shown. Prices are subject to change after expiry.') }}</textarea>
                 <div class="mt-3">
-                    <label class="block text-xs font-medium text-gray-700">Discount (₦)</label>
-                    <input type="number" name="discount_amount" x-model="discount" @input="calculateTotals"
-                           min="0" step="0.01" value="{{ old('discount_amount', 0) }}"
-                           class="mt-1 block w-full rounded border-gray-300 text-sm focus:ring-green-500 focus:border-green-500">
+                    @include('partials.discount-field', ['recalc' => 'calculateTotals'])
                 </div>
             </div>
 
@@ -196,7 +193,7 @@
                         <dd x-text="'₦' + fmtN(totals.vatAmount)"></dd>
                     </div>
                     <div class="flex justify-between text-orange-700" x-show="discount > 0">
-                        <dt>Discount</dt>
+                        <dt x-text="discountType === 'percent' ? 'Discount (' + (parseFloat(discountValue) || 0) + '%)' : 'Discount'"></dt>
                         <dd x-text="'- ₦' + fmtN(discount)"></dd>
                     </div>
                     <div class="flex justify-between text-red-700" x-show="whtApplicable">
@@ -254,6 +251,8 @@ function quoteForm() {
         whtApplicable: false,
         whtRate: 5,
         discount: 0,
+        discountType: @js(old('discount_type', 'fixed')),
+        discountValue: @js((float) old('discount_value', 0)),
         items: [{ description: '', quantity: 1, unitPrice: 0, subtotal: 0, vatAmount: 0, total: 0 }],
         totals: { subtotal: 0, vatAmount: 0, whtAmount: 0, grandTotal: 0 },
 
@@ -332,10 +331,18 @@ function quoteForm() {
         },
 
         calculateTotals() {
-            this.totals.subtotal   = this.items.reduce((s, i) => s + i.subtotal, 0);
-            this.totals.vatAmount  = this.vatApplicable ? this.items.reduce((s, i) => s + i.vatAmount, 0) : 0;
-            this.totals.whtAmount  = this.whtApplicable ? Math.round(this.totals.subtotal * this.whtRate) / 100 : 0;
-            this.totals.grandTotal = this.totals.subtotal + this.totals.vatAmount - this.totals.whtAmount - (parseFloat(this.discount) || 0);
+            const sub     = this.items.reduce((s, i) => s + (i.subtotal || 0), 0);
+            const lineVat = this.vatApplicable ? this.items.reduce((s, i) => s + (i.vatAmount || 0), 0) : 0;
+            const v       = Math.max(0, parseFloat(this.discountValue) || 0);
+            const disc    = this.discountType === 'percent'
+                ? Math.round(sub * Math.min(v, 100)) / 100
+                : Math.min(v, sub);
+            const net     = sub - disc;
+            this.discount = disc;
+            this.totals.subtotal   = sub;
+            this.totals.vatAmount  = sub > 0 ? Math.round(lineVat * (net / sub) * 100) / 100 : 0;
+            this.totals.whtAmount  = this.whtApplicable ? Math.round(net * this.whtRate) / 100 : 0;
+            this.totals.grandTotal = net + this.totals.vatAmount - this.totals.whtAmount;
         },
 
         fmt(v)  { return '₦' + this.fmtN(v); },

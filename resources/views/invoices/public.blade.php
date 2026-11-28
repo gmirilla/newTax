@@ -167,7 +167,7 @@
                 @endif
                 @if($invoice->discount_amount > 0)
                 <div class="flex justify-between text-red-600">
-                    <span>Discount</span>
+                    <span>{{ \App\Support\DocumentTotals::label($invoice->discount_type ?? null, $invoice->discount_value ?? 0) }}</span>
                     <span>- &#8358;{{ number_format($invoice->discount_amount, 2) }}</span>
                 </div>
                 @endif

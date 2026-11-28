@@ -207,7 +207,7 @@
         @endif
         @if($quote->discount_amount > 0)
         <tr>
-            <td class="label">Discount:</td>
+            <td class="label">{{ \App\Support\DocumentTotals::label($quote->discount_type ?? null, $quote->discount_value ?? 0) }}:</td>
             <td class="amount" style="color:#dc2626;">- ₦{{ number_format($quote->discount_amount, 2) }}</td>
         </tr>
         @endif

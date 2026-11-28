@@ -199,6 +199,9 @@
                           class="w-full border-gray-300 rounded-md text-sm focus:ring-green-500 focus:border-green-500">{{ old('notes') }}</textarea>
                 <textarea name="terms" rows="2" placeholder="Payment terms..."
                           class="mt-2 w-full border-gray-300 rounded-md text-sm focus:ring-green-500 focus:border-green-500">{{ old('terms', 'Payment due within 30 days. Please quote invoice number on remittance.') }}</textarea>
+                <div class="mt-3">
+                    @include('partials.discount-field', ['recalc' => 'calculateTotals'])
+                </div>
             </div>
 
             <div class="bg-white rounded-lg shadow p-6">
@@ -207,6 +210,10 @@
                     <div class="flex justify-between">
                         <dt class="text-gray-500">Subtotal</dt>
                         <dd x-text="'₦' + formatNumber(totals.subtotal)"></dd>
+                    </div>
+                    <div class="flex justify-between text-orange-700" x-show="totals.discount > 0">
+                        <dt x-text="discountType === 'percent' ? 'Discount (' + (parseFloat(discountValue) || 0) + '%)' : 'Discount'"></dt>
+                        <dd x-text="'- ₦' + formatNumber(totals.discount)"></dd>
                     </div>
                     <div class="flex justify-between text-blue-700" x-show="vatApplicable">
                         <dt>VAT (7.5%)</dt>
@@ -266,8 +273,10 @@ function invoiceForm() {
         vatApplicable: true,
         whtApplicable: false,
         whtRate: 5,
+        discountType: @js(old('discount_type', 'fixed')),
+        discountValue: @js((float) old('discount_value', 0)),
         items: [{ description: '', quantity: 1, unitPrice: 0, subtotal: 0, vatAmount: 0, total: 0 }],
-        totals: { subtotal: 0, vatAmount: 0, whtAmount: 0, grandTotal: 0 },
+        totals: { subtotal: 0, discount: 0, vatAmount: 0, whtAmount: 0, grandTotal: 0 },
 
         // Preview
         showPreview: false,
@@ -374,10 +383,18 @@ function invoiceForm() {
         },
 
         calculateTotals() {
-            this.totals.subtotal  = this.items.reduce((s, i) => s + i.subtotal, 0);
-            this.totals.vatAmount = this.vatApplicable ? this.items.reduce((s, i) => s + i.vatAmount, 0) : 0;
-            this.totals.whtAmount = this.whtApplicable ? Math.round(this.totals.subtotal * this.whtRate) / 100 : 0;
-            this.totals.grandTotal = this.totals.subtotal + this.totals.vatAmount - this.totals.whtAmount;
+            const sub     = this.items.reduce((s, i) => s + i.subtotal, 0);
+            const lineVat = this.vatApplicable ? this.items.reduce((s, i) => s + i.vatAmount, 0) : 0;
+            const v       = Math.max(0, parseFloat(this.discountValue) || 0);
+            const disc    = this.discountType === 'percent'
+                ? Math.round(sub * Math.min(v, 100)) / 100
+                : Math.min(v, sub);
+            const net     = sub - disc;
+            this.totals.subtotal   = sub;
+            this.totals.discount   = disc;
+            this.totals.vatAmount  = sub > 0 ? Math.round(lineVat * (net / sub) * 100) / 100 : 0;
+            this.totals.whtAmount  = this.whtApplicable ? Math.round(net * this.whtRate) / 100 : 0;
+            this.totals.grandTotal = net + this.totals.vatAmount - this.totals.whtAmount;
         },
 
         formatNaira(val) { return '₦' + this.formatNumber(val); },

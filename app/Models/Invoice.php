@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasDiscount;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,12 +12,12 @@ use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasDiscount;
 
     protected $fillable = [
         'tenant_id', 'customer_id', 'transaction_id',
         'invoice_number', 'reference', 'invoice_date', 'due_date',
-        'subtotal', 'vat_amount', 'wht_amount', 'discount_amount',
+        'subtotal', 'vat_amount', 'wht_amount', 'discount_amount', 'discount_type', 'discount_value',
         'total_amount', 'amount_paid', 'balance_due',
         'vat_applicable', 'wht_applicable', 'wht_rate',
         'status', 'notes', 'terms', 'currency', 'qr_code', 'created_by',
@@ -30,6 +31,7 @@ class Invoice extends Model
         'vat_amount'      => 'decimal:2',
         'wht_amount'      => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'discount_value'  => 'decimal:2',
         'total_amount'    => 'decimal:2',
         'amount_paid'     => 'decimal:2',
         'balance_due'     => 'decimal:2',
@@ -104,18 +106,15 @@ class Invoice extends Model
 
     public function recalculateTotals(): void
     {
-        $subtotal   = $this->items->sum('subtotal');
-        $vatAmount  = $this->vat_applicable
-            ? $this->items->where('vat_applicable', true)->sum('vat_amount')
-            : 0;
-        $whtAmount  = $this->wht_applicable
-            ? round($subtotal * $this->wht_rate / 100, 2)
-            : 0;
+        $subtotal = (float) $this->items->sum('subtotal');
+        $lineVat  = (float) $this->items->where('vat_applicable', true)->sum('vat_amount');
+        $t        = $this->computeTotals($subtotal, $lineVat);
 
         $this->subtotal        = $subtotal;
-        $this->vat_amount      = $vatAmount;
-        $this->wht_amount      = $whtAmount;
-        $this->total_amount    = $subtotal + $vatAmount - $whtAmount - $this->discount_amount;
+        $this->vat_amount      = $t['vat'];
+        $this->wht_amount      = $t['wht'];
+        $this->discount_amount = $t['discount'];
+        $this->total_amount    = $t['total'];
         $this->balance_due     = $this->total_amount - $this->amount_paid;
         $this->save();
     }

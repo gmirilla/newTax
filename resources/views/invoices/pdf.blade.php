@@ -261,7 +261,7 @@
         @endif
         @if($invoice->discount_amount > 0)
         <tr>
-            <td class="label">Discount:</td>
+            <td class="label">{{ \App\Support\DocumentTotals::label($invoice->discount_type ?? null, $invoice->discount_value ?? 0) }}:</td>
             <td class="amount" style="color:#dc2626;">- ₦{{ number_format($invoice->discount_amount, 2) }}</td>
         </tr>
         @endif

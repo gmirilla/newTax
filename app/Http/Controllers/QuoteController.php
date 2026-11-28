@@ -63,7 +63,8 @@ class QuoteController extends Controller
             'vat_applicable'=> 'boolean',
             'wht_applicable'=> 'boolean',
             'wht_rate'      => 'nullable|numeric|in:5,10',
-            'discount_amount'=> 'nullable|numeric|min:0',
+            'discount_type' => 'nullable|in:fixed,percent',
+            'discount_value' => ['nullable', 'numeric', 'min:0', 'max:' . ($request->input('discount_type') === 'percent' ? 100 : 999999999999)],
             'notes'         => 'nullable|string',
             'terms'         => 'nullable|string',
             'items'         => 'required|array|min:1',
@@ -91,7 +92,8 @@ class QuoteController extends Controller
             'vat_applicable'  => $request->boolean('vat_applicable'),
             'wht_applicable'  => $request->boolean('wht_applicable'),
             'wht_rate'        => $request->boolean('wht_applicable') ? ($request->wht_rate ?? 5) : 0,
-            'discount_amount' => $request->discount_amount ?? 0,
+            'discount_type'   => $request->input('discount_type') ?: 'fixed',
+            'discount_value'  => (float) $request->input('discount_value', 0),
             'notes'           => $request->notes,
             'terms'           => $request->terms,
             'status'          => $request->input('status', 'draft'),
@@ -152,7 +154,8 @@ class QuoteController extends Controller
             'vat_applicable' => 'boolean',
             'wht_applicable' => 'boolean',
             'wht_rate'       => 'nullable|numeric|in:5,10',
-            'discount_amount'=> 'nullable|numeric|min:0',
+            'discount_type' => 'nullable|in:fixed,percent',
+            'discount_value' => ['nullable', 'numeric', 'min:0', 'max:' . ($request->input('discount_type') === 'percent' ? 100 : 999999999999)],
             'notes'          => 'nullable|string',
             'terms'          => 'nullable|string',
             'items'          => 'required|array|min:1',
@@ -169,7 +172,8 @@ class QuoteController extends Controller
             'vat_applicable'  => $request->boolean('vat_applicable'),
             'wht_applicable'  => $request->boolean('wht_applicable'),
             'wht_rate'        => $request->boolean('wht_applicable') ? ($request->wht_rate ?? 5) : 0,
-            'discount_amount' => $request->discount_amount ?? 0,
+            'discount_type'   => $request->input('discount_type') ?: 'fixed',
+            'discount_value'  => (float) $request->input('discount_value', 0),
             'notes'           => $request->notes,
             'terms'           => $request->terms,
         ]);
@@ -272,6 +276,8 @@ class QuoteController extends Controller
             'vat_applicable'  => $quote->vat_applicable,
             'wht_applicable'  => $quote->wht_applicable,
             'wht_rate'        => $quote->wht_rate,
+            'discount_type'   => $quote->discount_type,
+            'discount_value'  => $quote->discount_value,
             'discount_amount' => $quote->discount_amount,
             'subtotal'        => 0,
             'vat_amount'      => 0,
@@ -337,8 +343,19 @@ class QuoteController extends Controller
         $vatAmount = $request->boolean('vat_applicable') ? $items->sum('vat_amount') : 0;
         $whtRate   = (float) ($request->input('wht_rate', 5));
         $whtAmount = $request->boolean('wht_applicable') ? round($subtotal * $whtRate / 100, 2) : 0;
-        $discount  = (float) ($request->input('discount_amount', 0));
-        $total     = $subtotal + $vatAmount - $whtAmount - $discount;
+        $t = \App\Support\DocumentTotals::calculate(
+            (float) $subtotal,
+            (float) $vatAmount,
+            $request->boolean('vat_applicable'),
+            $request->boolean('wht_applicable'),
+            $whtRate,
+            $request->input('discount_type', 'fixed'),
+            (float) $request->input('discount_value', 0),
+        );
+        $vatAmount = $t['vat'];
+        $whtAmount = $t['wht'];
+        $discount  = $t['discount'];
+        $total     = $t['total'];
 
         $quote = (object) [
             'tenant'          => $tenant,
@@ -356,12 +373,17 @@ class QuoteController extends Controller
             'vat_amount'      => $vatAmount,
             'wht_amount'      => $whtAmount,
             'discount_amount' => $discount,
+            'discount_type'   => $request->input('discount_type', 'fixed'),
+            'discount_value'  => (float) $request->input('discount_value', 0),
             'total_amount'    => $total,
             'notes'           => $request->input('notes'),
             'terms'           => $request->input('terms'),
         ];
 
-        $html = view('quotes.pdf', compact('quote'))->render();
+        $accent     = $tenant->accentColor();
+        $accentText = $tenant->accentTextColor();
+
+        $html = view('quotes.pdf', compact('quote', 'accent', 'accentText'))->render();
 
         return response()->json(['html' => $html]);
     }

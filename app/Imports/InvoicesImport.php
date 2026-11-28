@@ -36,7 +36,8 @@ class InvoicesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
      *  vat_applicable   | yes/no/1/0  (default: yes)
      *  wht_applicable   | yes/no/1/0  (default: no)
      *  wht_rate         | numeric     (default: 0)
-     *  discount_amount  | numeric     (default: 0)
+     *  discount_amount  | numeric     (default: 0) — a ₦ amount, or a percentage when discount_type is 'percent'
+     *  discount_type    | fixed/percent (default: fixed)
      *  notes            | optional
      *  terms            | optional
      *  item_description | required
@@ -172,6 +173,10 @@ class InvoicesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         $whtApplicable = $this->parseBool($header['wht_applicable'] ?? 'no');
         $whtRate       = (float)($header['wht_rate'] ?? 0);
         $discount      = (float)str_replace(',', '', $header['discount_amount'] ?? 0);
+        $discountType  = in_array(strtolower(trim($header['discount_type'] ?? '')), ['percent', 'percentage', '%'], true) ? 'percent' : 'fixed';
+        if ($discountType === 'percent') {
+            $discount = min($discount, 100.0);
+        }
 
         $data = [
             'customer_id'     => $customer->id,
@@ -181,7 +186,8 @@ class InvoicesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             'vat_applicable'  => $vatApplicable,
             'wht_applicable'  => $whtApplicable,
             'wht_rate'        => $whtRate,
-            'discount_amount' => $discount,
+            'discount_type'   => $discountType,
+            'discount_value'  => $discount,
             'notes'           => trim($header['notes'] ?? '') ?: null,
             'terms'           => trim($header['terms'] ?? '') ?: null,
         ];
