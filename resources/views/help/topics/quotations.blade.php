@@ -77,6 +77,15 @@
 
     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-semibold text-gray-800">Adding a Discount</h2>
+        </div>
+        <div class="p-5 space-y-3 text-sm text-gray-700">
+            <p>Quotes have the same <strong>Discount</strong> box as invoices: pick <strong>₦</strong> or <strong>%</strong>. VAT and WHT are calculated after the discount, and the discount carries over when the quote is converted to an invoice.</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
             <h2 class="text-sm font-semibold text-gray-800">Converting a Quote to an Invoice</h2>
         </div>
         <div class="p-5 space-y-3 text-sm text-gray-700">

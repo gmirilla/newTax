@@ -36,7 +36,9 @@ class InvoiceService
                 'vat_applicable' => $data['vat_applicable'] ?? true,
                 'wht_applicable' => $data['wht_applicable'] ?? false,
                 'wht_rate'       => $data['wht_rate'] ?? 0,
-                'discount_amount'=> $data['discount_amount'] ?? 0,
+                // discount_amount is computed by recalculateTotals() from type + value
+                'discount_type'  => $data['discount_type'] ?? 'fixed',
+                'discount_value' => $data['discount_value'] ?? $data['discount_amount'] ?? 0,
                 'notes'          => $data['notes'] ?? null,
                 'terms'          => $data['terms'] ?? 'Payment due within 30 days.',
                 'currency'       => 'NGN',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasDiscount;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,12 +12,12 @@ use Illuminate\Support\Str;
 
 class Quote extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasDiscount;
 
     protected $fillable = [
         'tenant_id', 'customer_id',
         'quote_number', 'reference', 'quote_date', 'expiry_date',
-        'subtotal', 'vat_amount', 'wht_amount', 'discount_amount', 'total_amount',
+        'subtotal', 'vat_amount', 'wht_amount', 'discount_amount', 'discount_type', 'discount_value', 'total_amount',
         'vat_applicable', 'wht_applicable', 'wht_rate',
         'status', 'notes', 'terms', 'currency', 'public_token',
         'converted_invoice_id', 'created_by',
@@ -29,6 +30,7 @@ class Quote extends Model
         'vat_amount'      => 'decimal:2',
         'wht_amount'      => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'discount_value'  => 'decimal:2',
         'total_amount'    => 'decimal:2',
         'vat_applicable'  => 'boolean',
         'wht_applicable'  => 'boolean',
@@ -82,19 +84,16 @@ class Quote extends Model
     public function recalculateTotals(): void
     {
         $this->load('items');
-        $subtotal  = $this->items->sum('subtotal');
-        $vatAmount = $this->vat_applicable
-            ? $this->items->where('vat_applicable', true)->sum('vat_amount')
-            : 0;
-        $whtAmount = $this->wht_applicable
-            ? round($subtotal * $this->wht_rate / 100, 2)
-            : 0;
+        $subtotal = (float) $this->items->sum('subtotal');
+        $lineVat  = (float) $this->items->where('vat_applicable', true)->sum('vat_amount');
+        $t        = $this->computeTotals($subtotal, $lineVat);
 
         $this->update([
             'subtotal'        => $subtotal,
-            'vat_amount'      => $vatAmount,
-            'wht_amount'      => $whtAmount,
-            'total_amount'    => $subtotal + $vatAmount - $whtAmount - $this->discount_amount,
+            'vat_amount'      => $t['vat'],
+            'wht_amount'      => $t['wht'],
+            'discount_amount' => $t['discount'],
+            'total_amount'    => $t['total'],
         ]);
     }
 }

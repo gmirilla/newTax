@@ -99,9 +99,19 @@ class InvoiceController extends Controller
         $subtotal  = $items->sum('subtotal');
         $vatAmount = $request->boolean('vat_applicable') ? $items->sum('vat_amount') : 0;
         $whtRate   = (float) ($request->input('wht_rate', 5));
-        $whtAmount = $request->boolean('wht_applicable') ? round($subtotal * $whtRate / 100, 2) : 0;
-        $discount  = (float) ($request->input('discount_amount', 0));
-        $total     = $subtotal + $vatAmount - $whtAmount - $discount;
+        $t = \App\Support\DocumentTotals::calculate(
+            (float) $subtotal,
+            (float) $vatAmount,
+            $request->boolean('vat_applicable'),
+            $request->boolean('wht_applicable'),
+            $whtRate,
+            $request->input('discount_type', 'fixed'),
+            (float) $request->input('discount_value', 0),
+        );
+        $vatAmount = $t['vat'];
+        $whtAmount = $t['wht'];
+        $discount  = $t['discount'];
+        $total     = $t['total'];
 
         $invoice = (object) [
             'tenant'          => $tenant,
@@ -119,6 +129,8 @@ class InvoiceController extends Controller
             'vat_amount'      => $vatAmount,
             'wht_amount'      => $whtAmount,
             'discount_amount' => $discount,
+            'discount_type'   => $request->input('discount_type', 'fixed'),
+            'discount_value'  => (float) $request->input('discount_value', 0),
             'total_amount'    => $total,
             'amount_paid'     => 0,
             'balance_due'     => $total,
@@ -126,7 +138,10 @@ class InvoiceController extends Controller
             'terms'           => $request->input('terms'),
         ];
 
-        $html = view('invoices.pdf', compact('invoice'))->render();
+        $accent     = $tenant->accentColor();
+        $accentText = $tenant->accentTextColor();
+
+        $html = view('invoices.pdf', compact('invoice', 'accent', 'accentText'))->render();
 
         return response()->json(['html' => $html]);
     }
@@ -180,16 +195,20 @@ class InvoiceController extends Controller
         $invoice->update($request->only([
             'customer_id', 'reference', 'invoice_date', 'due_date',
             'vat_applicable', 'wht_applicable', 'wht_rate',
-            'discount_amount', 'notes', 'terms',
-        ]));
+            'notes', 'terms',
+        ]) + [
+            'discount_type'  => $request->input('discount_type') ?: 'fixed',
+            'discount_value' => (float) $request->input('discount_value', 0),
+        ]);
 
         // Rebuild line items
         $invoice->items()->delete();
         foreach ($request->input('items', []) as $index => $itemData) {
             $item = new \App\Models\InvoiceItem(array_merge($itemData, [
-                'invoice_id' => $invoice->id,
-                'vat_rate'   => Invoice::VAT_RATE,
-                'sort_order' => $index + 1,
+                'invoice_id'     => $invoice->id,
+                'vat_applicable' => $invoice->vat_applicable,
+                'vat_rate'       => Invoice::VAT_RATE,
+                'sort_order'     => $index + 1,
             ]));
             $item->calculateTotals();
             $item->save();

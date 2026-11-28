@@ -251,7 +251,7 @@
                 </div>
                 @if($invoice->discount_amount > 0)
                 <div class="flex justify-between">
-                    <span class="text-gray-500">Discount</span>
+                    <span class="text-gray-500">{{ \App\Support\DocumentTotals::label($invoice->discount_type ?? null, $invoice->discount_value ?? 0) }}</span>
                     <span class="text-red-600">- ₦{{ number_format($invoice->discount_amount, 2) }}</span>
                 </div>
                 @endif

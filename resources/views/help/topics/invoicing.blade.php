@@ -65,6 +65,23 @@
         </div>
     </div>
 
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-sm font-semibold text-gray-800">Adding a Discount</h2>
+        </div>
+        <div class="p-5 space-y-3 text-sm text-gray-700">
+            <ul class="list-disc list-inside space-y-1 pl-2 text-gray-600">
+                <li>In the <strong>Discount</strong> box, choose <strong>₦</strong> for a fixed amount or <strong>%</strong> for a percentage of the subtotal</li>
+                <li>The discount applies to the whole invoice and is capped at the subtotal</li>
+                <li>VAT and WHT are worked out on the amount <em>after</em> the discount</li>
+            </ul>
+            <div class="bg-amber-50 border border-amber-200 rounded p-3 text-amber-800 text-xs">
+                Example: ₦100,000 of goods with a 10% discount is ₦90,000. VAT at 7.5% is ₦6,750, so the customer pays ₦96,750.
+            </div>
+            <p class="text-xs text-gray-500">Invoices created before discount types existed keep their original figures until you edit and save them.</p>
+        </div>
+    </div>
+
     {{-- Downloading PDF --}}
     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div class="px-5 py-3 bg-gray-50 border-b border-gray-200">

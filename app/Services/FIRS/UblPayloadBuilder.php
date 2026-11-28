@@ -27,6 +27,13 @@ class UblPayloadBuilder
 
         $typeCode = $invoice->is_b2c ? '388' : '380';
 
+        // Document-level discount: tax base is the discounted subtotal; line tax figures are
+        // scaled by the same ratio so they still sum to the document totals.
+        $subtotal  = (float) $invoice->subtotal;
+        $discount  = (float) $invoice->discount_amount;
+        $net       = round($subtotal - $discount, 2);
+        $taxRatio  = ($invoice->discount_type !== null && $subtotal > 0) ? $net / $subtotal : 1.0;
+
         return [
             // ── Context ───────────────────────────────────────────────────────
             'invoice_id'         => $invoice->id,
@@ -55,7 +62,7 @@ class UblPayloadBuilder
                     'TaxCurrencyCode'   => 'NGN',
                     'TaxSubtotal'       => [
                         [
-                            'TaxableAmount' => (float) $invoice->subtotal,
+                            'TaxableAmount' => $invoice->discount_type !== null ? $net : $subtotal,
                             'TaxAmount'     => (float) $invoice->vat_amount,
                             'TaxCategory'   => [
                                 'ID'           => 'S',
@@ -70,14 +77,14 @@ class UblPayloadBuilder
             // ── Monetary totals ───────────────────────────────────────────────
             'LegalMonetaryTotal' => [
                 'LineExtensionAmount'  => (float) $invoice->subtotal,
-                'TaxExclusiveAmount'   => (float) $invoice->subtotal,
-                'TaxInclusiveAmount'   => (float) ($invoice->subtotal + $invoice->vat_amount),
+                'TaxExclusiveAmount'   => $invoice->discount_type !== null ? $net : $subtotal,
+                'TaxInclusiveAmount'   => (float) (($invoice->discount_type !== null ? $net : $subtotal) + $invoice->vat_amount),
                 'AllowanceTotalAmount' => (float) $invoice->discount_amount,
                 'PayableAmount'        => (float) $invoice->total_amount,
             ],
 
             // ── Line items ────────────────────────────────────────────────────
-            'InvoiceLine' => $this->buildLines($invoice),
+            'InvoiceLine' => $this->buildLines($invoice, $taxRatio),
         ];
     }
 
@@ -139,9 +146,9 @@ class UblPayloadBuilder
         ];
     }
 
-    private function buildLines(Invoice $invoice): array
+    private function buildLines(Invoice $invoice, float $taxRatio = 1.0): array
     {
-        return $invoice->items->map(function ($item, $index) {
+        return $invoice->items->map(function ($item, $index) use ($taxRatio) {
             $vatPercent = $item->vat_applicable ? 7.5 : 0.0;
             $taxCode    = $item->vat_applicable ? 'S' : 'Z';
 
@@ -170,11 +177,11 @@ class UblPayloadBuilder
                 ],
                 'TaxTotal'           => [
                     [
-                        'TaxAmount'   => (float) $item->vat_amount,
+                        'TaxAmount'   => round((float) $item->vat_amount * $taxRatio, 2),
                         'TaxSubtotal' => [
                             [
-                                'TaxableAmount' => (float) $item->subtotal,
-                                'TaxAmount'     => (float) $item->vat_amount,
+                                'TaxableAmount' => round((float) $item->subtotal * $taxRatio, 2),
+                                'TaxAmount'     => round((float) $item->vat_amount * $taxRatio, 2),
                                 'TaxCategory'   => [
                                     'ID'        => $taxCode,
                                     'Percent'   => $vatPercent,
