@@ -233,7 +233,7 @@
         <table>
             @if($invoice->vat_applicable)
             <tr>
-                <td>Output VAT @ 7.5% (Finance Act 2019 – effective Feb 2020)</td>
+                <td>Output VAT @ 7.5%</td>
                 <td class="amount">₦{{ number_format($invoice->vat_amount, 2) }}</td>
             </tr>
             @endif
@@ -309,7 +309,7 @@
     <div class="footer">
         <p>
             <span class="footer-accent">{{ $invoice->tenant->name }}</span> |
-            This invoice is valid and complies with Nigerian tax regulations (FIRS). |
+            This invoice is valid and complies with Nigerian tax regulations (NRS). |
             @if($invoice->tenant->tin) TIN: {{ $invoice->tenant->tin }} | @endif
             Generated: {{ now()->format('d M Y, H:i') }}
         </p>

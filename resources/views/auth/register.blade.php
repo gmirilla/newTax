@@ -48,7 +48,7 @@
             <div class="space-y-4">
                 @foreach([
                     ['14-day free trial','Full access, no credit card required'],
-                    ['FIRS-compliant','Finance Act 2023 aligned calculations'],
+                    ['NRS-compliant','Nigeria Tax Act 2025 aligned calculations'],
                     ['VAT automation','Returns computed as you trade'],
                     ['Payroll & PAYE','Automated staff payment calculations'],
                     ['Multi-user access','Invite your accountant or team'],
@@ -123,7 +123,7 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-600 text-[#1E293B] mb-1.5">TIN (FIRS)</label>
+                            <label class="block text-sm font-600 text-[#1E293B] mb-1.5">TIN (NRS)</label>
                             <input type="text" name="tin" value="{{ old('tin') }}" placeholder="1234567-0001"
                                    class="input-field">
                         </div>

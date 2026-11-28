@@ -70,7 +70,7 @@
 
             <div class="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                    <p class="text-xs text-gray-400 uppercase font-medium">TIN (FIRS)</p>
+                    <p class="text-xs text-gray-400 uppercase font-medium">TIN (NRS)</p>
                     <p class="font-medium">{{ $tenant->tin ?? '—' }}</p>
                 </div>
                 <div>

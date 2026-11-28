@@ -184,7 +184,7 @@
 </div>
 
 <div class="footer">
-    <span>{{ $tenant->company_name ?? $tenant->name }} · {{ $report['basis'] === 'cash' ? 'Cash Basis' : 'Accrual Basis (IFRS/FIRS)' }}</span>
+    <span>{{ $tenant->company_name ?? $tenant->name }} · {{ $report['basis'] === 'cash' ? 'Cash Basis' : 'Accrual Basis (IFRS/NRS)' }}</span>
     <span>Confidential — management use only</span>
     <span>{{ now()->format('d M Y H:i') }}</span>
 </div>

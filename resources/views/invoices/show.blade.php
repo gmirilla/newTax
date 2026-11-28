@@ -32,8 +32,8 @@
                 @php
                     $firsLabel = match($invoice->firs_status ?? 'draft') {
                         'pending', 'validating', 'signing' => '⏳ NRS Pending…',
-                        'failed'  => '↺ Retry FIRS',
-                        default   => '⬆ Submit to FIRS',
+                        'failed'  => '↺ Retry NRS',
+                        default   => '⬆ Submit to NRS',
                     };
                     $firsClass = $invoice->firs_status === 'failed'
                         ? 'bg-red-600 hover:bg-red-700'

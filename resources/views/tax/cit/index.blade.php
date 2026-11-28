@@ -36,7 +36,7 @@
     {{-- 2026 CIT Rate Bands --}}
     <div class="bg-white rounded-lg shadow p-4">
         <div class="flex items-center justify-between mb-3">
-            <h3 class="text-sm font-semibold">CIT Rate Bands — Finance Act 2025 (2026)</h3>
+            <h3 class="text-sm font-semibold">CIT Rate Bands — Nigeria Tax Act 2025 (2026)</h3>
             <span class="text-xs text-gray-400">Development Levy: 4% of assessable profit (non-small companies)</span>
         </div>
         <div class="grid grid-cols-2 gap-4 text-sm">
@@ -118,7 +118,7 @@
     </div>
 
     <div class="text-xs text-gray-400 text-center">
-        Companies Income Tax Act (CITA) as amended by Finance Acts 2019–2025.
+        Nigeria Tax Act 2025.
         Annual returns and payment due within 6 months of financial year-end. Late filing: ₦25,000 + ₦5,000/day.
     </div>
 </div>

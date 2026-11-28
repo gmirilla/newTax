@@ -88,7 +88,7 @@
 
                     <tr class="bg-orange-50 border-t-2 border-orange-200">
                         <td class="py-3 px-4 font-bold text-orange-800">
-                            Net VAT {{ $vatReturn->net_vat_payable >= 0 ? 'Payable to FIRS' : 'Credit (Refundable)' }}
+                            Net VAT {{ $vatReturn->net_vat_payable >= 0 ? 'Payable to NRS' : 'Credit (Refundable)' }}
                         </td>
                         <td class="py-3 text-right px-4 font-bold text-xl {{ $vatReturn->net_vat_payable >= 0 ? 'text-orange-700' : 'text-green-700' }}">
                             ₦{{ number_format(abs($vatReturn->net_vat_payable), 2) }}
@@ -257,8 +257,8 @@
     @endif
 
     <div class="text-xs text-gray-400 text-center">
-        VAT at 7.5% per Finance Act 2019 (effective 1 Feb 2020). Returns and remittance due by 21st of following month.
-        Businesses with annual turnover ≥ ₦25M must register for VAT with FIRS.
+        VAT at 7.5% under the Nigeria Tax Act 2025. Returns and remittance due by 21st of following month.
+        Businesses with annual turnover ≥ ₦25M must register for VAT with the NRS.
     </div>
 </div>
 

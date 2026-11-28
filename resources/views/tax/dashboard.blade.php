@@ -109,8 +109,8 @@
                     </dd>
                 </div>
                 <div class="flex justify-between">
-                    <dt class="text-gray-500">Education Tax</dt>
-                    <dd class="font-medium">2.5% of profit</dd>
+                    <dt class="text-gray-500">Development Levy</dt>
+                    <dd class="font-medium">4% of profit (large companies)</dd>
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-gray-500">Annual Filing Due</dt>
@@ -120,7 +120,7 @@
 
             @if($compliance['cit']['summary']['is_exempt'])
             <div class="mt-3 p-2 bg-green-50 rounded text-xs text-green-700">
-                ✅ Small company (≤₦25M) – 0% CIT rate. Annual filing still required by FIRS.
+                ✅ Small company (turnover ≤₦50M) – 0% CIT rate. Annual filing still required by the NRS.
             </div>
             @endif
 
@@ -152,57 +152,50 @@
                         <td class="px-4 py-3 font-medium">VAT</td>
                         <td class="px-4 py-3 text-blue-700 font-bold">7.5%</td>
                         <td class="px-4 py-3">21st of following month</td>
-                        <td class="px-4 py-3">FIRS</td>
+                        <td class="px-4 py-3">NRS</td>
                         <td class="px-4 py-3 text-gray-500">Mandatory if turnover > ₦25M</td>
                     </tr>
                     <tr class="bg-gray-50">
                         <td class="px-4 py-3 font-medium">WHT (Services/Company)</td>
                         <td class="px-4 py-3 text-blue-700 font-bold">5%</td>
                         <td class="px-4 py-3">Monthly</td>
-                        <td class="px-4 py-3">FIRS</td>
+                        <td class="px-4 py-3">NRS</td>
                         <td class="px-4 py-3 text-gray-500">Deducted at source by payer</td>
                     </tr>
                     <tr>
                         <td class="px-4 py-3 font-medium">WHT (Services/Individual)</td>
                         <td class="px-4 py-3 text-blue-700 font-bold">10%</td>
                         <td class="px-4 py-3">Monthly</td>
-                        <td class="px-4 py-3">FIRS</td>
+                        <td class="px-4 py-3">NRS</td>
                         <td class="px-4 py-3 text-gray-500">Individuals incl. freelancers</td>
                     </tr>
                     <tr class="bg-gray-50">
                         <td class="px-4 py-3 font-medium">WHT (Rent/Dividends)</td>
                         <td class="px-4 py-3 text-blue-700 font-bold">10%</td>
                         <td class="px-4 py-3">Monthly</td>
-                        <td class="px-4 py-3">FIRS</td>
+                        <td class="px-4 py-3">NRS</td>
                         <td class="px-4 py-3 text-gray-500">Also applies to interest</td>
                     </tr>
                     <tr>
-                        <td class="px-4 py-3 font-medium">CIT (Small ≤₦25M)</td>
+                        <td class="px-4 py-3 font-medium">CIT (Small ≤₦50M)</td>
                         <td class="px-4 py-3 text-green-700 font-bold">0%</td>
                         <td class="px-4 py-3">6 months after year-end</td>
-                        <td class="px-4 py-3">FIRS</td>
+                        <td class="px-4 py-3">NRS</td>
                         <td class="px-4 py-3 text-gray-500">Filing still required</td>
                     </tr>
-                    <tr class="bg-gray-50">
-                        <td class="px-4 py-3 font-medium">CIT (Medium ₦25M–₦100M)</td>
-                        <td class="px-4 py-3 text-orange-700 font-bold">20%</td>
-                        <td class="px-4 py-3">6 months after year-end</td>
-                        <td class="px-4 py-3">FIRS</td>
-                        <td class="px-4 py-3 text-gray-500">+ 2.5% Education Tax</td>
-                    </tr>
-                    <tr>
-                        <td class="px-4 py-3 font-medium">CIT (Large >₦100M)</td>
+<tr>
+                        <td class="px-4 py-3 font-medium">CIT (Large >₦50M)</td>
                         <td class="px-4 py-3 text-red-700 font-bold">30%</td>
                         <td class="px-4 py-3">6 months after year-end</td>
-                        <td class="px-4 py-3">FIRS</td>
-                        <td class="px-4 py-3 text-gray-500">+ 2.5% Education Tax</td>
+                        <td class="px-4 py-3">NRS</td>
+                        <td class="px-4 py-3 text-gray-500">+ 4% Development Levy</td>
                     </tr>
                     <tr class="bg-gray-50">
                         <td class="px-4 py-3 font-medium">PAYE (Income Tax)</td>
-                        <td class="px-4 py-3 text-blue-700 font-bold">7% – 24%</td>
+                        <td class="px-4 py-3 text-blue-700 font-bold">0% – 25%</td>
                         <td class="px-4 py-3">Monthly (10th)</td>
                         <td class="px-4 py-3">State IRS</td>
-                        <td class="px-4 py-3 text-gray-500">Progressive bands on taxable income</td>
+                        <td class="px-4 py-3 text-gray-500">Progressive bands; first ₦800,000 tax-free</td>
                     </tr>
                 </tbody>
             </table>
